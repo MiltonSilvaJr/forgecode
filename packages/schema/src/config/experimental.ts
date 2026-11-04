@@ -10,8 +10,10 @@ export class Info extends Schema.Class<Info>("ConfigExperimental.Info")({
   portable_shell_scanner: Schema.Boolean.pipe(optional).annotate({
     description: "Deprecated: the built-in shell permission scanner is now always enabled.",
   }),
-  ...Record.map(ConfigFlag.registry, (_, key) =>
-    Schema.Boolean.pipe(optional).annotate({ description: ConfigFlag.describe(key) }),
+  ...Record.map(ConfigFlag.registry, (description) =>
+    Schema.Boolean.pipe(optional).annotate({
+      description: `${description} Defaults to on in local and dev builds and off in releases.`,
+    }),
   ),
   image_generate: Schema.Union([
     Schema.Boolean,
