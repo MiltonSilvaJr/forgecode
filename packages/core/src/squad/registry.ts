@@ -102,7 +102,24 @@ const resolved = (session: SquadStore.SessionRow): ResolvedSession => ({
   state: session.state,
 })
 
-export const registryDigest = (_generation: string, _sessions: readonly DigestSession[]): string => ""
+export const registryDigest = (generation: string, sessions: readonly DigestSession[]): string => {
+  const sorted = [...sessions].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+  return sha256(
+    JSON.stringify({
+      generation,
+      sessions: sorted.map((entry) => ({
+        name: entry.name,
+        provider: entry.provider,
+        model: entry.model,
+        variant: entry.variant,
+        location: entry.location,
+        branch: entry.branch,
+        sessionID: entry.sessionID,
+        state: entry.state,
+      })),
+    }),
+  )
+}
 
 const requireEnabled = () =>
   Effect.gen(function* () {
@@ -215,9 +232,17 @@ export const layer = Layer.succeed(
           if (!session) return yield* new SessionNotFoundError({ message: `session ${ref} not found` })
           return resolved(session)
         }
-        const session = yield* store.findSessionByName(db, ref)
-        if (!session) return yield* new SessionNotFoundError({ message: `session ${ref} not found` })
-        return resolved(session)
+        const active = yield* store.activeGeneration(db)
+        if (active) {
+          const session = yield* store.sessionByName(db, active.id, ref)
+          if (session) return resolved(session)
+        }
+        const found = yield* store.findSessionByName(db, ref)
+        if (found)
+          return yield* new SessionNotFoundError({
+            message: `session ${ref} belongs to generation ${found.generation_id}; use --session-id`,
+          })
+        return yield* new SessionNotFoundError({ message: `session ${ref} not found` })
       }),
   }),
 )
