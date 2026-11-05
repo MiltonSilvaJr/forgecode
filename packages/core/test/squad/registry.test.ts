@@ -7,6 +7,7 @@ import { SquadRegistry } from "@opencode/core/squad/registry"
 import { SquadStore } from "@opencode/core/squad/store"
 import { Document, Info } from "@opencode/schema/config"
 import { ConfigSquad } from "@opencode/schema/config/squad"
+import { Global } from "@opencode/util/global"
 import { tmpdirScoped } from "../fixture/tmpdir"
 import { testEffect } from "../lib/effect"
 
@@ -14,11 +15,23 @@ const enabled = [
   new Document({ type: "document", info: new Info({ squad: new ConfigSquad.Info({ enabled: true }) }) }),
 ]
 
+const globalFor = (directory: string) =>
+  Global.layerWith({
+    data: directory,
+    cache: directory,
+    config: directory,
+    state: directory,
+    tmp: directory,
+    bin: directory,
+    log: directory,
+    repos: directory,
+  })
+
 const layer = (directory: string) =>
   Layer.mergeAll(
     SquadRegistry.layer,
     SquadStore.layer,
-    Database.layer({ path: path.join(directory, "opencode.db") }),
+    Database.layer({ path: path.join(directory, "opencode.db") }).pipe(Layer.provide(globalFor(directory))),
     Config.testLayer(enabled),
   )
 
