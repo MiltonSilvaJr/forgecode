@@ -13,6 +13,7 @@ export type EnqueueResult = {
   delivery: "queue" | "steer"
   idempotencyKey: string
   messageID: string | null
+  created: string | null
   status: "queued" | "failed"
   error: string | null
 }
@@ -48,6 +49,7 @@ export async function enqueueOne(
       delivery: input.delivery,
       idempotencyKey: input.idempotencyKey,
       messageID: null,
+      created: null,
       status: "failed",
       error: `Refusing to queue for the calling session ${input.sessionID}; pass --allow-self to override`,
     }
@@ -70,6 +72,7 @@ export async function enqueueOne(
       delivery: input.delivery,
       idempotencyKey: input.idempotencyKey,
       messageID: inbox.id,
+      created: new Date(inbox.time.created).toISOString(),
       status: "queued",
       error: null,
     }
@@ -82,6 +85,7 @@ export async function enqueueOne(
       delivery: input.delivery,
       idempotencyKey: input.idempotencyKey,
       messageID: null,
+      created: null,
       status: "failed",
       error: enqueueErrorMessage(cause, input),
     }

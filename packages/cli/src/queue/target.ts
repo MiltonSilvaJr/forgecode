@@ -16,6 +16,32 @@ export const previousGenerationMessage = (name: string, id: string) =>
   `Session "${name}" belongs to a previous generation (archived): ${id}`
 export const tooManyMessage = (name: string) => `too many sessions match "${name}"`
 
+/** List eligible broadcast targets: top-level, non-archived sessions of the project, newest first. */
+export async function listEligibleTargets(input: {
+  client: OpenCodeClient
+  project: string
+  signal?: AbortSignal
+}): Promise<SessionInfo[]> {
+  const targets: SessionInfo[] = []
+  let cursor: string | undefined
+  for (;;) {
+    const result = await input.client.session.list(
+      {
+        project: input.project,
+        parentID: null,
+        archived: false,
+        order: "desc",
+        limit: PAGE_LIMIT,
+        ...(cursor ? { cursor } : {}),
+      },
+      ...(input.signal ? [{ signal: input.signal }] : []),
+    )
+    for (const session of result.data) targets.push(session)
+    if (!result.cursor.next || result.data.length === 0) return targets
+    cursor = result.cursor.next
+  }
+}
+
 type Search = {
   matches: SessionInfo[]
   stoppedAtLimit: boolean
