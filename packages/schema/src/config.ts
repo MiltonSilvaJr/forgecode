@@ -22,6 +22,7 @@ import { ConfigToolOutput } from "./config/tool-output.js"
 import { ConfigWatcher } from "./config/watcher.js"
 import { ConfigWarming } from "./config/warming.js"
 import { ConfigWorktree } from "./config/worktree.js"
+import { ConfigSubscriptionAuth } from "./config/subscription-auth.js"
 
 export class Info extends Schema.Class<Info>("Config.Info")({
   $schema: optional(Schema.String).annotate({
@@ -114,6 +115,7 @@ export class Info extends Schema.Class<Info>("Config.Info")({
   }),
   providers: Schema.Record(Schema.String, ConfigProvider.Info).pipe(optional),
   experimental: ConfigExperimental.Info.pipe(optional),
+  subscription_auth: ConfigSubscriptionAuth.Info.pipe(optional),
 }) {}
 
 export const Patch = Schema.Struct({
