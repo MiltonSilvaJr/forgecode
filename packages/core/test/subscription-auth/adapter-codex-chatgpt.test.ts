@@ -2,11 +2,21 @@ import { describe, expect, test } from "bun:test"
 import fs from "fs/promises"
 import path from "path"
 import { Effect } from "effect"
+import { Integration } from "@opencode/core/integration"
 import { CodexChatGPTAdapter } from "@opencode/core/subscription/adapters/codex-chatgpt"
 import { SubscriptionNativeSession } from "@opencode/core/subscription/native-session"
 import { tmpdir } from "../fixture/tmpdir"
 
 const run = <A, E>(effect: Effect.Effect<A, E>) => Effect.runPromise(effect)
+
+const OFFICIAL_OAUTH_URL = "https://auth.openai.com/api/accounts/authorize"
+const OFFICIAL_INSTRUCTIONS = "Complete authorization in your browser."
+
+const fakeIntegration = {
+  oauth: {
+    connect: () => Effect.succeed({ url: OFFICIAL_OAUTH_URL, instructions: OFFICIAL_INSTRUCTIONS }),
+  },
+} as unknown as Integration.Interface
 
 describe("CodexChatGPTAdapter", () => {
   test("reports the native session as not transferable", async () => {
@@ -33,10 +43,12 @@ describe("CodexChatGPTAdapter", () => {
     expect(report.state).toBe("incompatible")
   })
 
-  test("managed login returns the ChatGPT OAuth path without creating a credential", async () => {
+  test("managed login delegates to the official ChatGPT OAuth flow", async () => {
     const adapter = CodexChatGPTAdapter.make()
-    const result = await run(adapter.login({ source: "managed", env: {} }))
+    const result = await run(adapter.login({ source: "managed", env: {} }, fakeIntegration))
     expect(result.status).toBe("started")
-    expect(adapter.transport.provider).toBe("openai")
+    if (result.status !== "started") return
+    expect(result.url).toBe(OFFICIAL_OAUTH_URL)
+    expect(result.instructions).toBe(OFFICIAL_INSTRUCTIONS)
   })
 })

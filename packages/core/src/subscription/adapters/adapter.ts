@@ -2,6 +2,7 @@ export * as SubscriptionAdapter from "./adapter.js"
 
 import { Effect } from "effect"
 import { SubscriptionAuth } from "@opencode/schema/subscription-auth"
+import { Integration } from "../../integration.js"
 import { SubscriptionSource } from "../source.js"
 import type { Env } from "../native-session.js"
 
@@ -34,7 +35,10 @@ export interface Adapter {
   readonly providerID: string
   readonly sources: (env: Env) => Effect.Effect<readonly SubscriptionSource.Source[]>
   readonly report: (env: Env) => Effect.Effect<SubscriptionAuth.Source.Report>
-  readonly login: (input: { readonly source: LoginSource; readonly env: Env }) => Effect.Effect<LoginResult>
+  readonly login: (
+    input: { readonly source: LoginSource; readonly env: Env },
+    integration?: Integration.Interface,
+  ) => Effect.Effect<LoginResult>
   readonly logout: (env: Env) => Effect.Effect<LogoutResult>
   readonly transport: { readonly provider: string }
 }

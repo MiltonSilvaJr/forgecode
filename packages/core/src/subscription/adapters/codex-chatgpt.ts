@@ -52,7 +52,7 @@ export function make(runner: CommandRunner = realRunner): Adapter {
         }),
       ]),
     report: (env) => SubscriptionNativeSession.codexSession(env),
-    login: (input): Effect.Effect<LoginResult> =>
+    login: (input, _integration): Effect.Effect<LoginResult> =>
       Effect.gen(function* () {
         if (input.source === "managed")
           return {
