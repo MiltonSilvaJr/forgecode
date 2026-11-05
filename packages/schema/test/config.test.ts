@@ -185,4 +185,11 @@ describe("Config.Entry", () => {
     expect(encoded.info.providers?.custom).not.toHaveProperty("headers")
     expect(encoded.info.providers?.custom).not.toHaveProperty("canonical")
   })
+
+  test("round-trips experimental.forgequeue and stays disabled when absent", () => {
+    const decode = Schema.decodeUnknownSync(Config.Info)
+    const input = { experimental: { forgequeue: { enabled: true } } }
+    expect(Schema.encodeSync(Config.Info)(decode(input))).toEqual(input)
+    expect(decode({}).experimental?.forgequeue?.enabled).toBeUndefined()
+  })
 })
