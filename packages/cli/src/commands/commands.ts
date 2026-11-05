@@ -196,6 +196,22 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             ),
           },
         }),
+        Spec.make("test", {
+          description: "test a subscription provider with one minimal request",
+          params: {
+            target: Argument.String("target").pipe(
+              Argument.withDescription("Subscription provider ID: claude-code, codex-chatgpt, kimi-code"),
+            ),
+            model: Flag.String("model").pipe(
+              Flag.withDescription("Model ID to test"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(
+              Flag.withDescription("Output result as JSON"),
+              Flag.withDefault(false),
+            ),
+          },
+        }),
         Spec.make("login", {
           description: "connect an integration",
           params: {

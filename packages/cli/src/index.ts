@@ -49,6 +49,7 @@ const Handlers = Runtime.handlers(Commands, {
     list: () => import("./commands/handlers/auth/list"),
     status: () => import("./commands/handlers/auth/status"),
     refresh: () => import("./commands/handlers/auth/refresh"),
+    test: () => import("./commands/handlers/auth/test"),
     login: () => import("./commands/handlers/auth/login"),
     logout: () => import("./commands/handlers/auth/logout"),
     export: () => import("./commands/handlers/auth/export"),
