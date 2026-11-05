@@ -1729,6 +1729,91 @@ export interface ExperimentalIntegrationApi<E = never> {
   readonly wellknown: { readonly add: ExperimentalIntegrationWellknownAddOperation<E> }
 }
 
+export type ExperimentalServerSubscriptionStatusInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+}
+export type ExperimentalServerSubscriptionStatusOutput = {
+  readonly location: Location.PublicRef
+  readonly data: {
+    readonly enabled: boolean
+    readonly providers: ReadonlyArray<{
+      readonly id: string
+      readonly state: "ready" | "disabled" | "expired" | "refresh_required" | "incompatible" | "missing"
+      readonly source?: ("env" | "store" | "native" | "keychain" | "api_key") | undefined
+      readonly expiresAt?: number | undefined
+      readonly accountLabel?: string | undefined
+      readonly consent?: "required" | "acknowledged" | undefined
+      readonly transport?: string | undefined
+      readonly reason?: string | undefined
+      readonly usable_by_forgecode?: boolean | undefined
+    }>
+  }
+}
+export type ExperimentalServerSubscriptionStatusOperation<E = never> = (
+  input?: ExperimentalServerSubscriptionStatusInput,
+) => Effect.Effect<ExperimentalServerSubscriptionStatusOutput, E>
+
+export type ExperimentalServerSubscriptionLoginInput = {
+  readonly integrationID: string
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly source?: "managed" | "native" | undefined
+  readonly accept: boolean
+}
+export type ExperimentalServerSubscriptionLoginOutput = {
+  readonly location: Location.PublicRef
+  readonly data: {
+    readonly status: "already_authenticated" | "authenticated" | "started"
+    readonly url?: string | undefined
+    readonly instructions?: string | undefined
+  }
+}
+export type ExperimentalServerSubscriptionLoginOperation<E = never> = (
+  input: ExperimentalServerSubscriptionLoginInput,
+) => Effect.Effect<ExperimentalServerSubscriptionLoginOutput, E>
+
+export type ExperimentalServerSubscriptionConsentInput = {
+  readonly integrationID: string
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly accept: boolean
+}
+export type ExperimentalServerSubscriptionConsentOutput = void
+export type ExperimentalServerSubscriptionConsentOperation<E = never> = (
+  input: ExperimentalServerSubscriptionConsentInput,
+) => Effect.Effect<ExperimentalServerSubscriptionConsentOutput, E>
+
+export type ExperimentalServerSubscriptionRefreshInput = {
+  readonly integrationID: string
+  readonly location?: { readonly directory?: string | undefined } | undefined
+}
+export type ExperimentalServerSubscriptionRefreshOutput = {
+  readonly location: Location.PublicRef
+  readonly data: { readonly state: string; readonly expiresAt?: number | undefined }
+}
+export type ExperimentalServerSubscriptionRefreshOperation<E = never> = (
+  input: ExperimentalServerSubscriptionRefreshInput,
+) => Effect.Effect<ExperimentalServerSubscriptionRefreshOutput, E>
+
+export type ExperimentalServerSubscriptionTestInput = {
+  readonly integrationID: string
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly model?: string | undefined
+}
+export type ExperimentalServerSubscriptionTestOutput = {
+  readonly location: Location.PublicRef
+  readonly data: { readonly ok: boolean; readonly latencyMs: number; readonly model?: string | undefined }
+}
+export type ExperimentalServerSubscriptionTestOperation<E = never> = (
+  input: ExperimentalServerSubscriptionTestInput,
+) => Effect.Effect<ExperimentalServerSubscriptionTestOutput, E>
+
+export interface ExperimentalServerSubscriptionApi<E = never> {
+  readonly status: ExperimentalServerSubscriptionStatusOperation<E>
+  readonly login: ExperimentalServerSubscriptionLoginOperation<E>
+  readonly consent: ExperimentalServerSubscriptionConsentOperation<E>
+  readonly refresh: ExperimentalServerSubscriptionRefreshOperation<E>
+  readonly test: ExperimentalServerSubscriptionTestOperation<E>
+}
+
 export type McpListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 export type McpListOutput = { readonly location: Location.PublicRef; readonly data: ReadonlyArray<Mcp.Server> }
 export type McpListOperation<E = never> = (input?: McpListInput) => Effect.Effect<McpListOutput, E>
@@ -2928,6 +3013,51 @@ export type IntegrationWellknownAddOutput = ExperimentalIntegrationWellknownAddO
 /** @deprecated Use `ExperimentalIntegrationWellknownAddOperation`. Removed in the next minor. */
 export type IntegrationWellknownAddOperation<E = never> = ExperimentalIntegrationWellknownAddOperation<E>
 
+/** @deprecated Use `ExperimentalServerSubscriptionStatusInput`. Removed in the next minor. */
+export type ServerSubscriptionStatusInput = ExperimentalServerSubscriptionStatusInput
+
+/** @deprecated Use `ExperimentalServerSubscriptionStatusOutput`. Removed in the next minor. */
+export type ServerSubscriptionStatusOutput = ExperimentalServerSubscriptionStatusOutput
+
+/** @deprecated Use `ExperimentalServerSubscriptionStatusOperation`. Removed in the next minor. */
+export type ServerSubscriptionStatusOperation<E = never> = ExperimentalServerSubscriptionStatusOperation<E>
+
+/** @deprecated Use `ExperimentalServerSubscriptionLoginInput`. Removed in the next minor. */
+export type ServerSubscriptionLoginInput = ExperimentalServerSubscriptionLoginInput
+
+/** @deprecated Use `ExperimentalServerSubscriptionLoginOutput`. Removed in the next minor. */
+export type ServerSubscriptionLoginOutput = ExperimentalServerSubscriptionLoginOutput
+
+/** @deprecated Use `ExperimentalServerSubscriptionLoginOperation`. Removed in the next minor. */
+export type ServerSubscriptionLoginOperation<E = never> = ExperimentalServerSubscriptionLoginOperation<E>
+
+/** @deprecated Use `ExperimentalServerSubscriptionConsentInput`. Removed in the next minor. */
+export type ServerSubscriptionConsentInput = ExperimentalServerSubscriptionConsentInput
+
+/** @deprecated Use `ExperimentalServerSubscriptionConsentOutput`. Removed in the next minor. */
+export type ServerSubscriptionConsentOutput = ExperimentalServerSubscriptionConsentOutput
+
+/** @deprecated Use `ExperimentalServerSubscriptionConsentOperation`. Removed in the next minor. */
+export type ServerSubscriptionConsentOperation<E = never> = ExperimentalServerSubscriptionConsentOperation<E>
+
+/** @deprecated Use `ExperimentalServerSubscriptionRefreshInput`. Removed in the next minor. */
+export type ServerSubscriptionRefreshInput = ExperimentalServerSubscriptionRefreshInput
+
+/** @deprecated Use `ExperimentalServerSubscriptionRefreshOutput`. Removed in the next minor. */
+export type ServerSubscriptionRefreshOutput = ExperimentalServerSubscriptionRefreshOutput
+
+/** @deprecated Use `ExperimentalServerSubscriptionRefreshOperation`. Removed in the next minor. */
+export type ServerSubscriptionRefreshOperation<E = never> = ExperimentalServerSubscriptionRefreshOperation<E>
+
+/** @deprecated Use `ExperimentalServerSubscriptionTestInput`. Removed in the next minor. */
+export type ServerSubscriptionTestInput = ExperimentalServerSubscriptionTestInput
+
+/** @deprecated Use `ExperimentalServerSubscriptionTestOutput`. Removed in the next minor. */
+export type ServerSubscriptionTestOutput = ExperimentalServerSubscriptionTestOutput
+
+/** @deprecated Use `ExperimentalServerSubscriptionTestOperation`. Removed in the next minor. */
+export type ServerSubscriptionTestOperation<E = never> = ExperimentalServerSubscriptionTestOperation<E>
+
 /** @deprecated Use `ExperimentalMcpAddInput`. Removed in the next minor. */
 export type McpAddInput = ExperimentalMcpAddInput
 
@@ -3021,6 +3151,9 @@ export type GenerateApi<E = never> = ExperimentalGenerateApi<E>
 /** @deprecated Use `ExperimentalVoiceApi`. Removed in the next minor. */
 export type VoiceApi<E = never> = ExperimentalVoiceApi<E>
 
+/** @deprecated Use `ExperimentalServerSubscriptionApi`. Removed in the next minor. */
+export type ServerSubscriptionApi<E = never> = ExperimentalServerSubscriptionApi<E>
+
 /** @deprecated Use `ExperimentalMigrationApi`. Removed in the next minor. */
 export type MigrationApi<E = never> = ExperimentalMigrationApi<E>
 
@@ -3038,6 +3171,7 @@ export interface AppApi<E = never> {
     readonly generate: ExperimentalGenerateApi<E>
     readonly voice: ExperimentalVoiceApi<E>
     readonly integration: ExperimentalIntegrationApi<E>
+    readonly "server.subscription": ExperimentalServerSubscriptionApi<E>
     readonly mcp: ExperimentalMcpApi<E>
     readonly file: ExperimentalFileApi<E>
     readonly migration: ExperimentalMigrationApi<E>
@@ -3086,6 +3220,24 @@ export interface AppApi<E = never> {
 
     /** @deprecated Use `client.experimental.voice.session`. Removed in the next minor. */
     readonly session: ExperimentalVoiceSessionOperation<E>
+  }
+
+  /** @deprecated Use `client.experimental.server.subscription`. Removed in the next minor. */
+  readonly "server.subscription": {
+    /** @deprecated Use `client.experimental.server.subscription.status`. Removed in the next minor. */
+    readonly status: ExperimentalServerSubscriptionStatusOperation<E>
+
+    /** @deprecated Use `client.experimental.server.subscription.login`. Removed in the next minor. */
+    readonly login: ExperimentalServerSubscriptionLoginOperation<E>
+
+    /** @deprecated Use `client.experimental.server.subscription.consent`. Removed in the next minor. */
+    readonly consent: ExperimentalServerSubscriptionConsentOperation<E>
+
+    /** @deprecated Use `client.experimental.server.subscription.refresh`. Removed in the next minor. */
+    readonly refresh: ExperimentalServerSubscriptionRefreshOperation<E>
+
+    /** @deprecated Use `client.experimental.server.subscription.test`. Removed in the next minor. */
+    readonly test: ExperimentalServerSubscriptionTestOperation<E>
   }
 
   /** @deprecated Use `client.experimental.migration`. Removed in the next minor. */
