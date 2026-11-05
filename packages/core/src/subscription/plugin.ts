@@ -48,7 +48,7 @@ export const SubscriptionAuthPlugin = define({
     const subscription = yield* SubscriptionService.Service
     const status = yield* subscription.status()
     const kimi = status.providers.find((provider) => provider.id === "kimi-code")
-    const expose = true
+    const expose = status.enabled && kimi?.state === "ready"
     yield* ctx.provider.transform((providers) => {
       const source = providers.get(KimiProvider.catalogID)
       if (!source) return
