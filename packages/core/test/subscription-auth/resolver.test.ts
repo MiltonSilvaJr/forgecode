@@ -5,13 +5,20 @@ import { Credential } from "@opencode/schema/credential"
 
 const kinds = ["env", "store", "native", "keychain", "api_key"] as const
 
-function source(kind: (typeof kinds)[number], opts: { present?: boolean; state?: string; count?: { n: number } } = {}) {
+function source(
+  kind: (typeof kinds)[number],
+  opts: { present?: boolean; state?: string; detail?: string; count?: { n: number } } = {},
+) {
   return SubscriptionAuth.Source.make({
     kind,
     report: () =>
       Effect.sync(() => {
         if (opts.count) opts.count.n += 1
-        return { present: opts.present ?? true, state: opts.state ?? "ready" }
+        return {
+          present: opts.present ?? true,
+          state: opts.state ?? "ready",
+          ...(opts.detail !== undefined ? { detail: opts.detail } : {}),
+        }
       }),
     acquire: () => Effect.succeed(Credential.Key.make({ type: "key", key: `sentinel-${kind}` })),
   })
