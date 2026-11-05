@@ -499,6 +499,86 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
         }),
       ],
     }),
+    Spec.make("queue", {
+      description: "Queue a message for a session's inbox",
+      globalFlags: ServerFlags,
+      params: {
+        thread: Flag.String("thread").pipe(
+          Flag.withDescription("Session ID to queue to"),
+          Flag.optional,
+        ),
+        to: Flag.String("to").pipe(
+          Flag.withDescription("Session name to resolve in the current generation"),
+          Flag.optional,
+        ),
+        all: Flag.Boolean("all").pipe(
+          Flag.withDescription("Queue to every non-archived top-level session"),
+          Flag.withDefault(false),
+        ),
+        message: Flag.String("message").pipe(
+          Flag.withDescription("Message text to queue"),
+          Flag.optional,
+        ),
+        messageFile: Flag.String("message-file").pipe(
+          Flag.withDescription("Read the message from a UTF-8 file"),
+          Flag.optional,
+        ),
+        delivery: Flag.String("delivery").pipe(
+          Flag.withDescription("Delivery mode: queue or steer (queue is promoted at the idle boundary, steer at the next step boundary)"),
+          Flag.withDefault("queue"),
+        ),
+        json: Flag.Boolean("json").pipe(
+          Flag.withDescription("Output as JSON"),
+          Flag.withDefault(false),
+        ),
+        idempotencyKey: Flag.String("idempotency-key").pipe(
+          Flag.withDescription("Required idempotency key (derives the message id)"),
+          Flag.optional,
+        ),
+        allowSelf: Flag.Boolean("allow-self").pipe(
+          Flag.withDescription("Allow queueing to the calling session"),
+          Flag.withDefault(false),
+        ),
+      },
+      commands: [
+        Spec.make("list", {
+          description: "List queue items and derived state for a session",
+          globalFlags: ServerFlags,
+          params: {
+            thread: Flag.String("thread").pipe(Flag.withDescription("Session ID")),
+            limit: Flag.Int("limit").pipe(
+              Flag.withSchema(Schema.Int.check(Schema.isGreaterThanOrEqualTo(1))),
+              Flag.withDescription("Limit to N audit records (default: 100)"),
+              Flag.withDefault(100),
+            ),
+            json: Flag.Boolean("json").pipe(
+              Flag.withDescription("Output as JSON"),
+              Flag.withDefault(false),
+            ),
+          },
+        }),
+        Spec.make("activity", {
+          description: "Report measured activity for a session",
+          globalFlags: ServerFlags,
+          params: {
+            thread: Flag.String("thread").pipe(Flag.withDescription("Session ID")),
+            watch: Flag.Boolean("watch").pipe(
+              Flag.withDescription("Wait for the first durable activity event"),
+              Flag.withDefault(false),
+            ),
+            timeout: Flag.Int("timeout").pipe(
+              Flag.withSchema(Schema.Int.check(Schema.isGreaterThanOrEqualTo(1))),
+              Flag.withDescription("Watch timeout in milliseconds (default: 60000)"),
+              Flag.withDefault(60000),
+            ),
+            json: Flag.Boolean("json").pipe(
+              Flag.withDescription("Output as JSON"),
+              Flag.withDefault(false),
+            ),
+          },
+        }),
+      ],
+    }),
     Spec.make("service", {
       description: "Manage the background server",
       commands: [

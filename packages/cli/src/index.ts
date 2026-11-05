@@ -84,6 +84,11 @@ const Handlers = Runtime.handlers(Commands, {
     export: () => import("./commands/handlers/session/export"),
     import: () => import("./commands/handlers/session/import"),
   },
+  queue: {
+    $: () => import("./commands/handlers/queue"),
+    list: () => import("./commands/handlers/queue/list"),
+    activity: () => import("./commands/handlers/queue/activity"),
+  },
   service: {
     start: () => import("./commands/handlers/service/start"),
     restart: () => import("./commands/handlers/service/restart"),
