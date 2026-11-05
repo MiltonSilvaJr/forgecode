@@ -117,6 +117,7 @@ import { VerbosityPlugin } from "./verbosity.js"
 import { WarmingPlugin } from "./warming.js"
 import { WellKnownPlugin } from "../wellknown/plugin.js"
 import { SubscriptionAuthPlugin } from "../subscription/plugin.js"
+import { SubscriptionService } from "../subscription/service.js"
 
 const services = [
   Agent.Service,
@@ -168,6 +169,7 @@ const services = [
   Snapshot.Service,
   Skill.Service,
   SkillDiscovery.Service,
+  SubscriptionService.Service,
   Tool.Service,
   ToolOutput.Service,
   Watcher.Service,
@@ -228,6 +230,7 @@ export const requirements = LayerNode.group([
   Snapshot.node,
   Skill.node,
   SkillDiscovery.node,
+  SubscriptionService.node,
   Tool.node,
   ToolOutput.node,
   Watcher.node,
