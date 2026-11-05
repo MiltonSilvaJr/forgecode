@@ -55,6 +55,7 @@ describe("Squad.enabled", () => {
         Stream.runCollect,
         Effect.forkScoped,
       )
+      yield* Effect.yieldNow
       yield* squad.open({ generation: "gen-1" })
       const events = yield* Fiber.join(fiber)
       expect(events).toHaveLength(1)

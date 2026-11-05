@@ -36,6 +36,8 @@ const layer = Layer.effect(
     return Service.of({
       enabled: isEnabled,
       open: Effect.fn("Squad.open")(function* (input) {
+        yield* requireEnabled()
+        yield* bus.publish(SquadEvent.GenerationOpened, { generation: input.generation })
         return { generation: input.generation }
       }),
     })
