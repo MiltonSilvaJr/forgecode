@@ -29,7 +29,6 @@ describe("queue target resolver", () => {
     expect(result).toMatchObject({ type: "found", session: { id: "ses_a" } })
     expect(c.session.list).toHaveBeenCalledWith(
       expect.objectContaining({ parentID: null, archived: false, search: "ORQUESTRADORA" }),
-      undefined,
     )
   })
 
@@ -64,7 +63,7 @@ describe("queue target resolver", () => {
 
     const result = await resolveByName({ client: c, project: "project", name: "ORQUESTRADORA" })
     expect(list).toHaveBeenCalledTimes(2)
-    expect(list).toHaveBeenNthCalledWith(2, expect.objectContaining({ cursor: "page_2" }), undefined)
+    expect(list).toHaveBeenNthCalledWith(2, expect.objectContaining({ cursor: "page_2" }))
     expect(result).toMatchObject({ type: "found", session: { id: "ses_a" } })
   })
 
@@ -77,7 +76,7 @@ describe("queue target resolver", () => {
 
     const result = await resolveByName({ client: c, project: "project", name: "ORQUESTRADORA" })
     expect(result).toMatchObject({ type: "previous-generation", session: { id: "ses_old" } })
-    expect(list).toHaveBeenLastCalledWith(expect.objectContaining({ archived: true }), undefined)
+    expect(list).toHaveBeenLastCalledWith(expect.objectContaining({ archived: true }))
   })
 
   test("reports not-found when the title exists nowhere", async () => {
