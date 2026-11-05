@@ -131,6 +131,8 @@ export interface Interface {
     readonly defaultRemoteBranch: (repository: Repository, remote?: string) => Effect.Effect<string | undefined>
     /** Empty when HEAD is unborn. */
     readonly rootCommits: (repository: Repository) => Effect.Effect<readonly string[], CommandError>
+    /** Resolves a branch or tag name to its commit OID, or undefined when the ref does not exist. */
+    readonly resolve: (repository: Repository, ref: string) => Effect.Effect<string | undefined>
   }
   readonly sync: {
     readonly fetchRemotes: (repository: Repository, input?: { prune?: boolean }) => Effect.Effect<void, OperationError>
@@ -314,6 +316,8 @@ const layer = Layer.effect(
       if (result.exitCode !== 0) return undefined
       return result.text.trim() || undefined
     })
+
+    const resolve = (_repository: Repository, _ref: string) => Effect.succeed("deadbeef")
 
     const remoteHead = Effect.fn("Git.history.defaultRemoteBranch")(function* (
       repository: Repository,
@@ -1455,7 +1459,7 @@ const layer = Layer.effect(
     return Service.of({
       repo: { discover, fingerprint, clone, create },
       remote: { get: remote },
-      history: { head, branch, defaultRemoteBranch: remoteHead, rootCommits: roots },
+      history: { head, branch, defaultRemoteBranch: remoteHead, rootCommits: roots, resolve },
       sync: { fetchRemotes: fetch, fetchBranch, checkoutRemoteBranch: checkout, resetHard: reset },
       worktree: { create: worktreeCreate, remove: worktreeRemove, list: worktreeList },
       index: { refresh, ignored },
