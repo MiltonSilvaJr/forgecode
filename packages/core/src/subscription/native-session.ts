@@ -4,7 +4,7 @@ import { Effect } from "effect"
 import { SubscriptionAuth } from "@opencode/schema/subscription-auth"
 import path from "path"
 
-type Env = Readonly<Record<string, string | undefined>>
+export type Env = Readonly<Record<string, string | undefined>>
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null
@@ -12,8 +12,8 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const fileExists = (file: string) =>
   Effect.tryPromise({
     try: () => Bun.file(file).exists(),
-    catch: () => false,
-  })
+    catch: (cause) => cause,
+  }).pipe(Effect.orElseSucceed(() => false))
 
 const readJsonFile = (file: string) =>
   Effect.tryPromise({

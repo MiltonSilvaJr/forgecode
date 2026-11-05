@@ -16,10 +16,8 @@ export interface Source {
   readonly acquire: () => Effect.Effect<Credential.Value | undefined>
 }
 
-export const make = <R, E>(
-  input: {
-    readonly kind: SubscriptionAuth.Source.Kind
-    readonly report: () => Effect.Effect<SubscriptionAuth.Source.Report, E, R>
-    readonly acquire: () => Effect.Effect<Credential.Value | undefined, E, R>
-  },
-): Source => input
+export const make = (input: {
+  readonly kind: SubscriptionAuth.Source.Kind
+  readonly report: () => Effect.Effect<SubscriptionAuth.Source.Report>
+  readonly acquire: () => Effect.Effect<Credential.Value | undefined>
+}): Source => input

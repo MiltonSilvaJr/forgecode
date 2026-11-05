@@ -7,7 +7,12 @@ const kinds = ["env", "store", "native", "keychain", "api_key"] as const
 
 function source(
   kind: (typeof kinds)[number],
-  opts: { present?: boolean; state?: string; detail?: string; count?: { n: number } } = {},
+  opts: {
+    present?: boolean
+    state?: "ready" | "expired" | "incompatible" | "missing" | "refresh_required" | "disabled"
+    detail?: string
+    count?: { n: number }
+  } = {},
 ) {
   return SubscriptionAuth.Source.make({
     kind,

@@ -34,7 +34,7 @@ export const SubscriptionAuthPlugin = define({
       .pipe(
         Stream.runForEach((event) =>
           publishChanged({
-            integrationID: event.data.integrationID ?? "",
+            integrationID: "integrationID" in event.data ? event.data.integrationID : "",
             action: event.type === Credential.Event.Switched.type ? "login" : "logout",
           }),
         ),

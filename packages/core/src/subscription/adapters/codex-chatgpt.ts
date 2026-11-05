@@ -4,7 +4,6 @@ import { Effect } from "effect"
 import { Credential } from "@opencode/schema/credential"
 import { SubscriptionSource } from "../source.js"
 import { SubscriptionNativeSession } from "../native-session.js"
-import type { Env } from "../native-session.js"
 import type { Adapter, CommandRunner, LoginResult, LogoutResult } from "./adapter.js"
 
 export const integrationID = "codex-chatgpt"

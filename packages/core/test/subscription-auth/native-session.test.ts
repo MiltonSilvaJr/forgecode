@@ -7,7 +7,7 @@ import { tmpdir } from "../fixture/tmpdir"
 
 const sentinel = "SENTINEL_ACCESS_TOKEN_DO_NOT_LEAK"
 
-const run = <A, E, R>(effect: Effect.Effect<A, E, R>) => Effect.runPromise(effect)
+const run = <A, E>(effect: Effect.Effect<A, E>) => Effect.runPromise(effect)
 
 describe("SubscriptionNativeSession.claude", () => {
   test("detects the credentials file by existence, without reading it", async () => {

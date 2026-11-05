@@ -3,6 +3,7 @@ import fs from "fs/promises"
 import path from "path"
 import { Effect } from "effect"
 import { CodexChatGPTAdapter } from "@opencode/core/subscription/adapters/codex-chatgpt"
+import { SubscriptionNativeSession } from "@opencode/core/subscription/native-session"
 import { tmpdir } from "../fixture/tmpdir"
 
 const run = <A, E>(effect: Effect.Effect<A, E>) => Effect.runPromise(effect)
@@ -17,7 +18,7 @@ describe("CodexChatGPTAdapter", () => {
     ).toString("base64url")}.sig`
     await fs.writeFile(path.join(codex, "auth.json"), JSON.stringify({ auth_mode: "chatgpt", id_token: idToken }))
     const adapter = CodexChatGPTAdapter.make()
-    const report = await run(adapter.report({ HOME: dir.path }))
+    const report = (await run(adapter.report({ HOME: dir.path }))) as SubscriptionNativeSession.CodexReport
     expect(report.usable_by_forgecode).toBe(false)
     expect(report.accountLabel).toBe("acct_1")
   })

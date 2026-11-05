@@ -7,7 +7,7 @@ describe("KimiProvider", () => {
   })
 
   test("identifies the provider and catalog", () => {
-    expect(KimiProvider.providerID).toBe("kimi-for-coding")
+    expect(String(KimiProvider.providerID)).toBe("kimi-for-coding")
     expect(KimiProvider.catalogID).toBe("kimi-code-plan-global")
   })
 
