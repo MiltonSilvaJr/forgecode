@@ -100,10 +100,10 @@ describe("queue audit trail", () => {
     try {
       await fs.mkdir(auditDirectory(dir), { recursive: true })
       await fs.writeFile(rawFile(dir), "")
-      await fs.chmod(auditDirectory(dir), 0o555)
+      await fs.chmod(rawFile(dir), 0o444)
       expect(await appendAuditLine(dir, line())).toBe(false)
     } finally {
-      await fs.chmod(auditDirectory(dir), 0o755).catch(() => {})
+      await fs.chmod(rawFile(dir), 0o644).catch(() => {})
       await fs.rm(dir, { recursive: true, force: true })
     }
   })
