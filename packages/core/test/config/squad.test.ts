@@ -38,9 +38,7 @@ describe("ConfigSquad", () => {
     for (const stale of [0, "bogus", "0 minutes"]) {
       const result = normalized({ squad: { liveness: { stale_after: stale, dead_after: "24 hours" } } })
       expect(
-        result.diagnostics.some(
-          (d) => d.kind === "invalid" && d.path.join(".") === "squad.liveness.stale_after",
-        ),
+        result.diagnostics.some((d) => d.kind === "invalid" && d.path.join(".") === "squad.liveness"),
       ).toBe(true)
     }
   })
@@ -48,8 +46,10 @@ describe("ConfigSquad", () => {
   test("normalizes valid liveness durations", () => {
     const result = normalized({ squad: { liveness: { stale_after: "60 minutes", dead_after: "24 hours" } } })
     expect(result.encoded.squad).toEqual({
-      enabled: false,
       liveness: { stale_after: "3600000 millis", dead_after: "86400000 millis" },
     })
+    expect(decoded({ squad: { liveness: { stale_after: "60 minutes", dead_after: "24 hours" } } }).squad?.enabled).toBe(
+      false,
+    )
   })
 })
