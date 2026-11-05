@@ -188,6 +188,14 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             ),
           },
         }),
+        Spec.make("refresh", {
+          description: "refresh a subscription credential or session",
+          params: {
+            target: Argument.String("target").pipe(
+              Argument.withDescription("Subscription provider ID: claude-code, codex-chatgpt, kimi-code"),
+            ),
+          },
+        }),
         Spec.make("login", {
           description: "connect an integration",
           params: {
