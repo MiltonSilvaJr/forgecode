@@ -95,8 +95,8 @@ export async function enqueueOne(
 }
 
 export async function enqueueAll(
-  _client: OpenCodeClient,
-  _input: {
+  client: OpenCodeClient,
+  input: {
     targets: ReadonlyArray<{ sessionID: string; target: string | null }>
     text: string
     delivery: "queue" | "steer"
@@ -107,7 +107,25 @@ export async function enqueueAll(
     signal?: AbortSignal
   },
 ): Promise<EnqueueResult[]> {
-  return []
+  const self = process.env.OPENCODE_SESSION_ID
+  const targets = input.targets.filter((target) => input.allowSelf || target.sessionID !== self)
+  const results: EnqueueResult[] = []
+  for (const target of targets) {
+    results.push(
+      await enqueueOne(client, {
+        sessionID: target.sessionID,
+        text: input.text,
+        delivery: input.delivery,
+        idempotencyKey: input.idempotencyKey,
+        target: target.target,
+        allowSelf: input.allowSelf,
+        serverUrl: input.serverUrl,
+        audit: input.audit,
+        signal: input.signal,
+      }),
+    )
+  }
+  return results
 }
 
 function auditLine(result: EnqueueResult): AuditLine {

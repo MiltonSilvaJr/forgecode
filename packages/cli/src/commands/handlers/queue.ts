@@ -9,7 +9,7 @@ import { Runtime } from "../../framework/runtime"
 import { ServerConnection } from "../../services/server-connection"
 import { errorMessage } from "../../util/error"
 import { appendAuditLine } from "../../queue/audit"
-import { enqueueOne, validateIdempotencyKey } from "../../queue/enqueue"
+import { enqueueAll, enqueueOne, validateIdempotencyKey } from "../../queue/enqueue"
 import { resolveForgeQueueEnabled } from "../../queue/flag"
 import { formatQueued } from "../../queue/format"
 import {
@@ -70,23 +70,22 @@ const handler = Effect.fn("cli.queue")(function* (input: Runtime.Input<typeof Co
 
   const data = yield* Global.Service
   const audit = { append: (line: Parameters<typeof appendAuditLine>[1]) => appendAuditLine(data.data, line) }
-  const results = yield* Effect.forEach(
-    destinations.targets,
-    (destination) =>
-      Effect.promise(() =>
-        enqueueOne(client, {
-          sessionID: destination.sessionID,
-          text: read.text,
-          delivery,
-          idempotencyKey: key.key,
-          target: destination.target,
-          allowSelf: input.allowSelf,
-          serverUrl: server.endpoint.url,
-          audit,
-        }),
-      ),
-    { concurrency: 1 },
-  )
+  const common = {
+    text: read.text,
+    delivery: delivery as "queue" | "steer",
+    idempotencyKey: key.key,
+    allowSelf: input.allowSelf,
+    serverUrl: server.endpoint.url,
+    audit,
+  }
+  const results = input.all
+    ? yield* Effect.promise(() => enqueueAll(client, { targets: destinations.targets, ...common }))
+    : [
+        yield* Effect.promise(() =>
+          enqueueOne(client, { sessionID: destinations.targets[0].sessionID, target: destinations.targets[0].target, ...common }),
+        ),
+      ]
+  if (input.all && results.length === 0) return yield* writeError(1, NO_TARGETS)
 
   const output = input.json
     ? results.length === 1
@@ -134,12 +133,8 @@ async function resolveDestinations(
         return { targets: [], error: notFoundMessage(input.to) }
     }
   }
-  const self = process.env.OPENCODE_SESSION_ID
   const eligible = await listEligibleTargets({ client, project })
-  const targets = eligible
-    .filter((session) => input.allowSelf || session.id !== self)
-    .map((session) => ({ sessionID: session.id, target: session.title ?? null }))
-  if (targets.length === 0) return { targets: [], error: NO_TARGETS }
+  const targets = eligible.map((session) => ({ sessionID: session.id, target: session.title ?? null }))
   return { targets }
 }
 
