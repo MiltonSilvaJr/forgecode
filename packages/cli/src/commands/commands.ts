@@ -224,6 +224,14 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
               Flag.withDescription("Provider form answer (key=value; repeat for multiple fields)"),
               Flag.atMost(100),
             ),
+            source: Flag.Literals("source", ["managed", "native"]).pipe(
+              Flag.withDescription("Subscription source: managed or native"),
+              Flag.optional,
+            ),
+            acceptTos: Flag.Boolean("accept-tos").pipe(
+              Flag.withDescription("Accept the subscription terms of use"),
+              Flag.withDefault(false),
+            ),
           },
         }),
         Spec.make("logout", {

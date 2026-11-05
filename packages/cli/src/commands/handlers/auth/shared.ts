@@ -43,6 +43,14 @@ export const resolveIntegration = Effect.fn("cli.auth.resolve-integration")(func
   return yield* Effect.fail(new Error(`Integration not found: ${target}`))
 })
 
+export const SUBSCRIPTION_PROVIDERS = ["claude-code", "codex-chatgpt", "kimi-code"] as const
+
+export type SubscriptionProvider = (typeof SUBSCRIPTION_PROVIDERS)[number]
+
+export function isSubscriptionProvider(target: string): target is SubscriptionProvider {
+  return (SUBSCRIPTION_PROVIDERS as readonly string[]).includes(target)
+}
+
 export type ConnectMethod = Exclude<IntegrationMethod, { type: "env" }>
 
 export function connectMethods(integration: IntegrationInfo) {

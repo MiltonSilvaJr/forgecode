@@ -10,6 +10,7 @@ import { answerForm, secret } from "./form"
 import {
   createClient,
   connectMethods,
+  isSubscriptionProvider,
   loadIntegrations,
   location,
   request,
@@ -34,6 +35,8 @@ export default Runtime.handler(
       target: Option.getOrUndefined(input.target),
       method: Option.getOrUndefined(input.method),
       answer: input.answer,
+      source: Option.getOrUndefined(input.source),
+      acceptTos: input.acceptTos,
     }).pipe(handlePromptErrors),
   ),
 )
@@ -42,11 +45,15 @@ const login = Effect.fn("cli.auth.login.run")(function* (input: {
   target?: string
   method?: string
   answer?: ReadonlyArray<string>
+  source?: "managed" | "native"
+  acceptTos: boolean
 }) {
   if (!input.target)
     yield* requireInteractive("Pass an integration ID or name when running without an interactive terminal")
   intro("Connect an integration")
   const client = yield* createClient()
+  if (isSubscriptionProvider(input.target))
+    return yield* subscriptionLogin(client, input.target, input.source, input.acceptTos)
   const integration = yield* findIntegration(client, input.target)
   const methods = connectMethods(integration)
   if (methods.length === 0) yield* Effect.fail(new Error(`${integration.name} has no interactive login methods`))
@@ -54,6 +61,16 @@ const login = Effect.fn("cli.auth.login.run")(function* (input: {
   const answer = yield* answerForm(method.type === "command" ? undefined : method.form, input.answer)
   yield* authenticate(client, integration, method, answer)
   outro("Done")
+})
+
+const subscriptionLogin = Effect.fn("cli.auth.login.subscription")(function* (
+  client: OpenCodeClient,
+  target: string,
+  source?: "managed" | "native",
+  acceptTos?: boolean,
+) {
+  process.stderr.write("stub: not implemented\n")
+  process.exitCode = 1
 })
 
 const findIntegration = Effect.fn("cli.auth.login.integration")(function* (client: OpenCodeClient, target?: string) {
