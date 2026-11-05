@@ -40,7 +40,7 @@ describe("queue activity", () => {
   test("derives busy from time.busy greater than time.idle", async () => {
     const c = client()
     spyOn(c.session, "get").mockResolvedValue(session({ busy: 2000, idle: 1000 }, "succeeded"))
-    spyOn(c.session.message, "list").mockResolvedValue({ data: [], cursor: {} })
+    spyOn(c.message, "list").mockResolvedValue({ data: [], cursor: {} })
     spyOn(c.session.inbox, "list").mockResolvedValue([])
     const snapshot = await snapshotActivity(c, { sessionID: "ses_a" })
     expect(snapshot).toMatchObject({ state: "busy", outcome: "succeeded", pendingCount: 0 })
@@ -49,7 +49,7 @@ describe("queue activity", () => {
   test("derives idle when time.idle exists without a newer busy", async () => {
     const c = client()
     spyOn(c.session, "get").mockResolvedValue(session({ idle: 1000 }))
-    spyOn(c.session.message, "list").mockResolvedValue({ data: [], cursor: {} })
+    spyOn(c.message, "list").mockResolvedValue({ data: [], cursor: {} })
     spyOn(c.session.inbox, "list").mockResolvedValue([])
     expect((await snapshotActivity(c, { sessionID: "ses_a" })).state).toBe("idle")
   })
@@ -57,7 +57,7 @@ describe("queue activity", () => {
   test("derives unknown when neither busy nor idle exists", async () => {
     const c = client()
     spyOn(c.session, "get").mockResolvedValue(session())
-    spyOn(c.session.message, "list").mockResolvedValue({ data: [], cursor: {} })
+    spyOn(c.message, "list").mockResolvedValue({ data: [], cursor: {} })
     spyOn(c.session.inbox, "list").mockResolvedValue([])
     expect((await snapshotActivity(c, { sessionID: "ses_a" })).state).toBe("unknown")
   })
@@ -65,7 +65,7 @@ describe("queue activity", () => {
   test("reports lastMessageAt from the newest message and a null outcome", async () => {
     const c = client()
     spyOn(c.session, "get").mockResolvedValue(session({ idle: 1000 }))
-    spyOn(c.session.message, "list").mockResolvedValue({
+    spyOn(c.message, "list").mockResolvedValue({
       data: [{ id: "m1", time: { created: 1700000000000 }, type: "user", text: "hi" }],
       cursor: {},
     })
