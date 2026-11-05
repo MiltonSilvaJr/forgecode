@@ -56,4 +56,12 @@ export class Info extends Schema.Class<Info>("ConfigExperimental.Info")({
   policies: ConfigPolicy.Info.pipe(Schema.Array, optional).annotate({
     description: "Deprecated: use top-level policies. Ordered policies controlling access to configured resources",
   }),
+  forgequeue: Schema.Struct({
+    enabled: Schema.Boolean.pipe(optional),
+  })
+    .pipe(optional)
+    .annotate({
+      description:
+        "Enable the experimental ForgeQueue per-session queue commands. Defaults to false.",
+    }),
 }) {}
