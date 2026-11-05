@@ -16,12 +16,16 @@ export interface ChangedPayload {
   readonly noticeVersion?: number
 }
 
+/** Publishes the ephemeral audit event `subscription.auth.changed`. */
 export const publishChanged = Effect.fn("SubscriptionAuth.publishChanged")(function* (payload: ChangedPayload) {
   const bus = yield* Bus.Service
-  yield* bus.publish(SubscriptionAuth.Event.Changed, payload)
-  return { type: "credential.updated" as const, data: payload, id: "evt_stub", created: 0 }
+  return yield* bus.publish(SubscriptionAuth.Event.Changed, payload)
 })
 
+/**
+ * Host plugin: relays credential switches and removals to the `subscription.auth.changed` audit
+ * event so every subscription mutation (login, logout, refresh, consent, probe) is observable.
+ */
 export const SubscriptionAuthPlugin = define({
   id: "opencode.subscription-auth",
   effect: Effect.fn(function* (ctx) {
