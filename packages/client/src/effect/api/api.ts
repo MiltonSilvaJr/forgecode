@@ -2133,6 +2133,7 @@ export type EventSubscribeInput = {
         | "form.cancelled"
         | "websearch.updated"
         | "artifact.updated"
+        | "subscription.auth.changed"
         | "session.status"
         | "session.idle"
         | "tui.prompt.append"

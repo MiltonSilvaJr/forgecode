@@ -380,6 +380,8 @@ export type ConfigModelReasoning =
   | { supported: false }
   | { supported: true; toggle?: boolean; effort?: Array<string>; budget?: { min?: number; max?: number } }
 
+export type ConfigSubscriptionAuthSourceKind = "env" | "store" | "native" | "keychain" | "api_key"
+
 export type ConfigShellOption = { path: string; name: string; acceptable: boolean }
 
 export type LocationPublicRef = { directory: AbsolutePath }
@@ -1979,6 +1981,23 @@ export type ArtifactUpdated = {
   data: {}
 }
 
+export type SubscriptionAuthChanged = {
+  id: EventID
+  created: number
+  metadata?: { [x: string]: any }
+  type: "subscription.auth.changed"
+  location?: LocationRef
+  data: {
+    integrationID: string
+    action: "consent" | "login" | "logout" | "refresh" | "probe"
+    sourceKind?: string
+    outcome?: string
+    code?: string
+    expiresAt?: number
+    noticeVersion?: number
+  }
+}
+
 export type SessionStatusUpdated = {
   id: EventID
   created: number
@@ -2568,6 +2587,11 @@ export type ConfigEntry =
             effect: "allow" | "deny"
           }>
         }
+        subscription_auth?: {
+          enabled?: boolean
+          sources?: { [x: string]: Array<ConfigSubscriptionAuthSourceKind> }
+          fallback?: { api_key?: boolean }
+        }
       }
     }
   | { type: "directory"; path: AbsolutePath }
@@ -2926,6 +2950,7 @@ export type V2Event =
   | FormCancelled
   | WebsearchUpdated
   | ArtifactUpdated
+  | SubscriptionAuthChanged
   | SessionStatusUpdated
   | SessionIdle
   | TuiPromptAppend
@@ -4418,6 +4443,7 @@ export type EventSubscribeInput = {
         | "form.cancelled"
         | "websearch.updated"
         | "artifact.updated"
+        | "subscription.auth.changed"
         | "session.status"
         | "session.idle"
         | "tui.prompt.append"
