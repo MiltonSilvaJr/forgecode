@@ -235,7 +235,7 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
           },
         }),
         Spec.make("logout", {
-          description: "log out of a saved account",
+          description: "log out of a saved account or subscription session",
           params: {
             target: Argument.String("target").pipe(
               Argument.withDescription("Integration ID or name"),
