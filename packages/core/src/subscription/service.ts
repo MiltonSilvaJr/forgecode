@@ -167,7 +167,7 @@ const layer = Layer.effect(
         const started = Date.now()
         return { ok: true, latencyMs: Date.now() - started, ...(model !== undefined ? { model } : {}) }
       }),
-    })
+    } as Interface)
   }),
 )
 

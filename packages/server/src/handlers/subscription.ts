@@ -29,7 +29,8 @@ export const SubscriptionHandler = HttpApiBuilder.group(Api, "server.subscriptio
           return yield* response(
             service
               .login({ integrationID: ctx.params.integrationID, source: ctx.payload.source, accept: ctx.payload.accept })
-              .pipe(Effect.mapError((error) => new SubscriptionError({ code: error.code, message: error.message }))),
+              .pipe(Effect.mapError((error) => new SubscriptionError({ code: error.code, message: error.message })))
+              .pipe(Effect.map((result) => result as { status: "already_authenticated" | "authenticated" | "started"; url?: string; instructions?: string })),
           )
         }),
       )

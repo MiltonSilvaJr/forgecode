@@ -5,7 +5,6 @@ import { expect } from "bun:test"
 import { Effect } from "effect"
 import { HttpServer } from "effect/http"
 import { ServerProcess } from "../src/process"
-import { tmpdir } from "../../core/test/fixture/tmpdir"
 import { it } from "../../core/test/lib/effect"
 
 const startWithContent = Effect.fnUntraced(function* (content: string) {
