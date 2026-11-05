@@ -36,7 +36,7 @@ describe("auth login subscription command", () => {
     ])
     expect({ exitCode: result.exitCode, stderr: result.stderr }).toEqual({ exitCode: 0, stderr: "" })
     expect(bodies).toEqual([{ source: "native", accept: true }])
-    expect(result.stdout).toContain("already_authenticated")
+    expect(result.stdout).toContain("Already authenticated")
   })
 
   test("prints the authorization URL for a started device flow", async () => {
