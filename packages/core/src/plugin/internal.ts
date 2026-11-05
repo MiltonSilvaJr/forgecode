@@ -52,6 +52,7 @@ import { Global } from "@opencode/util/global"
 import { Image } from "../image.js"
 import { InstructionDiscovery } from "../instruction-discovery.js"
 import { Integration } from "../integration.js"
+import { Detaching } from "../detaching.js"
 import { Job } from "../job.js"
 import { KV } from "../kv.js"
 import { Location } from "../location.js"
@@ -143,6 +144,7 @@ const services = [
   Image.Service,
   InstructionDiscovery.Service,
   Integration.Service,
+  Detaching.Service,
   Job.Service,
   KV.Service,
   LLMClient.Service,
@@ -203,6 +205,7 @@ export const requirements = LayerNode.group([
   Image.node,
   InstructionDiscovery.node,
   Integration.node,
+  Detaching.node,
   Job.node,
   KV.node,
   llmClient,
