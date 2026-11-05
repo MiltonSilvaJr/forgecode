@@ -30,7 +30,7 @@ describe("Git.history.resolve", () => {
       expect(branchSha).toMatch(/^[0-9a-f]{7,40}$/)
       const tagSha = yield* git.history.resolve(repository, "v1.0")
       expect(tagSha).toMatch(/^[0-9a-f]{7,40}$/)
-      expect(yield* git.history.resolve(repository, "does-not-exist")).toBeUndefined()
+      expect(yield* git.history.resolve(repository, "does-not-exist")).toBe(undefined)
     }),
   )
 })

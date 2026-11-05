@@ -317,7 +317,11 @@ const layer = Layer.effect(
       return result.text.trim() || undefined
     })
 
-    const resolve = (_repository: Repository, _ref: string) => Effect.succeed("deadbeef")
+    const resolve = Effect.fn("Git.history.resolve")(function* (repository: Repository, ref: string) {
+      const result = yield* run(repository.worktree, proc, ["rev-parse", "--verify", "--quiet", `${ref}^{commit}`])
+      if (result.exitCode !== 0) return undefined
+      return result.text.trim() || undefined
+    })
 
     const remoteHead = Effect.fn("Git.history.defaultRemoteBranch")(function* (
       repository: Repository,
