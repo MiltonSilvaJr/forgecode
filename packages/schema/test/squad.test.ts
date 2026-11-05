@@ -2,7 +2,9 @@ import { describe, expect, test } from "bun:test"
 import { Schema } from "effect"
 import { Squad } from "@opencode/schema/squad"
 
-const roundtrip = <S extends Schema.Schema.AnyNoContext>(schema: S) => (value: Schema.Schema.Encoded<S>) => {
+const roundtrip = <S extends Schema.Codec<unknown, unknown, never, never>>(schema: S) => (
+  value: Schema.Codec.Encoded<S>,
+) => {
   const decoded = Schema.decodeUnknownSync(schema)(value)
   return Schema.encodeSync(schema)(decoded)
 }
@@ -32,7 +34,13 @@ describe("Squad.SessionState", () => {
 
 describe("Squad codec round-trips", () => {
   test("Generation", () => {
-    const value = { id: "gen-2026-11-04", runID: "run-1", state: "active", createdAt: 0, sessions: [] }
+    const value = {
+      id: "gen-2026-11-04",
+      runID: "run-1",
+      state: "active",
+      createdAt: 0,
+      sessions: [],
+    } satisfies Schema.Codec.Encoded<typeof Squad.Generation>
     expect(roundtrip(Squad.Generation)(value)).toEqual(value)
   })
 
@@ -51,7 +59,7 @@ describe("Squad codec round-trips", () => {
       productive: false,
       createdAt: 0,
       updatedAt: 0,
-    }
+    } satisfies Schema.Codec.Encoded<typeof Squad.SessionEntry>
     expect(roundtrip(Squad.SessionEntry)(value)).toEqual(value)
   })
 
@@ -74,12 +82,19 @@ describe("Squad codec round-trips", () => {
       validation: "unknown",
       state: "open",
       createdAt: 0,
-    }
+    } satisfies Schema.Codec.Encoded<typeof Squad.Dispatch>
     expect(roundtrip(Squad.Dispatch)(value)).toEqual(value)
   })
 
   test("Checkpoint", () => {
-    const value = { generationID: "gen-1", name: "ATLAS", sha256: "sha", body: "body", bytes: 4, createdAt: 0 }
+    const value = {
+      generationID: "gen-1",
+      name: "ATLAS",
+      sha256: "sha",
+      body: "body",
+      bytes: 4,
+      createdAt: 0,
+    } satisfies Schema.Codec.Encoded<typeof Squad.Checkpoint>
     expect(roundtrip(Squad.Checkpoint)(value)).toEqual(value)
   })
 
@@ -96,7 +111,7 @@ describe("Squad codec round-trips", () => {
       result: "accepted",
       actor: "ORQUESTRADORA",
       prevHash: "prev",
-    }
+    } satisfies Schema.Codec.Encoded<typeof Squad.AuditEntry>
     expect(roundtrip(Squad.AuditEntry)(value)).toEqual(value)
   })
 

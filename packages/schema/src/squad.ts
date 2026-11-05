@@ -15,6 +15,7 @@ export const GenerationID = Schema.String.pipe(
 export type GenerationID = typeof GenerationID.Type
 
 export const SessionName = Schema.String.pipe(
+  Schema.refine((value): value is string => value.length > 0 && !/\s/.test(value)),
   Schema.brand("Squad.SessionName"),
   Schema.annotate({ identifier: "Squad.SessionName" }),
 )
