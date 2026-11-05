@@ -6,6 +6,7 @@ import { makeLocationNode } from "@opencode/util/effect/app-node"
 import { Config } from "../config.js"
 import { KV } from "../kv.js"
 import { Bus } from "../bus.js"
+import { Integration } from "../integration.js"
 import { ClaudeCodeAdapter } from "./adapters/claude-code.js"
 import { CodexChatGPTAdapter } from "./adapters/codex-chatgpt.js"
 import { KimiCodeAdapter } from "./adapters/kimi-code.js"
@@ -125,7 +126,8 @@ const layer = Layer.effect(
             ),
           )
         if (input.accept) yield* SubscriptionConsent.acknowledge(adapter.integrationID, notice.version)
-        const result = yield* adapter.login({ source: input.source ?? "native", env: process.env })
+        const integration = yield* Integration.Service
+        const result = yield* adapter.login({ source: input.source ?? "native", env: process.env }, integration)
         if (result.status === "error")
           return yield* Effect.fail(fail(result.code, SubscriptionRedaction.redact(result.message)))
         yield* bus.publish(SubscriptionAuth.Event.Changed, {
@@ -171,4 +173,4 @@ const layer = Layer.effect(
   }),
 )
 
-export const node = makeLocationNode({ service: Service, layer, deps: [Config.node, KV.node, Bus.node] })
+export const node = makeLocationNode({ service: Service, layer, deps: [Config.node, KV.node, Bus.node, Integration.node] })

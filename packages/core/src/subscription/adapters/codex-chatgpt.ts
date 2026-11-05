@@ -2,6 +2,7 @@ export * as CodexChatGPTAdapter from "./codex-chatgpt.js"
 
 import { Effect } from "effect"
 import { Credential } from "@opencode/schema/credential"
+import { Integration } from "../../integration.js"
 import { SubscriptionSource } from "../source.js"
 import { SubscriptionNativeSession } from "../native-session.js"
 import type { Adapter, CommandRunner, LoginResult, LogoutResult } from "./adapter.js"
@@ -9,6 +10,9 @@ import type { Adapter, CommandRunner, LoginResult, LogoutResult } from "./adapte
 export const integrationID = "codex-chatgpt"
 export const providerID = "openai"
 export const installUrl = "https://github.com/openai/codex"
+
+const managedIntegrationID = Integration.ID.make("openai")
+const managedMethodID = Integration.MethodID.make("chatgpt-token-sharing")
 
 const realRunner: CommandRunner = (command, args, env) =>
   Effect.promise(async () => {
@@ -52,15 +56,36 @@ export function make(runner: CommandRunner = realRunner): Adapter {
         }),
       ]),
     report: (env) => SubscriptionNativeSession.codexSession(env),
-    login: (input, _integration): Effect.Effect<LoginResult> =>
+    login: (input, integration): Effect.Effect<LoginResult> =>
       Effect.gen(function* () {
-        if (input.source === "managed")
-          return {
-            status: "started",
-            url: "https://chatgpt.com/authorize",
-            instructions:
-              "Complete ChatGPT sign-in with token sharing. Run opencode auth login openai for the interactive flow.",
-          }
+        if (input.source === "managed") {
+          if (!integration)
+            return {
+              status: "error",
+              code: "transport_unavailable",
+              message: "codex-chatgpt managed login is unavailable. Run: opencode auth login openai",
+            }
+          const attempt = yield* integration.oauth
+            .connect({ integrationID: managedIntegrationID, methodID: managedMethodID })
+            .pipe(
+              Effect.map(
+                (attempt): LoginResult => ({
+                  status: "started",
+                  url: attempt.url,
+                  instructions: attempt.instructions,
+                }),
+              ),
+              Effect.catch(
+                (error): Effect.Effect<LoginResult> =>
+                  Effect.succeed({
+                    status: "error",
+                    code: "transport_unavailable",
+                    message: error.message,
+                  }),
+              ),
+            )
+          return attempt
+        }
         const presence = yield* SubscriptionNativeSession.codexSession(input.env)
         if (presence.present && presence.state === "ready") return { status: "already_authenticated" }
         const version = yield* runner("codex", ["--version"], input.env)
