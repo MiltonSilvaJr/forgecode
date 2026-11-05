@@ -5,6 +5,9 @@ import { define } from "@opencode/plugin/effect/plugin"
 import { SubscriptionAuth } from "@opencode/schema/subscription-auth"
 import { Bus } from "../bus.js"
 import { Credential } from "../credential.js"
+import { Provider } from "../provider.js"
+import { KimiProvider } from "../plugin/provider/kimi.js"
+import { SubscriptionService } from "./service.js"
 
 export interface ChangedPayload {
   readonly integrationID: string
@@ -40,5 +43,32 @@ export const SubscriptionAuthPlugin = define({
         ),
         Effect.forkScoped({ startImmediately: true }),
       )
+
+    // Gate the kimi-for-coding provider on the subscription flag and a resolved ready source.
+    const subscription = yield* SubscriptionService.Service
+    const status = yield* subscription.status()
+    const kimi = status.providers.find((provider) => provider.id === "kimi-code")
+    const expose = status.enabled && kimi?.state === "ready"
+    yield* ctx.provider.transform((providers) => {
+      const source = providers.get(KimiProvider.catalogID)
+      if (!source) return
+      if (expose) {
+        providers.add({
+          info: {
+            ...source.provider,
+            id: KimiProvider.providerID,
+            integrationID: undefined,
+            activation: "enabled",
+            settings: Provider.mergeOverlay(source.provider.settings, {
+              baseURL: KimiProvider.baseURL,
+              transport: "http",
+            }),
+          },
+          models: Array.from(source.models.values()).map((model) => ({ ...model, cost: [] })),
+        })
+      } else {
+        providers.remove(KimiProvider.providerID)
+      }
+    })
   }),
 })
