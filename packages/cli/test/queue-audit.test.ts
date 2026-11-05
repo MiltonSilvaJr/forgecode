@@ -43,7 +43,7 @@ describe("queue audit trail", () => {
     try {
       await appendAuditLine(dir, line())
       const stat = await fs.stat(rawFile(dir)).catch(() => null)
-      expect(stat?.mode & 0o777).toBe(0o600)
+      expect(stat ? stat.mode & 0o777 : undefined).toBe(0o600)
     } finally {
       await fs.rm(dir, { recursive: true, force: true })
     }
