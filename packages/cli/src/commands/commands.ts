@@ -175,6 +175,19 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             ),
           },
         }),
+        Spec.make("status", {
+          description: "show subscription authentication status",
+          params: {
+            json: Flag.Boolean("json").pipe(
+              Flag.withDescription("Output status as JSON"),
+              Flag.withDefault(false),
+            ),
+            provider: Flag.String("provider").pipe(
+              Flag.withDescription("Filter to one provider: claude-code, codex-chatgpt, kimi-code"),
+              Flag.optional,
+            ),
+          },
+        }),
         Spec.make("login", {
           description: "connect an integration",
           params: {
