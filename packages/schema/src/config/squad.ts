@@ -30,7 +30,7 @@ const Panel = Schema.Struct({
   ci_evidence: Schema.String.pipe(optional),
 }).annotate({ identifier: "Config.Squad.Panel" })
 
-export const Info = Schema.Struct({
+export class Info extends Schema.Class<Info>("Config.Squad")({
   enabled: Schema.Boolean.pipe(Schema.withDecodingDefault(Effect.succeed(false))),
   state_dir: Schema.String.pipe(optional),
   liveness: Liveness.pipe(optional),
@@ -39,4 +39,4 @@ export const Info = Schema.Struct({
   checkpoint: Checkpoint.pipe(optional),
   credential: Credential.pipe(optional),
   panel: Panel.pipe(optional),
-}).annotate({ identifier: "Config.Squad" })
+}) {}
