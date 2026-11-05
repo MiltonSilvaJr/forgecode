@@ -23,6 +23,7 @@ Generated clients follow the assembled public `HttpApi`. GitHub issues own activ
 | ----------------------- | --------------------------------------------------------------------------------------- |
 | [Session](./session.md) | Explain prompt admission, execution, instructions, compaction, and recovery boundaries. |
 | [Tools](./tools.md)     | Explain tool construction, registration, execution, and outcome laws.                   |
+| [Subscription authentication](./subscription-auth.md) | Explain the opt-in subscription auth flag, source priority, terms of use, and per-provider limitations. |
 
 ## Decision Records
 
