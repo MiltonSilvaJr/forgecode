@@ -579,6 +579,20 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
         }),
       ],
     }),
+    Spec.make("sessions", {
+      description: "List top-level sessions with identity and status",
+      globalFlags: ServerFlags,
+      params: {
+        all: Flag.Boolean("all").pipe(
+          Flag.withDescription("Include archived sessions"),
+          Flag.withDefault(false),
+        ),
+        json: Flag.Boolean("json").pipe(
+          Flag.withDescription("Output as JSON"),
+          Flag.withDefault(false),
+        ),
+      },
+    }),
     Spec.make("service", {
       description: "Manage the background server",
       commands: [
