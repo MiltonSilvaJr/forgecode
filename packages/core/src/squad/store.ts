@@ -1,7 +1,7 @@
 export * as SquadStore from "./store.js"
 
 import { Context, Effect, Layer } from "effect"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { EffectDrizzleSqlite } from "../database/drizzle.js"
 import { SquadGenerationTable, SquadIdempotencyTable, SquadSessionTable } from "./sql.js"
 
@@ -27,6 +27,9 @@ export interface Interface {
   readonly activeGeneration: (q: Querier) => Effect.Effect<GenerationRow | undefined>
   readonly generation: (q: Querier, id: string) => Effect.Effect<GenerationRow | undefined>
   readonly sessions: (q: Querier, generationID: string) => Effect.Effect<readonly SessionRow[]>
+  readonly sessionByID: (q: Querier, sessionID: string) => Effect.Effect<SessionRow | undefined>
+  readonly sessionByName: (q: Querier, generationID: string, name: string) => Effect.Effect<SessionRow | undefined>
+  readonly findSessionByName: (q: Querier, name: string) => Effect.Effect<SessionRow | undefined>
   readonly countActive: (q: Querier) => Effect.Effect<number>
   readonly idempotency: (q: Querier, key: string) => Effect.Effect<IdempotencyRow | undefined>
 }
@@ -57,6 +60,27 @@ export const Default: Interface = {
       .from(SquadSessionTable)
       .where(eq(SquadSessionTable.generation_id, generationID))
       .all()
+      .pipe(Effect.orDie),
+  sessionByID: (q, sessionID) =>
+    q
+      .select()
+      .from(SquadSessionTable)
+      .where(eq(SquadSessionTable.session_id, sessionID))
+      .get()
+      .pipe(Effect.orDie),
+  sessionByName: (q, generationID, name) =>
+    q
+      .select()
+      .from(SquadSessionTable)
+      .where(and(eq(SquadSessionTable.generation_id, generationID), eq(SquadSessionTable.name, name)))
+      .get()
+      .pipe(Effect.orDie),
+  findSessionByName: (q, name) =>
+    q
+      .select()
+      .from(SquadSessionTable)
+      .where(eq(SquadSessionTable.name, name))
+      .get()
       .pipe(Effect.orDie),
   countActive: (q) =>
     q

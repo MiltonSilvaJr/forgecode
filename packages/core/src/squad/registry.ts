@@ -3,6 +3,7 @@ export * as SquadRegistry from "./registry.js"
 import { createHash, randomUUID } from "node:crypto"
 import { Context, Effect, Layer, Schema } from "effect"
 import type { SqlError } from "effect/sql/SqlError"
+import { Session } from "@opencode/schema/session"
 import { Config } from "../config.js"
 import { Database } from "../database/database.js"
 import { DisabledError } from "./index.js"
@@ -13,8 +14,30 @@ export class ConflictError extends Schema.TaggedError<ConflictError>()("Conflict
   pendencies: Schema.Array(Schema.String),
 }) {}
 
+export class SessionNotFoundError extends Schema.TaggedError<SessionNotFoundError>()("SessionNotFoundError", {
+  message: Schema.String,
+}) {}
+
 export interface SessionRecord {
   name: string
+  sessionID: string | null
+  state: string
+}
+
+export interface ResolvedSession {
+  generationID: string
+  name: string
+  sessionID: string | null
+  state: string
+}
+
+export interface DigestSession {
+  name: string
+  provider: string
+  model: string
+  variant: string | null
+  location: string
+  branch: string | null
   sessionID: string | null
   state: string
 }
@@ -54,6 +77,9 @@ export interface Interface {
   ) => Effect.Effect<GenerationResult | undefined, never, Database.Service | SquadStore.Service>
   readonly active: () => Effect.Effect<GenerationResult | undefined, never, Database.Service | SquadStore.Service>
   readonly countActive: () => Effect.Effect<number, never, Database.Service | SquadStore.Service>
+  readonly resolve: (
+    ref: string,
+  ) => Effect.Effect<ResolvedSession, SessionNotFoundError, Database.Service | SquadStore.Service>
 }
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/Squad/Registry") {}
@@ -68,6 +94,15 @@ const read = (generation: SquadStore.GenerationRow, sessions: readonly SquadStor
   state: generation.state,
   sessions: sessions.map((entry) => ({ name: entry.name, sessionID: entry.session_id, state: entry.state })),
 })
+
+const resolved = (session: SquadStore.SessionRow): ResolvedSession => ({
+  generationID: session.generation_id,
+  name: session.name,
+  sessionID: session.session_id,
+  state: session.state,
+})
+
+export const registryDigest = (_generation: string, _sessions: readonly DigestSession[]): string => ""
 
 const requireEnabled = () =>
   Effect.gen(function* () {
@@ -170,6 +205,19 @@ export const layer = Layer.succeed(
         const db = (yield* Database.Service).db
         const store = yield* SquadStore.Service
         return yield* store.countActive(db)
+      }),
+    resolve: (ref) =>
+      Effect.gen(function* () {
+        const db = (yield* Database.Service).db
+        const store = yield* SquadStore.Service
+        if (Schema.is(Session.ID)(ref)) {
+          const session = yield* store.sessionByID(db, ref)
+          if (!session) return yield* new SessionNotFoundError({ message: `session ${ref} not found` })
+          return resolved(session)
+        }
+        const session = yield* store.findSessionByName(db, ref)
+        if (!session) return yield* new SessionNotFoundError({ message: `session ${ref} not found` })
+        return resolved(session)
       }),
   }),
 )
