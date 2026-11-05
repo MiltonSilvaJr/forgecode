@@ -55,10 +55,12 @@ describe("queue enqueue", () => {
     const result = await enqueueOne(c, input())
 
     expect(prompt).toHaveBeenCalledTimes(1)
-    expect(prompt).toHaveBeenCalledWith(
-      { sessionID: "ses_a", text: "hello", delivery: "queue", id: "msg_fq_k-1" },
-      undefined,
-    )
+    expect(prompt).toHaveBeenCalledWith({
+      sessionID: "ses_a",
+      text: "hello",
+      delivery: "queue",
+      id: "msg_fq_k-1",
+    })
     expect(result).toMatchObject({ status: "queued", messageID: "msg_fq_k-1", delivery: "queue" })
   })
 
@@ -66,7 +68,7 @@ describe("queue enqueue", () => {
     const c = client()
     const prompt = spyOn(c.session, "prompt").mockResolvedValue(inbox("msg_fq_k-1"))
     await enqueueOne(c, input({ delivery: "steer" }))
-    expect(prompt).toHaveBeenCalledWith(expect.objectContaining({ delivery: "steer" }), undefined)
+    expect(prompt).toHaveBeenCalledWith(expect.objectContaining({ delivery: "steer" }))
   })
 
   test("refuses self-send by default and allows it with --allow-self", async () => {
