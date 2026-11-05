@@ -94,6 +94,22 @@ export async function enqueueOne(
   }
 }
 
+export async function enqueueAll(
+  _client: OpenCodeClient,
+  _input: {
+    targets: ReadonlyArray<{ sessionID: string; target: string | null }>
+    text: string
+    delivery: "queue" | "steer"
+    idempotencyKey: string
+    allowSelf: boolean
+    serverUrl: string
+    audit: AuditSink
+    signal?: AbortSignal
+  },
+): Promise<EnqueueResult[]> {
+  return []
+}
+
 function auditLine(result: EnqueueResult): AuditLine {
   return {
     schema_version: 1,
