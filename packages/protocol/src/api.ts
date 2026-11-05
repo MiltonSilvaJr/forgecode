@@ -26,6 +26,7 @@ import { ReferenceGroup } from "./groups/reference.js"
 import { Authorization } from "./middleware/authorization.js"
 import { makeLocationGroup } from "./groups/location.js"
 import { IntegrationGroup } from "./groups/integration.js"
+import { SubscriptionGroup } from "./groups/subscription.js"
 import { WebSearchGroup } from "./groups/websearch.js"
 import { UsageGroup } from "./groups/usage.js"
 import { makeMcpGroup } from "./groups/mcp.js"
@@ -42,6 +43,7 @@ type LocationGroups<LocationId extends HttpApiMiddleware.AnyId> =
   | HttpApiGroup.AddMiddleware<typeof ModelGroup, LocationId>
   | HttpApiGroup.AddMiddleware<typeof ProviderGroup, LocationId>
   | HttpApiGroup.AddMiddleware<typeof IntegrationGroup, LocationId>
+  | HttpApiGroup.AddMiddleware<typeof SubscriptionGroup, LocationId>
   | HttpApiGroup.AddMiddleware<typeof WebSearchGroup, LocationId>
   | HttpApiGroup.AddMiddleware<typeof UsageGroup, LocationId>
   | HttpApiGroup.AddMiddleware<typeof FileSystemGroup, LocationId>
@@ -176,6 +178,7 @@ const makeApiFromGroup = <
     .add(VoiceGroup)
     .add(ProviderGroup.middleware(locationMiddleware))
     .add(IntegrationGroup.middleware(locationMiddleware))
+    .add(SubscriptionGroup.middleware(locationMiddleware))
     .add(makeMcpGroup(locationMiddleware))
     .add(CredentialGroup)
     .add(ProjectGroup)
