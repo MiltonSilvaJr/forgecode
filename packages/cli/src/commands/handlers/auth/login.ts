@@ -40,7 +40,11 @@ export default Runtime.handler(
       acceptTos: input.acceptTos ?? false,
     }
     if (params.target !== undefined && isSubscriptionProvider(params.target)) {
-      return subscriptionLogin(params).pipe(
+      return subscriptionLogin({
+        target: params.target,
+        source: params.source,
+        acceptTos: params.acceptTos,
+      }).pipe(
         Effect.catch((error) =>
           Effect.sync(() => {
             process.stderr.write(subscriptionError(error) + EOL)
