@@ -146,16 +146,16 @@ import type {
   IntegrationCommandCancelOutput,
   ExperimentalIntegrationWellknownAddInput,
   ExperimentalIntegrationWellknownAddOutput,
-  ExperimentalServerSubscriptionStatusInput,
-  ExperimentalServerSubscriptionStatusOutput,
-  ExperimentalServerSubscriptionLoginInput,
-  ExperimentalServerSubscriptionLoginOutput,
-  ExperimentalServerSubscriptionConsentInput,
-  ExperimentalServerSubscriptionConsentOutput,
-  ExperimentalServerSubscriptionRefreshInput,
-  ExperimentalServerSubscriptionRefreshOutput,
-  ExperimentalServerSubscriptionTestInput,
-  ExperimentalServerSubscriptionTestOutput,
+  ExperimentalSubscriptionStatusInput,
+  ExperimentalSubscriptionStatusOutput,
+  ExperimentalSubscriptionLoginInput,
+  ExperimentalSubscriptionLoginOutput,
+  ExperimentalSubscriptionConsentInput,
+  ExperimentalSubscriptionConsentOutput,
+  ExperimentalSubscriptionRefreshInput,
+  ExperimentalSubscriptionRefreshOutput,
+  ExperimentalSubscriptionTestInput,
+  ExperimentalSubscriptionTestOutput,
   McpListInput,
   McpListOutput,
   McpResourceCatalogInput,
@@ -1270,9 +1270,9 @@ export function make(options: ClientOptions) {
             ),
         },
       },
-      "server.subscription": {
-        status: (input?: ExperimentalServerSubscriptionStatusInput, requestOptions?: RequestOptions) =>
-          request<ExperimentalServerSubscriptionStatusOutput>(
+      subscription: {
+        status: (input?: ExperimentalSubscriptionStatusInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalSubscriptionStatusOutput>(
             {
               method: "GET",
               path: `/api/experimental/subscription/status`,
@@ -1283,8 +1283,8 @@ export function make(options: ClientOptions) {
             },
             requestOptions,
           ),
-        login: (input: ExperimentalServerSubscriptionLoginInput, requestOptions?: RequestOptions) =>
-          request<ExperimentalServerSubscriptionLoginOutput>(
+        login: (input: ExperimentalSubscriptionLoginInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalSubscriptionLoginOutput>(
             {
               method: "POST",
               path: `/api/experimental/subscription/${encodeURIComponent(input.integrationID)}/login`,
@@ -1296,8 +1296,8 @@ export function make(options: ClientOptions) {
             },
             requestOptions,
           ),
-        consent: (input: ExperimentalServerSubscriptionConsentInput, requestOptions?: RequestOptions) =>
-          request<ExperimentalServerSubscriptionConsentOutput>(
+        consent: (input: ExperimentalSubscriptionConsentInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalSubscriptionConsentOutput>(
             {
               method: "POST",
               path: `/api/experimental/subscription/${encodeURIComponent(input.integrationID)}/consent`,
@@ -1309,8 +1309,8 @@ export function make(options: ClientOptions) {
             },
             requestOptions,
           ),
-        refresh: (input: ExperimentalServerSubscriptionRefreshInput, requestOptions?: RequestOptions) =>
-          request<ExperimentalServerSubscriptionRefreshOutput>(
+        refresh: (input: ExperimentalSubscriptionRefreshInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalSubscriptionRefreshOutput>(
             {
               method: "POST",
               path: `/api/experimental/subscription/${encodeURIComponent(input.integrationID)}/refresh`,
@@ -1321,8 +1321,8 @@ export function make(options: ClientOptions) {
             },
             requestOptions,
           ),
-        test: (input: ExperimentalServerSubscriptionTestInput, requestOptions?: RequestOptions) =>
-          request<ExperimentalServerSubscriptionTestOutput>(
+        test: (input: ExperimentalSubscriptionTestInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalSubscriptionTestOutput>(
             {
               method: "POST",
               path: `/api/experimental/subscription/${encodeURIComponent(input.integrationID)}/test`,
@@ -2816,19 +2816,6 @@ export function make(options: ClientOptions) {
         /** @deprecated Use `client.experimental.integration.wellknown.add`. Removed in the next minor. */
         add: client.experimental.integration.wellknown.add,
       },
-    },
-    /** @deprecated Use `client.experimental.server.subscription`. Removed in the next minor. */
-    "server.subscription": {
-      /** @deprecated Use `client.experimental.server.subscription.status`. Removed in the next minor. */
-      status: client.experimental["server.subscription"].status,
-      /** @deprecated Use `client.experimental.server.subscription.login`. Removed in the next minor. */
-      login: client.experimental["server.subscription"].login,
-      /** @deprecated Use `client.experimental.server.subscription.consent`. Removed in the next minor. */
-      consent: client.experimental["server.subscription"].consent,
-      /** @deprecated Use `client.experimental.server.subscription.refresh`. Removed in the next minor. */
-      refresh: client.experimental["server.subscription"].refresh,
-      /** @deprecated Use `client.experimental.server.subscription.test`. Removed in the next minor. */
-      test: client.experimental["server.subscription"].test,
     },
     mcp: {
       ...client.mcp,
