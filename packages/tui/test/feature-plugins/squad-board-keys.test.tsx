@@ -133,7 +133,7 @@ test("enter opens the focused card detail and esc returns to the board", async (
     app.mockInput.pressKey("j")
     await app.renderOnce()
     expect(focusedCardID()).toBe("card-2")
-    app.mockInput.pressKey("enter")
+    app.mockInput.pressEnter()
     await app.renderOnce()
     const detail = app.captureCharFrame()
     expect(detail).toContain("Segundo")
@@ -231,10 +231,14 @@ test("read-only invariant: no key performs a write on the full squad client", as
     await handle.board!.refresh()
     await settle()
     await app.renderOnce()
-    for (const key of ["j", "k", "h", "l", "enter", "escape", "r", "?"]) {
+    for (const key of ["j", "k", "h", "l", "r", "?"]) {
       app.mockInput.pressKey(key)
       await app.renderOnce()
     }
+    app.mockInput.pressEnter()
+    await app.renderOnce()
+    app.mockInput.pressEscape()
+    await app.renderOnce()
     expect(writes).toEqual([])
     expect(reads).toEqual([])
     expect(new Set(calls)).toEqual(new Set(["panel", "liveness"]))

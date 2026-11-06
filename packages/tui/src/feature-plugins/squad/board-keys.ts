@@ -11,6 +11,17 @@ export type BoardKeyHandlers = {
   help(): void
 }
 
-export function boardKeys(_handlers: BoardKeyHandlers): KeymapLayer {
-  return { commands: [] }
+export function boardKeys(handlers: BoardKeyHandlers): KeymapLayer {
+  return {
+    commands: [
+      { bind: "j", title: "próximo card", run: handlers.down },
+      { bind: "k", title: "card anterior", run: handlers.up },
+      { bind: "h", title: "coluna anterior", run: handlers.left },
+      { bind: "l", title: "próxima coluna", run: handlers.right },
+      { bind: "enter", title: "abrir detalhe", run: handlers.open },
+      { bind: "esc", title: "voltar", run: handlers.close },
+      { bind: "r", title: "atualizar", run: handlers.refresh },
+      { bind: "?", title: "ajuda", run: handlers.help },
+    ],
+  }
 }
