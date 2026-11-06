@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm"
 import { Config } from "@opencode/core/config"
 import { Database } from "@opencode/core/database/database"
 import { ChannelError, SquadChannel } from "@opencode/core/squad/channel"
+import { SquadAudit } from "@opencode/core/squad/audit"
 import { SquadRegistry } from "@opencode/core/squad/registry"
 import { SquadSend } from "@opencode/core/squad/send"
 import { SquadSessionTable } from "@opencode/core/squad/sql"
@@ -54,6 +55,7 @@ const layer = (directory: string, options: { fail?: boolean } = {}) =>
   Layer.mergeAll(
     SquadRegistry.layer,
     SquadStore.layer,
+    SquadAudit.layer,
     channel(options),
     Database.layer({ path: path.join(directory, "opencode.db") }).pipe(Layer.provide(globalFor(directory))),
     Config.testLayer(enabled),
