@@ -545,7 +545,7 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
       ],
     }),
     Spec.make("squad", {
-      description: "Orchestrate multi-session squads",
+      description: "Orchestrate multi-session squads (experimental, behind squad.enabled; não libera execução produtiva, não aprova, não faz merge nem deploy)",
       commands: [
         Spec.make("init", {
           description: "Create a squad generation from a JSON config file",
@@ -572,14 +572,14 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
           },
         }),
         Spec.make("check", {
-          description: "Validate the active generation's sessions without mutating anything",
+          description: "Validate the active generation's sessions without mutating anything (seguro, sem efeito; não libera execução produtiva)",
           globalFlags: ServerFlags,
           params: {
             json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
           },
         }),
         Spec.make("plan", {
-          description: "Simulate the launch of the active generation with no effect (sem efeito)",
+          description: "Simulate the launch of the active generation with no effect (seguro, sem efeito; não libera execução produtiva)",
           globalFlags: ServerFlags,
           params: {
             json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
