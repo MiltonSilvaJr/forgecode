@@ -1,10 +1,12 @@
 /** @jsxImportSource @opentui/solid */
 import { For, Show, createMemo, createSignal } from "solid-js"
+import { useTerminalDimensions } from "@opentui/solid"
 import type { SquadPanelCard } from "@opencode/client"
 import type { Plugin } from "@opencode/plugin/tui"
 import { boardKeys } from "./board-keys"
 import { boardModel, stalled, type BoardColumn } from "./board-model"
 import { CardDetail } from "./card-detail"
+import { mode } from "./layout"
 import { freshnessLabel } from "./render-fields"
 import type { SquadBoardHandle } from "./use-squad-board"
 
@@ -35,6 +37,7 @@ function BoardCard(props: { card: SquadPanelCard; selected: boolean; theme: Plug
 
 export function Board(props: { context: Plugin.Context; board: SquadBoardHandle; now: () => number }) {
   const theme = props.context.theme
+  const dimensions = useTerminalDimensions()
   const state = props.board.state
   const [columnIndex, setColumnIndex] = createSignal(0)
   const [rowIndex, setRowIndex] = createSignal(0)
@@ -56,6 +59,7 @@ export function Board(props: { context: Plugin.Context; board: SquadBoardHandle;
   })
 
   const columns = createMemo(() => model()?.columns ?? [])
+  const layout = createMemo(() => mode(dimensions().width))
   const currentColumn = createMemo<BoardColumn | undefined>(() => columns()[columnIndex()])
   const focusedCard = createMemo<SquadPanelCard | undefined>(
     () => currentColumn()?.cards[Math.min(rowIndex(), Math.max(0, (currentColumn()?.cards.length ?? 1) - 1))],
@@ -155,26 +159,42 @@ export function Board(props: { context: Plugin.Context; board: SquadBoardHandle;
         </box>
       </Show>
       <Show when={model() !== null && !model()!.empty && !noGeneration()}>
-        <box flexGrow={1} flexDirection="row" overflow="hidden">
-          <For each={model()!.columns}>
-            {(column) => (
-              <box flexGrow={1} flexShrink={1} flexDirection="column" overflow="hidden">
-                <text fg={theme.text.base} wrapMode="none">
-                  {column.id} · {column.cards.length}
-                </text>
-                <For each={column.cards}>
-                  {(card, index) => (
-                    <BoardCard
-                      card={card}
-                      selected={model()!.columns.indexOf(column) === columnIndex() && index() === rowIndex()}
-                      theme={theme}
-                    />
-                  )}
-                </For>
-              </box>
-            )}
-          </For>
-        </box>
+        <Show when={layout() === "columns"}>
+          <box flexGrow={1} flexDirection="row" overflow="hidden">
+            <For each={model()!.columns}>
+              {(column) => (
+                <box flexGrow={1} flexShrink={1} flexDirection="column" overflow="hidden">
+                  <text fg={theme.text.base} wrapMode="none">
+                    {column.id} · {column.cards.length}
+                  </text>
+                  <For each={column.cards}>
+                    {(card, index) => (
+                      <BoardCard
+                        card={card}
+                        selected={model()!.columns.indexOf(column) === columnIndex() && index() === rowIndex()}
+                        theme={theme}
+                      />
+                    )}
+                  </For>
+                </box>
+              )}
+            </For>
+          </box>
+        </Show>
+        <Show when={layout() !== "columns"}>
+          <box flexGrow={1} flexDirection="column" overflow="hidden">
+            <Show when={currentColumn() !== undefined}>
+              <text fg={theme.text.base} wrapMode="none">
+                {currentColumn()!.id} · {currentColumn()!.cards.length}
+              </text>
+              <For each={currentColumn()!.cards}>
+                {(card, index) => (
+                  <BoardCard card={card} selected={index() === rowIndex()} theme={theme} />
+                )}
+              </For>
+            </Show>
+          </box>
+        </Show>
       </Show>
       <Show when={model() !== null && model()!.empty && !noGeneration()}>
         <box flexGrow={1} paddingLeft={1}>
