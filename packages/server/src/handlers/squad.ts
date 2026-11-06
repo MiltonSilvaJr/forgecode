@@ -12,6 +12,7 @@ import { SquadRegistry } from "@opencode/core/squad/registry"
 import { SquadSend } from "@opencode/core/squad/send"
 import {
   ConflictError,
+  DispatchNotFoundError,
   ForbiddenError,
   InvalidRequestError,
   ServiceUnavailableError,
@@ -36,6 +37,13 @@ const squadError = (error: unknown) => {
     default:
       return new ServiceUnavailableError({ message: tagged.message ?? "squad operation failed" })
   }
+}
+
+const acceptError = (orqID: string) => (error: unknown) => {
+  const tagged = error as { _tag?: string; message?: string }
+  if (tagged._tag === "DispatchNotFoundError")
+    return new DispatchNotFoundError({ orqID, message: tagged.message ?? `dispatch ${orqID} not found` })
+  return squadError(error)
 }
 
 const sendError = (ref: string) => (error: unknown) => {
@@ -166,6 +174,14 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           Effect.provide(services),
           catchMissingGlobal,
           Effect.mapError(squadError),
+          Effect.map((data) => ({ data })),
+        ),
+      )
+      .handle("squad.dispatch.accept", (ctx) =>
+        SquadDispatch.accept({ orq: ctx.params.orqId }).pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(acceptError(ctx.params.orqId)),
           Effect.map((data) => ({ data })),
         ),
       )

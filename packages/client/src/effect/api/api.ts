@@ -2072,6 +2072,12 @@ export type ExperimentalSquadReleaseOperation<E = never> = (
   input: ExperimentalSquadReleaseInput,
 ) => Effect.Effect<ExperimentalSquadReleaseOutput, E>
 
+export type ExperimentalSquadDispatchAcceptInput = { readonly orqId: string }
+export type ExperimentalSquadDispatchAcceptOutput = Squad.Dispatch
+export type ExperimentalSquadDispatchAcceptOperation<E = never> = (
+  input: ExperimentalSquadDispatchAcceptInput,
+) => Effect.Effect<ExperimentalSquadDispatchAcceptOutput, E>
+
 export interface ExperimentalSquadApi<E = never> {
   readonly generation: { readonly create: ExperimentalSquadGenerationCreateOperation<E> }
   readonly session: {
@@ -2085,6 +2091,7 @@ export interface ExperimentalSquadApi<E = never> {
   readonly dispatch: {
     readonly create: ExperimentalSquadDispatchCreateOperation<E>
     readonly list: ExperimentalSquadDispatchListOperation<E>
+    readonly accept: ExperimentalSquadDispatchAcceptOperation<E>
   }
   readonly release: ExperimentalSquadReleaseOperation<E>
 }

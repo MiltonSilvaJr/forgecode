@@ -24,6 +24,7 @@ test("squad routes carry the canonical experimental.squad identifiers", () => {
     ["experimental.squad.dispatch.create", "POST", "/api/experimental/squad/dispatch"],
     ["experimental.squad.dispatch.list", "GET", "/api/experimental/squad/dispatch"],
     ["experimental.squad.release", "POST", "/api/experimental/squad/release"],
+    ["experimental.squad.dispatch.accept", "POST", "/api/experimental/squad/dispatch/{orqId}/accept"],
   ] as const
   const offenders = required
     .filter(

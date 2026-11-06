@@ -7,6 +7,7 @@ import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "effect/http-api"
 import { SessionInbox } from "@opencode/schema/session-inbox"
 import {
   ConflictError,
+  DispatchNotFoundError,
   ForbiddenError,
   InvalidRequestError,
   ServiceUnavailableError,
@@ -212,6 +213,20 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
         summary: "Release a tree to another squad session",
         description:
           "Hand the trees owned by one session to another. Requires the current owner's persisted checkpoint to match its hash, and records the hash in the audit trail. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.dispatch.accept", "/api/experimental/squad/dispatch/:orqId/accept", {
+      params: { orqId: Schema.String },
+      success: Schema.Struct({ data: Squad.Dispatch }),
+      error: [InvalidRequestError, ForbiddenError, DispatchNotFoundError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.dispatch.accept",
+        summary: "Accept a squad dispatch",
+        description:
+          "Mark an open dispatch of the active generation as accepted by its owner. Repeating it is a no-op. Experimental: may change without compatibility guarantees.",
       }),
     ),
   )

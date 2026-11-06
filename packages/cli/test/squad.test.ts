@@ -216,4 +216,13 @@ describe("squad command", () => {
     expect(output).toContain("from ATLAS to NOVA")
     expect(output).toContain("abc")
   })
+
+  test("squad dispatch accept requires --orq before reaching the server", async () => {
+    const help = await cli(["squad", "dispatch", "accept", "--help"])
+    expect(help.exitCode).toBe(0)
+    for (const flag of ["--orq", "--json"]) expect(help.stdout).toContain(flag)
+    const missing = await cli(["squad", "dispatch", "accept"])
+    expect(missing.exitCode).toBe(2)
+    expect(missing.stderr).toContain("--orq")
+  })
 })

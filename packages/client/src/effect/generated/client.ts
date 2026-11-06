@@ -205,6 +205,8 @@ import type {
   ExperimentalSquadDispatchListOutput,
   ExperimentalSquadReleaseInput,
   ExperimentalSquadReleaseOutput,
+  ExperimentalSquadDispatchAcceptInput,
+  ExperimentalSquadDispatchAcceptOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1466,6 +1468,15 @@ const EndpointExperimentalSquadRelease = (raw: RawClient["server.squad"]) => (in
     ),
   )
 
+const EndpointExperimentalSquadDispatchAccept =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadDispatchAcceptInput) =>
+    preserveEffect<ExperimentalSquadDispatchAcceptOutput>()(
+      raw["squad.dispatch.accept"]({ params: { orqId: input["orqId"] } }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
 const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
   generation: { create: EndpointExperimentalSquadGenerationCreate(raw) },
   session: { list: EndpointExperimentalSquadSessionList(raw), send: EndpointExperimentalSquadSessionSend(raw) },
@@ -1473,7 +1484,11 @@ const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
   plan: EndpointExperimentalSquadPlan(raw),
   broadcast: EndpointExperimentalSquadBroadcast(raw),
   audit: EndpointExperimentalSquadAudit(raw),
-  dispatch: { create: EndpointExperimentalSquadDispatchCreate(raw), list: EndpointExperimentalSquadDispatchList(raw) },
+  dispatch: {
+    create: EndpointExperimentalSquadDispatchCreate(raw),
+    list: EndpointExperimentalSquadDispatchList(raw),
+    accept: EndpointExperimentalSquadDispatchAccept(raw),
+  },
   release: EndpointExperimentalSquadRelease(raw),
 })
 

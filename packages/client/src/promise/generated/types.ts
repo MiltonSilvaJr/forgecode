@@ -3423,6 +3423,14 @@ export type ProjectNotFoundError = {
 export const isProjectNotFoundError = (value: unknown): value is ProjectNotFoundError =>
   typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "ProjectNotFoundError"
 
+export type DispatchNotFoundError = {
+  readonly _tag: "DispatchNotFoundError"
+  readonly orqID: string
+  readonly message: string
+}
+export const isDispatchNotFoundError = (value: unknown): value is DispatchNotFoundError =>
+  typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "DispatchNotFoundError"
+
 export type PermissionSavedNotFoundError = {
   readonly _tag: "PermissionSavedNotFoundError"
   readonly id: string
@@ -4580,6 +4588,10 @@ export type ExperimentalSquadReleaseInput = {
 }
 
 export type ExperimentalSquadReleaseOutput = { data: SquadReleaseReceipt }["data"]
+
+export type ExperimentalSquadDispatchAcceptInput = { readonly orqId: string }
+
+export type ExperimentalSquadDispatchAcceptOutput = { data: SquadDispatch }["data"]
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 

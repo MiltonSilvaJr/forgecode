@@ -53,6 +53,9 @@ it.live("forbids squad routes when the flag is off", () =>
       await expect(api.experimental.squad.release({ from: "A", to: "B", reason: "r" })).rejects.toMatchObject({
         _tag: "ForbiddenError",
       })
+      await expect(api.experimental.squad.dispatch.accept({ orqId: "ORQ-gen-1-001" })).rejects.toMatchObject({
+        _tag: "ForbiddenError",
+      })
     })
   }),
 )
@@ -74,6 +77,9 @@ it.live("creates and lists a generation when the flag is on", () =>
         _tag: "InvalidRequestError",
       })
       expect(await api.experimental.squad.dispatch.list()).toEqual([])
+      await expect(api.experimental.squad.dispatch.accept({ orqId: "ORQ-gen-1-001" })).rejects.toMatchObject({
+        _tag: "DispatchNotFoundError",
+      })
       await expect(api.experimental.squad.release({ from: "ATLAS", to: "ATLAS", reason: "r" })).rejects.toMatchObject({
         _tag: "ConflictError",
       })

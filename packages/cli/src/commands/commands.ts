@@ -669,6 +669,14 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
                 json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
               },
             }),
+            Spec.make("accept", {
+              description: "Accept an open dispatch of the active generation",
+              globalFlags: ServerFlags,
+              params: {
+                orq: Flag.String("orq").pipe(Flag.withDescription("Dispatch id (ORQ-<generation>-<NNN>)"), Flag.optional),
+                json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+              },
+            }),
           ],
         }),
         Spec.make("release", {

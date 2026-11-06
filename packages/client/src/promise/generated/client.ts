@@ -199,6 +199,8 @@ import type {
   ExperimentalSquadDispatchListOutput,
   ExperimentalSquadReleaseInput,
   ExperimentalSquadReleaseOutput,
+  ExperimentalSquadDispatchAcceptInput,
+  ExperimentalSquadDispatchAcceptOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1552,6 +1554,17 @@ export function make(options: ClientOptions) {
                 path: `/api/experimental/squad/dispatch`,
                 successStatus: 200,
                 declaredStatuses: [400, 401, 403, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+          accept: (input: ExperimentalSquadDispatchAcceptInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadDispatchAcceptOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/squad/dispatch/${encodeURIComponent(input.orqId)}/accept`,
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 404, 409, 503],
                 empty: false,
               },
               requestOptions,
