@@ -75,6 +75,26 @@ describe("squad command", () => {
     expect(result.stdout).toContain("init")
   })
 
+  test("squad --help lists every subcommand and says what the squad does not do", async () => {
+    const result = await cli(["squad", "--help"])
+    expect(result.exitCode).toBe(0)
+    for (const name of [
+      "init", "check", "plan", "broadcast", "status", "session", "block", "launch", "audit", "close",
+      "transition", "activate", "checkpoint", "send", "dispatch", "panel", "release",
+    ])
+      expect(result.stdout).toContain(name)
+    expect(result.stdout).toContain("não libera execução produtiva")
+  })
+
+  test("squad plan and check --help describe themselves as safe", async () => {
+    const plan = await cli(["squad", "plan", "--help"])
+    expect(plan.exitCode).toBe(0)
+    expect(plan.stdout).toContain("não libera execução produtiva")
+    const check = await cli(["squad", "check", "--help"])
+    expect(check.exitCode).toBe(0)
+    expect(check.stdout).toContain("não libera execução produtiva")
+  })
+
   test("squad init --help shows the init flags", async () => {
     const result = await cli(["squad", "init", "--help"])
     expect(result.exitCode).toBe(0)
