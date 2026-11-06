@@ -143,3 +143,9 @@ export const layer = Layer.succeed(
     }),
   }),
 )
+
+export const chain = Effect.fn("SquadAudit.chain")(function* (filter?: { since?: number }) {
+  const audit = yield* Service
+  const entries = yield* audit.list(filter)
+  return Squad.AuditChain.make({ entries, digest: "", integrity: "integrity_broken" })
+})

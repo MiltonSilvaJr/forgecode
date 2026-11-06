@@ -256,6 +256,16 @@ export const AuditEntry = Schema.Struct({
   detail: Schema.String.pipe(optional),
 }).annotate({ identifier: "Squad.AuditEntry" })
 
+export const AuditIntegrity = Schema.Literals(["integrity_ok", "integrity_broken"])
+export type AuditIntegrity = typeof AuditIntegrity.Type
+
+export interface AuditChain extends Schema.Schema.Type<typeof AuditChain> {}
+export const AuditChain = Schema.Struct({
+  entries: Schema.Array(AuditEntry),
+  digest: Schema.String,
+  integrity: AuditIntegrity,
+}).annotate({ identifier: "Squad.AuditChain" })
+
 export interface EnqueueProof extends Schema.Schema.Type<typeof EnqueueProof> {}
 export const EnqueueProof = Schema.Struct({
   messageID: SessionMessage.ID,
