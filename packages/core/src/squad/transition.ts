@@ -194,3 +194,22 @@ export const close = Effect.fn("SquadTransition.close")(function* (input: CloseI
     })
   return result.receipt
 })
+
+export interface TransitionInput {
+  readonly from: string
+  readonly by?: string
+  readonly idempotencyKey?: string
+}
+
+export const transition = Effect.fn("SquadTransition.transition")(function* (input: TransitionInput) {
+  return Squad.TransitionReceipt.make({
+    sourceGeneration: Squad.GenerationID.make(input.from),
+    sourceRegistryDigest: "",
+    closed: {},
+    checkpoints: {},
+    previousSessionsClosed: false,
+    previousOrchestratorKeptOpen: false,
+    closedBy: "operator",
+    createdAt: DateTime.makeUnsafe(Date.now()),
+  })
+})
