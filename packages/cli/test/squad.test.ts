@@ -205,10 +205,14 @@ describe("squad command", () => {
   test("squad close --help shows the close flags and a missing generation is a usage error", async () => {
     const help = await cli(["squad", "close", "--help"])
     expect(help.exitCode).toBe(0)
-    for (const flag of ["--generation", "--idempotency-key"]) expect(help.stdout).toContain(flag)
+    for (const flag of ["--generation", "--idempotency-key", "--by", "--force", "--reason"])
+      expect(help.stdout).toContain(flag)
     const result = await cli(["squad", "close"])
     expect(result.exitCode).toBe(2)
     expect(result.stderr).toContain("--generation")
+    const forced = await cli(["squad", "close", "--generation", "gen-1", "--force"])
+    expect(forced.exitCode).toBe(2)
+    expect(forced.stderr).toContain("--reason")
   })
 
   test("the receipt output names the digest and whether the orchestrator stayed open", () => {

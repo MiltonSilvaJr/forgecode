@@ -623,6 +623,15 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
           globalFlags: ServerFlags,
           params: {
             generation: Flag.String("generation").pipe(Flag.withDescription("Generation to close"), Flag.optional),
+            by: Flag.String("by").pipe(
+              Flag.withDescription("Session (name or id) issuing the close; excluded from the active-execution check (default: the orchestrator)"),
+              Flag.optional,
+            ),
+            force: Flag.Boolean("force").pipe(
+              Flag.withDescription("Close despite queued inbox items (requires --reason)"),
+              Flag.withDefault(false),
+            ),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Why --force is used"), Flag.optional),
             idempotencyKey: Flag.String("idempotency-key").pipe(
               Flag.withDescription("Idempotency key (repeating the close returns the same receipt)"),
               Flag.optional,

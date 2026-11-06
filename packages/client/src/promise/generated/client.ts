@@ -1443,7 +1443,12 @@ export function make(options: ClientOptions) {
               {
                 method: "POST",
                 path: `/api/experimental/squad/generation/${encodeURIComponent(input.generationID)}/close`,
-                body: { from: input["from"], idempotencyKey: input["idempotencyKey"] },
+                body: {
+                  from: input["from"],
+                  force: input["force"],
+                  reason: input["reason"],
+                  idempotencyKey: input["idempotencyKey"],
+                },
                 successStatus: 200,
                 declaredStatuses: [400, 401, 403, 404, 409, 503],
                 empty: false,

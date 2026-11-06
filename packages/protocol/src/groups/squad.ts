@@ -57,6 +57,8 @@ const CheckpointInput = Schema.Struct({
 
 const CloseInput = Schema.Struct({
   from: Schema.String.pipe(optional),
+  force: Schema.Boolean.pipe(optional),
+  reason: Schema.String.pipe(optional),
   idempotencyKey: Schema.String.pipe(optional),
 }).annotate({ identifier: "Squad.CloseInput" })
 

@@ -1448,7 +1448,12 @@ const EndpointExperimentalSquadGenerationClose =
     preserveEffect<ExperimentalSquadGenerationCloseOutput>()(
       raw["squad.generation.close"]({
         params: { generationID: input["generationID"] },
-        payload: { from: input["from"], idempotencyKey: input["idempotencyKey"] },
+        payload: {
+          from: input["from"],
+          force: input["force"],
+          reason: input["reason"],
+          idempotencyKey: input["idempotencyKey"],
+        },
       }).pipe(
         Effect.mapError(mapClientError),
         Effect.map((value) => value.data),

@@ -162,6 +162,8 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
         SquadTransition.close({
           generation: ctx.params.generationID,
           by: ctx.payload.from,
+          force: ctx.payload.force,
+          reason: ctx.payload.reason,
           idempotencyKey: ctx.payload.idempotencyKey,
         }).pipe(
           Effect.provide(services),

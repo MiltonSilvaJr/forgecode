@@ -2047,6 +2047,8 @@ export type ExperimentalSquadCheckpointOperation<E = never> = (
 export type ExperimentalSquadGenerationCloseInput = {
   readonly generationID: Squad.GenerationID
   readonly from?: string | undefined
+  readonly force?: boolean | undefined
+  readonly reason?: string | undefined
   readonly idempotencyKey?: string | undefined
 }
 export type ExperimentalSquadGenerationCloseOutput = Squad.TransitionReceipt

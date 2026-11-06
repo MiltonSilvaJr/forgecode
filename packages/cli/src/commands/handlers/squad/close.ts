@@ -12,6 +12,7 @@ const handler = Effect.fn("cli.squad.close")(function* (
 ) {
   const generation = Option.getOrUndefined(input.generation)
   if (generation === undefined) return yield* usageError("missing required --generation")
+  if (input.force && Option.isNone(input.reason)) return yield* usageError("--force requires --reason")
 
   const server = yield* ServerConnection.resolve()
   const client = OpenCode.make({ baseUrl: server.endpoint.url, headers: Service.headers(server.endpoint) })
@@ -19,7 +20,9 @@ const handler = Effect.fn("cli.squad.close")(function* (
     try: () =>
       client.experimental.squad.generation.close({
         generationID: generation,
-        from: process.env.OPENCODE_SESSION_ID,
+        from: Option.getOrUndefined(input.by),
+        force: input.force,
+        reason: Option.getOrUndefined(input.reason),
         idempotencyKey: Option.getOrUndefined(input.idempotencyKey),
       }),
     catch: (cause) => cause,

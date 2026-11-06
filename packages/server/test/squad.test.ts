@@ -96,6 +96,12 @@ it.live("creates and lists a generation when the flag is on", () =>
       await expect(api.experimental.squad.generation.close({ generationID: "gen-9" })).rejects.toMatchObject({
         _tag: "SessionNotFoundError",
       })
+      await expect(api.experimental.squad.generation.close({ generationID: "gen-1", from: "GHOST" })).rejects.toMatchObject({
+        _tag: "ConflictError",
+      })
+      await expect(api.experimental.squad.generation.close({ generationID: "gen-1", force: true })).rejects.toMatchObject({
+        _tag: "ConflictError",
+      })
       const receipt = await api.experimental.squad.generation.close({ generationID: "gen-1" })
       expect(receipt.sourceRegistryDigest).toMatch(/^[0-9a-f]{64}$/u)
       expect(receipt.checkpoints.ATLAS?.sha256).toBe(checkpoint.sha256)

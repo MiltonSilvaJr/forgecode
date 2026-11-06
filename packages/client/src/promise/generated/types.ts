@@ -4558,6 +4558,8 @@ export type ExperimentalSquadCheckpointOutput = { data: SquadCheckpoint }["data"
 export type ExperimentalSquadGenerationCloseInput = {
   readonly generationID: string
   readonly from?: string | undefined
+  readonly force?: boolean | undefined
+  readonly reason?: string | undefined
   readonly idempotencyKey?: string | undefined
 }
 
