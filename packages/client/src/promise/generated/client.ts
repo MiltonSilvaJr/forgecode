@@ -194,6 +194,8 @@ import type {
   ExperimentalSquadSessionLaunchOutput,
   ExperimentalSquadBroadcastInput,
   ExperimentalSquadBroadcastOutput,
+  ExperimentalSquadBlockInput,
+  ExperimentalSquadBlockOutput,
   ExperimentalSquadLivenessOutput,
   ExperimentalSquadAuditInput,
   ExperimentalSquadAuditOutput,
@@ -1519,6 +1521,24 @@ export function make(options: ClientOptions) {
               },
               successStatus: 200,
               declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        block: (input: ExperimentalSquadBlockInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadBlockOutput }>(
+            {
+              method: "POST",
+              path: `/api/experimental/squad/block`,
+              body: {
+                name: input["name"],
+                waitingOn: input["waitingOn"],
+                reason: input["reason"],
+                clear: input["clear"],
+                from: input["from"],
+              },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 404, 409, 503],
               empty: false,
             },
             requestOptions,

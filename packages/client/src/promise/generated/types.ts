@@ -410,8 +410,6 @@ export type ConfigModelReasoning =
   | { supported: false }
   | { supported: true; toggle?: boolean; effort?: Array<string>; budget?: { min?: number; max?: number } }
 
-export type ConfigSquadLiveness = { stale_after: string; dead_after: string }
-
 export type ConfigSquadLaunch = { verify_timeout: string }
 
 export type ConfigSquadCheckpoint = { max_bytes: number | "Infinity" | "-Infinity" | "NaN" }
@@ -894,6 +892,16 @@ export type SquadBroadcastResult = {
   status: "accepted" | "rejected" | "not_attempted"
   messageID?: SessionMessageID
   reason?: string
+}
+
+export type SquadBlock = {
+  generationID: SquadGenerationID
+  name: SquadSessionName
+  waitingOn: "human" | "tool"
+  reason: string
+  author: string
+  createdAt: number
+  clearedAt?: number
 }
 
 export type SquadPreviousSession = { name: SquadSessionName; sessionID?: SessionID; state: "closed" }
@@ -2776,7 +2784,7 @@ export type ConfigEntry =
         squad?: {
           enabled?: boolean | null
           state_dir?: string
-          liveness?: ConfigSquadLiveness
+          liveness?: { stale_after: string; dead_after: string }
           writer_scope?: "worktree" | "repository"
           launch?: ConfigSquadLaunch
           checkpoint?: ConfigSquadCheckpoint
@@ -4571,6 +4579,16 @@ export type ExperimentalSquadBroadcastInput = {
 }
 
 export type ExperimentalSquadBroadcastOutput = { data: SquadBroadcastReport }["data"]
+
+export type ExperimentalSquadBlockInput = {
+  readonly name: string
+  readonly waitingOn: "human" | "tool"
+  readonly reason: string
+  readonly clear?: boolean | undefined
+  readonly from?: string | undefined
+}
+
+export type ExperimentalSquadBlockOutput = { data: SquadBlock }["data"]
 
 export type ExperimentalSquadLivenessOutput = { data: SquadLivenessReport }["data"]
 

@@ -3,6 +3,7 @@ import { Location } from "@opencode/core/location"
 import { LocationServiceMap } from "@opencode/core/location-service-map"
 import { AbsolutePath } from "@opencode/core/schema"
 import { SquadAudit } from "@opencode/core/squad/audit"
+import { SquadBlock } from "@opencode/core/squad/block"
 import { SquadBroadcast } from "@opencode/core/squad/broadcast"
 import { SquadCheck } from "@opencode/core/squad/check"
 import { SquadLaunch } from "@opencode/core/squad/launch"
@@ -134,6 +135,20 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           )
           return { data: chain }
         }),
+      )
+      .handle("squad.block", (ctx) =>
+        SquadBlock.block({
+          name: ctx.payload.name,
+          waitingOn: ctx.payload.waitingOn,
+          reason: ctx.payload.reason,
+          clear: ctx.payload.clear,
+          author: ctx.payload.from,
+        }).pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(sendError(ctx.payload.name)),
+          Effect.map((data) => ({ data })),
+        ),
       )
       .handle("squad.liveness", () =>
         SquadStatus.status().pipe(

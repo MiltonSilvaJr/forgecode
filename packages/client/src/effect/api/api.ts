@@ -2038,6 +2038,18 @@ export type ExperimentalSquadBroadcastOperation<E = never> = (
   input: ExperimentalSquadBroadcastInput,
 ) => Effect.Effect<ExperimentalSquadBroadcastOutput, E>
 
+export type ExperimentalSquadBlockInput = {
+  readonly name: Squad.SessionName
+  readonly waitingOn: "human" | "tool"
+  readonly reason: string
+  readonly clear?: boolean | undefined
+  readonly from?: string | undefined
+}
+export type ExperimentalSquadBlockOutput = Squad.Block
+export type ExperimentalSquadBlockOperation<E = never> = (
+  input: ExperimentalSquadBlockInput,
+) => Effect.Effect<ExperimentalSquadBlockOutput, E>
+
 export type ExperimentalSquadLivenessOutput = Squad.LivenessReport
 export type ExperimentalSquadLivenessOperation<E = never> = () => Effect.Effect<ExperimentalSquadLivenessOutput, E>
 
@@ -2057,6 +2069,7 @@ export interface ExperimentalSquadApi<E = never> {
   readonly check: ExperimentalSquadCheckOperation<E>
   readonly plan: ExperimentalSquadPlanOperation<E>
   readonly broadcast: ExperimentalSquadBroadcastOperation<E>
+  readonly block: ExperimentalSquadBlockOperation<E>
   readonly liveness: ExperimentalSquadLivenessOperation<E>
   readonly audit: ExperimentalSquadAuditOperation<E>
 }

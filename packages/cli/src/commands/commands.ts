@@ -611,6 +611,17 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
           },
         }),
+        Spec.make("block", {
+          description: "Declare why a verified session is stopped (human or tool), or clear the declaration",
+          globalFlags: ServerFlags,
+          params: {
+            name: Flag.String("name").pipe(Flag.withDescription("Session name in the active generation"), Flag.optional),
+            waiting: Flag.String("waiting").pipe(Flag.withDescription("What the session waits on: human or tool"), Flag.optional),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Why the session is blocked"), Flag.optional),
+            clear: Flag.Boolean("clear").pipe(Flag.withDescription("Clear the declared block"), Flag.withDefault(false)),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
         Spec.make("launch", {
           description: "Create or adopt the active generation's sessions and verify each by durable evidence",
           globalFlags: ServerFlags,

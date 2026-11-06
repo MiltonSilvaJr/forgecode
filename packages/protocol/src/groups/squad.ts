@@ -54,6 +54,14 @@ const LaunchInput = Schema.Struct({
   timeout: Schema.Int.pipe(optional).annotate({ description: "Verification timeout in milliseconds." }),
 }).annotate({ identifier: "Squad.LaunchInput" })
 
+const BlockInput = Schema.Struct({
+  name: Squad.SessionName,
+  waitingOn: Squad.WaitingOn,
+  reason: Schema.String,
+  clear: Schema.Boolean.pipe(optional),
+  from: Schema.String.pipe(optional),
+}).annotate({ identifier: "Squad.BlockInput" })
+
 export const SquadGroup = HttpApiGroup.make("server.squad")
   .add(
     HttpApiEndpoint.post("squad.generation.create", "/api/experimental/squad/generation", {
@@ -151,6 +159,20 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
         summary: "Broadcast a message to the active generation",
         description:
           "Validate every recipient first, then enqueue in configuration order. Delivery is best-effort and not transactional: a failure in the middle keeps what was queued and reports the rest as not_attempted. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.block", "/api/experimental/squad/block", {
+      payload: BlockInput,
+      success: Schema.Struct({ data: Squad.Block }),
+      error: [InvalidRequestError, ForbiddenError, SessionNotFoundError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.block",
+        summary: "Declare or clear why a squad session is stopped",
+        description:
+          "Record that a verified session waits on a human or a tool, with a reason, or clear that declaration. It only feeds the liveness cause: it never changes the verdict or releases the execution claim. Experimental: may change without compatibility guarantees.",
       }),
     ),
   )

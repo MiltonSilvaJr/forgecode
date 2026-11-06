@@ -200,6 +200,8 @@ import type {
   ExperimentalSquadSessionLaunchOutput,
   ExperimentalSquadBroadcastInput,
   ExperimentalSquadBroadcastOutput,
+  ExperimentalSquadBlockInput,
+  ExperimentalSquadBlockOutput,
   ExperimentalSquadLivenessOutput,
   ExperimentalSquadAuditInput,
   ExperimentalSquadAuditOutput,
@@ -1427,6 +1429,22 @@ const EndpointExperimentalSquadBroadcast =
       ),
     )
 
+const EndpointExperimentalSquadBlock = (raw: RawClient["server.squad"]) => (input: ExperimentalSquadBlockInput) =>
+  preserveEffect<ExperimentalSquadBlockOutput>()(
+    raw["squad.block"]({
+      payload: {
+        name: input["name"],
+        waitingOn: input["waitingOn"],
+        reason: input["reason"],
+        clear: input["clear"],
+        from: input["from"],
+      },
+    }).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
 const EndpointExperimentalSquadLiveness = (raw: RawClient["server.squad"]) => () =>
   preserveEffect<ExperimentalSquadLivenessOutput>()(
     raw["squad.liveness"]({}).pipe(
@@ -1453,6 +1471,7 @@ const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
   check: EndpointExperimentalSquadCheck(raw),
   plan: EndpointExperimentalSquadPlan(raw),
   broadcast: EndpointExperimentalSquadBroadcast(raw),
+  block: EndpointExperimentalSquadBlock(raw),
   liveness: EndpointExperimentalSquadLiveness(raw),
   audit: EndpointExperimentalSquadAudit(raw),
 })
