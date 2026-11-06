@@ -25,6 +25,7 @@ import { Job } from "@opencode/core/job"
 import { KV } from "@opencode/core/kv"
 import { Mcp } from "@opencode/core/mcp/index"
 import { Global } from "@opencode/util/global"
+import { Git } from "@opencode/core/git"
 import { FSUtil } from "@opencode/util/fs-util"
 import { InstructionDiscovery } from "@opencode/core/instruction-discovery"
 import { LocationServiceMap } from "@opencode/core/location-service-map"
@@ -58,6 +59,7 @@ import type { ServerOptions } from "./options"
 const applicationServiceNodes = [
   Global.node,
   FSUtil.node,
+  Git.node,
   Database.node,
   KV.node,
   Bus.node,

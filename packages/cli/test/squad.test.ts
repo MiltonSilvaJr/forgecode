@@ -75,6 +75,26 @@ describe("squad command", () => {
     expect(result.stdout).toContain("init")
   })
 
+  test("squad --help lists every subcommand and says what the squad does not do", async () => {
+    const result = await cli(["squad", "--help"])
+    expect(result.exitCode).toBe(0)
+    for (const name of [
+      "init", "check", "plan", "broadcast", "status", "session", "block", "launch", "audit", "close",
+      "transition", "activate", "checkpoint", "send", "dispatch", "panel", "release",
+    ])
+      expect(result.stdout).toContain(name)
+    expect(result.stdout).toContain("não libera execução produtiva")
+  })
+
+  test("squad plan and check --help describe themselves as safe", async () => {
+    const plan = await cli(["squad", "plan", "--help"])
+    expect(plan.exitCode).toBe(0)
+    expect(plan.stdout).toContain("não libera execução produtiva")
+    const check = await cli(["squad", "check", "--help"])
+    expect(check.exitCode).toBe(0)
+    expect(check.stdout).toContain("não libera execução produtiva")
+  })
+
   test("squad init --help shows the init flags", async () => {
     const result = await cli(["squad", "init", "--help"])
     expect(result.exitCode).toBe(0)
@@ -412,5 +432,29 @@ describe("squad command", () => {
     expect(output).toContain("progressa: false")
     expect(output).toContain("A")
     expect(output).toContain("desconhecido: ci")
+  })
+
+  test("demo-squad runs end to end on the fake provider without credentials", async () => {
+    const child = Bun.spawn([process.execPath, "run", path.join(cliDir, "script/demo-squad.ts")], {
+      cwd: cliDir,
+      env: { ...process.env, OPENCODE_PASSWORD: "" },
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, exitCode] = await Promise.all([new Response(child.stdout).text(), child.exited])
+    expect(exitCode).toBe(0)
+    expect(stdout).toContain("session.inbox.delivered")
+    expect(stdout).toContain("transition demo-1 -> demo-2")
+  }, 60_000)
+
+  test("demo-squad fails readably when the server is unavailable", async () => {
+    const child = Bun.spawn([process.execPath, "run", path.join(cliDir, "script/demo-squad.ts"), "--server", "http://127.0.0.1:1"], {
+      cwd: cliDir,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stderr, exitCode] = await Promise.all([new Response(child.stderr).text(), child.exited])
+    expect(exitCode).toBe(1)
+    expect(stderr).toContain("demo-squad: cannot reach a server at http://127.0.0.1:1")
   })
 })

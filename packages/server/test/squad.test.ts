@@ -187,3 +187,19 @@ it.live("launch creates a real session through the wired services and never repo
     })
   }),
 )
+
+it.live("check and plan answer with the Git service wired", () =>
+  Effect.gen(function* () {
+    const api = yield* make(JSON.stringify({ squad: { enabled: true } }))
+    const directory = (yield* tmpdirScoped("opencode-squad-check-")).path
+    yield* Effect.promise(async () => {
+      await api.experimental.squad.generation.create({
+        generation: "gen-1",
+        sessions: [{ name: "ATLAS", role: "worker", provider: "deepseek", model: "deepseek-flash", location: { directory } }],
+      })
+      const check = await api.experimental.squad.check()
+      expect(check.sessions.map((entry) => entry.name)).toEqual(["ATLAS"])
+      expect(check.sessions[0]?.checks.map((item) => item.check)).toContain("location")
+    })
+  }),
+)
