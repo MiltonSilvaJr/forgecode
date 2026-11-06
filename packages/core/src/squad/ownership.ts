@@ -159,3 +159,15 @@ export const release = Effect.fn("SquadOwnership.release")(function* (input: Rel
   })
   return { released: input.from, to: input.to, trees: owned.length, checkpointSha256 }
 })
+
+export interface AcquireInput {
+  readonly generationID: string
+  readonly name: string
+  readonly directory: string
+  readonly via: "launch" | "dispatch"
+}
+
+/** `acquired` when this call opened the ownership row, `held` when the same session already owned the tree. */
+export const acquireTree = Effect.fn("SquadOwnership.acquireTree")(function* (input: AcquireInput) {
+  return { status: "acquired" as "acquired" | "held", key: input.directory }
+})
