@@ -47,6 +47,14 @@ const BroadcastInput = Schema.Struct({
   idempotencyKey: Schema.String.pipe(optional),
 }).annotate({ identifier: "Squad.BroadcastInput" })
 
+const CheckpointInput = Schema.Struct({
+  name: Squad.SessionName,
+  body: Schema.String,
+  from: Schema.String.pipe(optional),
+  allowSecretLikeText: Schema.Boolean.pipe(optional),
+  reason: Schema.String.pipe(optional),
+}).annotate({ identifier: "Squad.CheckpointInput" })
+
 export const SquadGroup = HttpApiGroup.make("server.squad")
   .add(
     HttpApiEndpoint.post("squad.generation.create", "/api/experimental/squad/generation", {
@@ -143,6 +151,20 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
         summary: "List the squad audit trail",
         description:
           "List the append-only audit lines in order, optionally since an ISO instant, with the chain digest and its integrity. Read-only: there is no write parameter. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.checkpoint", "/api/experimental/squad/checkpoint", {
+      payload: CheckpointInput,
+      success: Schema.Struct({ data: Squad.Checkpoint }),
+      error: [InvalidRequestError, ForbiddenError, SessionNotFoundError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.checkpoint",
+        summary: "Record a session checkpoint",
+        description:
+          "Validate the six required sections, normalize the body, scan for secret-like text and store it under its SHA-256. History is kept; the session points at the most recent checkpoint. Experimental: may change without compatibility guarantees.",
       }),
     ),
   )

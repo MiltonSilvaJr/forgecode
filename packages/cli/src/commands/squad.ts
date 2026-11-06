@@ -1,5 +1,7 @@
 import { Effect } from "effect"
 import { EOL } from "node:os"
+import fs from "node:fs/promises"
+import path from "node:path"
 import { errorMessage } from "../util/error"
 
 export type SquadError = { code: string; message: string; details: Record<string, unknown> }
@@ -45,4 +47,26 @@ export async function readMessageFile(file: string): Promise<{ ok: true; text: s
 /** Describe an enqueue acknowledgement; it states acceptance only, never reading or processing. */
 export function formatEnqueue(proof: { messageID: string; name: string; sessionID: string; delivery: string; at: number }) {
   return `Queued message ${proof.messageID} for ${proof.name} (${proof.sessionID}) delivery ${proof.delivery} at ${new Date(proof.at).toISOString()}`
+}
+
+/** True when `directory` or any ancestor holds a `.git` entry, so a file written there would land in a versioned tree. */
+export async function insideGitTree(directory: string) {
+  const walk = async (current: string): Promise<boolean> => {
+    if (await fs.stat(path.join(current, ".git")).then(() => true, () => false)) return true
+    const parent = path.dirname(current)
+    return parent === current ? false : walk(parent)
+  }
+  return walk(path.resolve(directory))
+}
+
+/** Write an exported checkpoint under `directory`, refusing a location inside a git work tree. */
+export async function exportCheckpoint(
+  directory: string,
+  file: { filename: string; content: string },
+): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
+  if (await insideGitTree(directory)) return { ok: false, error: `refusing to export into a git work tree: ${directory}` }
+  await fs.mkdir(directory, { recursive: true })
+  const target = path.join(directory, file.filename)
+  await Bun.write(target, file.content)
+  return { ok: true, path: target }
 }

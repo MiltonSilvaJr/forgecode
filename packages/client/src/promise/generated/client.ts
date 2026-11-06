@@ -194,6 +194,8 @@ import type {
   ExperimentalSquadBroadcastOutput,
   ExperimentalSquadAuditInput,
   ExperimentalSquadAuditOutput,
+  ExperimentalSquadCheckpointInput,
+  ExperimentalSquadCheckpointOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1511,6 +1513,24 @@ export function make(options: ClientOptions) {
               query: { since: input?.["since"] },
               successStatus: 200,
               declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        checkpoint: (input: ExperimentalSquadCheckpointInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadCheckpointOutput }>(
+            {
+              method: "POST",
+              path: `/api/experimental/squad/checkpoint`,
+              body: {
+                name: input["name"],
+                body: input["body"],
+                from: input["from"],
+                allowSecretLikeText: input["allowSecretLikeText"],
+                reason: input["reason"],
+              },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 404, 409, 503],
               empty: false,
             },
             requestOptions,

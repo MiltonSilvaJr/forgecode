@@ -48,6 +48,9 @@ it.live("forbids squad routes when the flag is off", () =>
       })
       await expect(api.experimental.squad.audit()).rejects.toMatchObject({ _tag: "ForbiddenError" })
       await expect(api.experimental.squad.broadcast({ text: "go" })).rejects.toMatchObject({ _tag: "ForbiddenError" })
+      await expect(api.experimental.squad.checkpoint({ name: "ATLAS", body: "x" })).rejects.toMatchObject({
+        _tag: "ForbiddenError",
+      })
     })
   }),
 )
@@ -74,6 +77,18 @@ it.live("creates and lists a generation when the flag is on", () =>
       await expect(api.experimental.squad.audit({ since: "not-a-date" })).rejects.toMatchObject({
         _tag: "InvalidRequestError",
       })
+      await expect(api.experimental.squad.checkpoint({ name: "ATLAS", body: "## Resultado\nok" })).rejects.toMatchObject({
+        _tag: "InvalidRequestError",
+      })
+      await expect(api.experimental.squad.checkpoint({ name: "GHOST", body: "x" })).rejects.toMatchObject({
+        _tag: "SessionNotFoundError",
+      })
+      const body = ["Resultado", "Fontes", "Comandos e provas", "Limites", "Próximos passos", "Posse da árvore"]
+        .map((title) => `## ${title}\nok`)
+        .join("\n")
+      const checkpoint = await api.experimental.squad.checkpoint({ name: "ATLAS", body })
+      expect(checkpoint.sha256).toMatch(/^[0-9a-f]{64}$/u)
+      expect(checkpoint.body).toBe(body)
     })
   }),
 )

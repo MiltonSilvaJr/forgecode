@@ -4,6 +4,7 @@ import { LocationServiceMap } from "@opencode/core/location-service-map"
 import { AbsolutePath } from "@opencode/core/schema"
 import { SquadAudit } from "@opencode/core/squad/audit"
 import { SquadBroadcast } from "@opencode/core/squad/broadcast"
+import { SquadCheckpoint } from "@opencode/core/squad/checkpoint"
 import { SquadCheck } from "@opencode/core/squad/check"
 import { SquadPlan } from "@opencode/core/squad/plan"
 import { SquadRegistry } from "@opencode/core/squad/registry"
@@ -38,6 +39,15 @@ const sendError = (ref: string) => (error: unknown) => {
   const tagged = error as { _tag?: string; message?: string }
   if (tagged._tag === "SessionNotFoundError")
     return new SessionNotFoundError({ sessionID: ref, message: tagged.message ?? `session ${ref} not found` })
+  return squadError(error)
+}
+
+const checkpointError = (name: string) => (error: unknown) => {
+  const tagged = error as { _tag?: string; message?: string }
+  if (tagged._tag === "InvalidCheckpointError")
+    return new InvalidRequestError({ message: tagged.message ?? "invalid checkpoint", field: "body" })
+  if (tagged._tag === "SessionNotFoundError")
+    return new SessionNotFoundError({ sessionID: name, message: tagged.message ?? `session ${name} not found` })
   return squadError(error)
 }
 
@@ -132,6 +142,14 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           )
           return { data: chain }
         }),
+      )
+      .handle("squad.checkpoint", (ctx) =>
+        SquadCheckpoint.write({ ...ctx.payload, actor: ctx.payload.from }).pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(checkpointError(ctx.payload.name)),
+          Effect.map((data) => ({ data })),
+        ),
       )
       .handle("squad.session.send", (ctx) =>
         SquadSend.send({ to: ctx.params.sessionRef, ...ctx.payload }).pipe(

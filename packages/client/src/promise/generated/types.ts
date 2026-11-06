@@ -896,6 +896,15 @@ export type SquadBroadcastResult = {
   reason?: string
 }
 
+export type SquadCheckpoint = {
+  generationID: SquadGenerationID
+  name: SquadSessionName
+  sha256: string
+  body: string
+  bytes: number
+  createdAt: number
+}
+
 export type SquadSessionCheck = {
   name: SquadSessionName
   checks: Array<SquadCheckItem>
@@ -4523,6 +4532,16 @@ export type ExperimentalSquadBroadcastOutput = { data: SquadBroadcastReport }["d
 export type ExperimentalSquadAuditInput = { readonly since?: string | undefined }
 
 export type ExperimentalSquadAuditOutput = { data: SquadAuditChain }["data"]
+
+export type ExperimentalSquadCheckpointInput = {
+  readonly name: string
+  readonly body: string
+  readonly from?: string | undefined
+  readonly allowSecretLikeText?: boolean | undefined
+  readonly reason?: string | undefined
+}
+
+export type ExperimentalSquadCheckpointOutput = { data: SquadCheckpoint }["data"]
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 

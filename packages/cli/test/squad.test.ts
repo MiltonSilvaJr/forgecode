@@ -6,7 +6,7 @@ import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { it } from "../../core/test/lib/effect"
-import { formatEnqueue, readMessageFile } from "../src/commands/squad"
+import { exportCheckpoint, formatEnqueue, insideGitTree, readMessageFile } from "../src/commands/squad"
 
 const cliDir = path.join(import.meta.dir, "..")
 
@@ -172,5 +172,33 @@ describe("squad command", () => {
     expect(output).toContain("Queued message msg_1")
     for (const word of ["lida", "processada", "concluída", "read", "processed", "completed"])
       expect(output.toLowerCase()).not.toContain(word)
+  })
+
+  test("squad checkpoint --help shows the checkpoint flags", async () => {
+    const result = await cli(["squad", "checkpoint", "--help"])
+    expect(result.exitCode).toBe(0)
+    for (const flag of ["--name", "--body-file", "--allow-secret-like-text", "--reason", "--export-dir"])
+      expect(result.stdout).toContain(flag)
+  })
+
+  test("checkpoint fails on a missing body file before reaching the server", async () => {
+    const result = await cli(["squad", "checkpoint", "--name", "ATLAS", "--body-file", "/nonexistent/body.md"])
+    expect(result.exitCode).toBe(1)
+    expect(result.stderr).toContain("cannot read")
+  })
+
+  test("the export refuses a git work tree and otherwise writes the file", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "squad-export-"))
+    const file = { filename: "gen-ATLAS-abc.md", content: "corpo" }
+    expect(await insideGitTree(dir)).toBe(false)
+    const written = await exportCheckpoint(path.join(dir, "out"), file)
+    expect(written.ok).toBe(true)
+    expect(await Bun.file(path.join(dir, "out", file.filename)).text()).toBe("corpo")
+    await fs.mkdir(path.join(dir, "repo", ".git"), { recursive: true })
+    expect(await insideGitTree(path.join(dir, "repo", "sub"))).toBe(true)
+    expect(await exportCheckpoint(path.join(dir, "repo", "sub"), file)).toEqual({
+      ok: false,
+      error: `refusing to export into a git work tree: ${path.join(dir, "repo", "sub")}`,
+    })
   })
 })

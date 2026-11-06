@@ -2032,6 +2032,18 @@ export type ExperimentalSquadAuditOperation<E = never> = (
   input?: ExperimentalSquadAuditInput,
 ) => Effect.Effect<ExperimentalSquadAuditOutput, E>
 
+export type ExperimentalSquadCheckpointInput = {
+  readonly name: Squad.SessionName
+  readonly body: string
+  readonly from?: string | undefined
+  readonly allowSecretLikeText?: boolean | undefined
+  readonly reason?: string | undefined
+}
+export type ExperimentalSquadCheckpointOutput = Squad.Checkpoint
+export type ExperimentalSquadCheckpointOperation<E = never> = (
+  input: ExperimentalSquadCheckpointInput,
+) => Effect.Effect<ExperimentalSquadCheckpointOutput, E>
+
 export interface ExperimentalSquadApi<E = never> {
   readonly generation: { readonly create: ExperimentalSquadGenerationCreateOperation<E> }
   readonly session: {
@@ -2042,6 +2054,7 @@ export interface ExperimentalSquadApi<E = never> {
   readonly plan: ExperimentalSquadPlanOperation<E>
   readonly broadcast: ExperimentalSquadBroadcastOperation<E>
   readonly audit: ExperimentalSquadAuditOperation<E>
+  readonly checkpoint: ExperimentalSquadCheckpointOperation<E>
 }
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }

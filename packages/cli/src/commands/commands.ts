@@ -618,6 +618,24 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             }),
           ],
         }),
+        Spec.make("checkpoint", {
+          description: "Record a session checkpoint (six required sections, SHA-256, secret scan)",
+          globalFlags: ServerFlags,
+          params: {
+            name: Flag.String("name").pipe(Flag.withDescription("Session name in the active generation"), Flag.optional),
+            bodyFile: Flag.String("body-file").pipe(Flag.withDescription("Read the checkpoint from a UTF-8 file"), Flag.optional),
+            allowSecretLikeText: Flag.Boolean("allow-secret-like-text").pipe(
+              Flag.withDescription("Record the checkpoint even if it looks like it holds a secret (requires --reason)"),
+              Flag.withDefault(false),
+            ),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Why secret-like text is allowed"), Flag.optional),
+            exportDir: Flag.String("export-dir").pipe(
+              Flag.withDescription("Also write the checkpoint to this directory, which must be outside a git work tree"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
         Spec.make("send", {
           description: "Enqueue a message in a squad session's inbox (proof of enqueue, never of reading)",
           globalFlags: ServerFlags,
