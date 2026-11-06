@@ -2032,6 +2032,30 @@ export type ExperimentalSquadAuditOperation<E = never> = (
   input?: ExperimentalSquadAuditInput,
 ) => Effect.Effect<ExperimentalSquadAuditOutput, E>
 
+export type ExperimentalSquadDispatchCreateInput = {
+  readonly scope?: string | undefined
+  readonly owner?: string | undefined
+  readonly base?: string | undefined
+  readonly head?: string | undefined
+  readonly dor?: string | undefined
+  readonly dod?: string | undefined
+  readonly proof?: string | undefined
+  readonly exclusions?: ReadonlyArray<string> | undefined
+  readonly exigidos?: ReadonlyArray<"jira" | "ci" | "merge" | "deploy" | "acceptance"> | undefined
+  readonly milestone?: string | undefined
+  readonly from?: string | undefined
+}
+export type ExperimentalSquadDispatchCreateOutput = Squad.Dispatch
+export type ExperimentalSquadDispatchCreateOperation<E = never> = (
+  input?: ExperimentalSquadDispatchCreateInput,
+) => Effect.Effect<ExperimentalSquadDispatchCreateOutput, E>
+
+export type ExperimentalSquadDispatchListOutput = ReadonlyArray<Squad.Dispatch>
+export type ExperimentalSquadDispatchListOperation<E = never> = () => Effect.Effect<
+  ExperimentalSquadDispatchListOutput,
+  E
+>
+
 export interface ExperimentalSquadApi<E = never> {
   readonly generation: { readonly create: ExperimentalSquadGenerationCreateOperation<E> }
   readonly session: {
@@ -2042,6 +2066,10 @@ export interface ExperimentalSquadApi<E = never> {
   readonly plan: ExperimentalSquadPlanOperation<E>
   readonly broadcast: ExperimentalSquadBroadcastOperation<E>
   readonly audit: ExperimentalSquadAuditOperation<E>
+  readonly dispatch: {
+    readonly create: ExperimentalSquadDispatchCreateOperation<E>
+    readonly list: ExperimentalSquadDispatchListOperation<E>
+  }
 }
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }

@@ -6,7 +6,7 @@ import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { it } from "../../core/test/lib/effect"
-import { formatEnqueue, readMessageFile } from "../src/commands/squad"
+import { formatDispatch, formatEnqueue, readDispatchFile, readMessageFile } from "../src/commands/squad"
 
 const cliDir = path.join(import.meta.dir, "..")
 
@@ -172,5 +172,33 @@ describe("squad command", () => {
     expect(output).toContain("Queued message msg_1")
     for (const word of ["lida", "processada", "concluída", "read", "processed", "completed"])
       expect(output.toLowerCase()).not.toContain(word)
+  })
+
+  test("squad dispatch create --help shows the dispatch flags", async () => {
+    const result = await cli(["squad", "dispatch", "create", "--help"])
+    expect(result.exitCode).toBe(0)
+    for (const flag of ["--file", "--to", "--exigidos", "--json"]) expect(result.stdout).toContain(flag)
+  })
+
+  test("dispatch create fails on a missing dispatch file before reaching the server", async () => {
+    const result = await cli(["squad", "dispatch", "create", "--file", "/nonexistent/dispatch.json"])
+    expect(result.exitCode).toBe(1)
+    expect(result.stderr).toContain("cannot read dispatch file")
+  })
+
+  test("readDispatchFile keeps only the dispatch fields", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "squad-dispatch-"))
+    const file = path.join(dir, "dispatch.json")
+    await fs.writeFile(file, JSON.stringify({ scope: "s", dod: "d", exclusions: ["x", 1], token: "secret" }))
+    expect(await readDispatchFile(file)).toMatchObject({ ok: true, fields: { scope: "s", dod: "d", exclusions: ["x"] } })
+    await fs.writeFile(file, "[]")
+    expect((await readDispatchFile(file)).ok).toBe(false)
+  })
+
+  test("the dispatch output names the ORQ id, the measured commits and the warnings", () => {
+    const output = formatDispatch({ orqID: "ORQ-gen-1-001", owner: "ATLAS", validation: "unknown", state: "open", warnings: ["head missing"] })
+    expect(output).toContain("ORQ-gen-1-001")
+    expect(output).toContain("base unknown head unknown")
+    expect(output).toContain("warning: head missing")
   })
 })

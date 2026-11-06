@@ -200,6 +200,9 @@ import type {
   ExperimentalSquadBroadcastOutput,
   ExperimentalSquadAuditInput,
   ExperimentalSquadAuditOutput,
+  ExperimentalSquadDispatchCreateInput,
+  ExperimentalSquadDispatchCreateOutput,
+  ExperimentalSquadDispatchListOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1420,6 +1423,37 @@ const EndpointExperimentalSquadAudit = (raw: RawClient["server.squad"]) => (inpu
     ),
   )
 
+const EndpointExperimentalSquadDispatchCreate =
+  (raw: RawClient["server.squad"]) => (input?: ExperimentalSquadDispatchCreateInput) =>
+    preserveEffect<ExperimentalSquadDispatchCreateOutput>()(
+      raw["squad.dispatch.create"]({
+        payload: {
+          scope: input?.["scope"],
+          owner: input?.["owner"],
+          base: input?.["base"],
+          head: input?.["head"],
+          dor: input?.["dor"],
+          dod: input?.["dod"],
+          proof: input?.["proof"],
+          exclusions: input?.["exclusions"],
+          exigidos: input?.["exigidos"],
+          milestone: input?.["milestone"],
+          from: input?.["from"],
+        },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
+const EndpointExperimentalSquadDispatchList = (raw: RawClient["server.squad"]) => () =>
+  preserveEffect<ExperimentalSquadDispatchListOutput>()(
+    raw["squad.dispatch.list"]({}).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
 const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
   generation: { create: EndpointExperimentalSquadGenerationCreate(raw) },
   session: { list: EndpointExperimentalSquadSessionList(raw), send: EndpointExperimentalSquadSessionSend(raw) },
@@ -1427,6 +1461,7 @@ const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
   plan: EndpointExperimentalSquadPlan(raw),
   broadcast: EndpointExperimentalSquadBroadcast(raw),
   audit: EndpointExperimentalSquadAudit(raw),
+  dispatch: { create: EndpointExperimentalSquadDispatchCreate(raw), list: EndpointExperimentalSquadDispatchList(raw) },
 })
 
 const EndpointFormList = (raw: RawClient["server.form"]) => (input?: FormListInput) =>

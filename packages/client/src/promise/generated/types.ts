@@ -896,6 +896,34 @@ export type SquadBroadcastResult = {
   reason?: string
 }
 
+export type SquadDispatch = {
+  id: string
+  generationID: SquadGenerationID
+  orqID: string
+  seq: number
+  scope: string
+  owner: SquadSessionName
+  base: string
+  head: string
+  dor: string
+  dod: string
+  proof: string
+  exclusions: [string, ...Array<string>]
+  exigidos: [
+    "jira" | "ci" | "merge" | "deploy" | "acceptance",
+    ...Array<"jira" | "ci" | "merge" | "deploy" | "acceptance">,
+  ]
+  milestone: string
+  baseOid?: string
+  headOid?: string
+  validation: "verified" | "unknown" | "failed"
+  state: "open" | "accepted" | "done" | "blocked"
+  acceptedAt?: number
+  acceptedBy?: SquadSessionName
+  createdAt: number
+  warnings?: Array<string>
+}
+
 export type SquadSessionCheck = {
   name: SquadSessionName
   checks: Array<SquadCheckItem>
@@ -4523,6 +4551,24 @@ export type ExperimentalSquadBroadcastOutput = { data: SquadBroadcastReport }["d
 export type ExperimentalSquadAuditInput = { readonly since?: string | undefined }
 
 export type ExperimentalSquadAuditOutput = { data: SquadAuditChain }["data"]
+
+export type ExperimentalSquadDispatchCreateInput = {
+  readonly scope?: string | undefined
+  readonly owner?: string | undefined
+  readonly base?: string | undefined
+  readonly head?: string | undefined
+  readonly dor?: string | undefined
+  readonly dod?: string | undefined
+  readonly proof?: string | undefined
+  readonly exclusions?: ReadonlyArray<string> | undefined
+  readonly exigidos?: ReadonlyArray<"jira" | "ci" | "merge" | "deploy" | "acceptance"> | undefined
+  readonly milestone?: string | undefined
+  readonly from?: string | undefined
+}
+
+export type ExperimentalSquadDispatchCreateOutput = { data: SquadDispatch }["data"]
+
+export type ExperimentalSquadDispatchListOutput = { data: Array<SquadDispatch> }["data"]
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 

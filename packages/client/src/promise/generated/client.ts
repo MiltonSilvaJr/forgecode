@@ -194,6 +194,9 @@ import type {
   ExperimentalSquadBroadcastOutput,
   ExperimentalSquadAuditInput,
   ExperimentalSquadAuditOutput,
+  ExperimentalSquadDispatchCreateInput,
+  ExperimentalSquadDispatchCreateOutput,
+  ExperimentalSquadDispatchListOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1515,6 +1518,43 @@ export function make(options: ClientOptions) {
             },
             requestOptions,
           ).then((value) => value.data),
+        dispatch: {
+          create: (input?: ExperimentalSquadDispatchCreateInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadDispatchCreateOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/squad/dispatch`,
+                body: {
+                  scope: input?.["scope"],
+                  owner: input?.["owner"],
+                  base: input?.["base"],
+                  head: input?.["head"],
+                  dor: input?.["dor"],
+                  dod: input?.["dod"],
+                  proof: input?.["proof"],
+                  exclusions: input?.["exclusions"],
+                  exigidos: input?.["exigidos"],
+                  milestone: input?.["milestone"],
+                  from: input?.["from"],
+                },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+          list: (requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadDispatchListOutput }>(
+              {
+                method: "GET",
+                path: `/api/experimental/squad/dispatch`,
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+        },
       },
       file: {
         write: (input: ExperimentalFileWriteInput, requestOptions?: RequestOptions) =>

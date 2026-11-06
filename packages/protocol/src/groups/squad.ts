@@ -47,6 +47,21 @@ const BroadcastInput = Schema.Struct({
   idempotencyKey: Schema.String.pipe(optional),
 }).annotate({ identifier: "Squad.BroadcastInput" })
 
+// Every field is optional on the wire so the core can answer with all the missing ones at once.
+const DispatchCreateInput = Schema.Struct({
+  scope: Schema.String.pipe(optional),
+  owner: Schema.String.pipe(optional),
+  base: Schema.String.pipe(optional),
+  head: Schema.String.pipe(optional),
+  dor: Schema.String.pipe(optional),
+  dod: Schema.String.pipe(optional),
+  proof: Schema.String.pipe(optional),
+  exclusions: Schema.Array(Schema.String).pipe(optional),
+  exigidos: Schema.Array(Squad.Exigidos).pipe(optional),
+  milestone: Schema.String.pipe(optional),
+  from: Schema.String.pipe(optional),
+}).annotate({ identifier: "Squad.DispatchCreateInput" })
+
 export const SquadGroup = HttpApiGroup.make("server.squad")
   .add(
     HttpApiEndpoint.post("squad.generation.create", "/api/experimental/squad/generation", {
@@ -143,6 +158,32 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
         summary: "List the squad audit trail",
         description:
           "List the append-only audit lines in order, optionally since an ISO instant, with the chain digest and its integrity. Read-only: there is no write parameter. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.dispatch.create", "/api/experimental/squad/dispatch", {
+      payload: DispatchCreateInput,
+      success: Schema.Struct({ data: Squad.Dispatch }),
+      error: [InvalidRequestError, ForbiddenError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.dispatch.create",
+        summary: "Create a squad dispatch",
+        description:
+          "Validate and record a dispatch for the active generation, allocating its ORQ id and measuring base and head. Reports every missing field in one answer. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.get("squad.dispatch.list", "/api/experimental/squad/dispatch", {
+      success: Schema.Struct({ data: Schema.Array(Squad.Dispatch) }),
+      error: [ForbiddenError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.dispatch.list",
+        summary: "List squad dispatches",
+        description: "List the dispatches of the active generation. Experimental: may change without compatibility guarantees.",
       }),
     ),
   )
