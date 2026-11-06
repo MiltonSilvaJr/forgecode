@@ -175,6 +175,43 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             ),
           },
         }),
+        Spec.make("status", {
+          description: "show subscription authentication status",
+          params: {
+            json: Flag.Boolean("json").pipe(
+              Flag.withDescription("Output status as JSON"),
+              Flag.withDefault(false),
+            ),
+            provider: Flag.String("provider").pipe(
+              Flag.withDescription("Filter to one provider: claude-code, codex-chatgpt, kimi-code"),
+              Flag.optional,
+            ),
+          },
+        }),
+        Spec.make("refresh", {
+          description: "refresh a subscription credential or session",
+          params: {
+            target: Argument.String("target").pipe(
+              Argument.withDescription("Subscription provider ID: claude-code, codex-chatgpt, kimi-code"),
+            ),
+          },
+        }),
+        Spec.make("test", {
+          description: "test a subscription provider with one minimal request",
+          params: {
+            target: Argument.String("target").pipe(
+              Argument.withDescription("Subscription provider ID: claude-code, codex-chatgpt, kimi-code"),
+            ),
+            model: Flag.String("model").pipe(
+              Flag.withDescription("Model ID to test"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(
+              Flag.withDescription("Output result as JSON"),
+              Flag.withDefault(false),
+            ),
+          },
+        }),
         Spec.make("login", {
           description: "connect an integration",
           params: {
@@ -187,10 +224,18 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
               Flag.withDescription("Provider form answer (key=value; repeat for multiple fields)"),
               Flag.atMost(100),
             ),
+            source: Flag.Literals("source", ["managed", "native"]).pipe(
+              Flag.withDescription("Subscription source: managed or native"),
+              Flag.optional,
+            ),
+            acceptTos: Flag.Boolean("accept-tos").pipe(
+              Flag.withDescription("Accept the subscription terms of use"),
+              Flag.withDefault(false),
+            ),
           },
         }),
         Spec.make("logout", {
-          description: "log out of a saved account",
+          description: "log out of a saved account or subscription session",
           params: {
             target: Argument.String("target").pipe(
               Argument.withDescription("Integration ID or name"),

@@ -47,6 +47,7 @@ import { SessionContext } from "./session/context.js"
 import { Skill } from "./skill.js"
 import { SkillInstructions } from "./skill/instructions.js"
 import { Snapshot } from "./snapshot.js"
+import { SubscriptionService } from "./subscription/service.js"
 import { InstructionDiscovery } from "./instruction-discovery.js"
 import { InstructionBuiltIns } from "./instructions/builtins.js"
 import { SessionInstructions } from "./session/instructions.js"
@@ -113,6 +114,7 @@ const nodes = [
   Snapshot.node,
   SessionRunnerLLM.node,
   Vcs.node,
+  SubscriptionService.node,
   // Start repository watches only after boot-critical filesystem and Git work.
   LocationWatcher.node,
 ] as const satisfies readonly Node.LocationGraph<never, unknown>[]

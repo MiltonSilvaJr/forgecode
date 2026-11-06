@@ -30,6 +30,7 @@ import { Reference } from "./reference.js"
 import { ServerEvent } from "./server-event.js"
 import { Shell } from "./shell.js"
 import { Skill } from "./skill.js"
+import { SubscriptionAuth } from "./subscription-auth.js"
 import { SessionEvent } from "./session-event.js"
 import { SessionStatusEvent } from "./session-status-event.js"
 import { TuiEvent } from "./tui-event.js"
@@ -67,6 +68,7 @@ const featureDefinitions = Event.inventory(
   ...Form.Event.Definitions,
   ...WebSearch.Event.Definitions,
   ...Artifact.Event.Definitions,
+  ...SubscriptionAuth.Event.Definitions,
 )
 
 export const ServerDefinitions = Event.inventory(

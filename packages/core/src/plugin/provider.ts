@@ -11,6 +11,7 @@ import { GithubCopilotPlugin } from "./provider/github-copilot.js"
 import { GitLabPlugin } from "./provider/gitlab.js"
 import { GoogleVertexPlugin } from "./provider/google-vertex.js"
 import { KiloPlugin } from "./provider/kilo.js"
+import { KimiProviderPlugin } from "./provider/kimi.js"
 import { LLMGatewayPlugin } from "./provider/llmgateway.js"
 import { LMStudioPlugin } from "./provider/lmstudio.js"
 import { ModalPlugin } from "./provider/modal.js"
@@ -43,6 +44,7 @@ export const ProviderPlugins: PluginInternal.InternalPlugin[] = [
   GitLabPlugin,
   GoogleVertexPlugin,
   KiloPlugin,
+  KimiProviderPlugin,
   LLMGatewayPlugin,
   LMStudioPlugin,
   ModalPlugin,

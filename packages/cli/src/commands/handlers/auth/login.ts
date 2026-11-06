@@ -1,4 +1,5 @@
 import { intro, log, outro, select, spinner, text } from "@clack/prompts"
+import { EOL } from "node:os"
 import { Effect, Option } from "effect"
 import type { FormAnswer, IntegrationInfo, OpenCodeClient } from "@opencode/client"
 import { Commands } from "../../commands"
@@ -10,6 +11,7 @@ import { answerForm, secret } from "./form"
 import {
   createClient,
   connectMethods,
+  isSubscriptionProvider,
   loadIntegrations,
   location,
   request,
@@ -29,19 +31,38 @@ const integrationPriority = new Map([
 
 export default Runtime.handler(
   Commands.commands.auth.commands.login,
-  Effect.fn("cli.auth.login")((input) =>
-    login({
+  Effect.fn("cli.auth.login")((input) => {
+    const params = {
       target: Option.getOrUndefined(input.target),
       method: Option.getOrUndefined(input.method),
       answer: input.answer,
-    }).pipe(handlePromptErrors),
-  ),
+      source: Option.getOrUndefined(input.source ?? Option.none()),
+      acceptTos: input.acceptTos ?? false,
+    }
+    if (params.target !== undefined && isSubscriptionProvider(params.target)) {
+      return subscriptionLogin({
+        target: params.target,
+        source: params.source,
+        acceptTos: params.acceptTos,
+      }).pipe(
+        Effect.catch((error) =>
+          Effect.sync(() => {
+            process.stderr.write(subscriptionError(error) + EOL)
+            process.exitCode = 1
+          }),
+        ),
+      )
+    }
+    return login(params).pipe(handlePromptErrors)
+  }),
 )
 
 const login = Effect.fn("cli.auth.login.run")(function* (input: {
   target?: string
   method?: string
   answer?: ReadonlyArray<string>
+  source?: "managed" | "native"
+  acceptTos: boolean
 }) {
   if (!input.target)
     yield* requireInteractive("Pass an integration ID or name when running without an interactive terminal")
@@ -55,6 +76,42 @@ const login = Effect.fn("cli.auth.login.run")(function* (input: {
   yield* authenticate(client, integration, method, answer)
   outro("Done")
 })
+
+const subscriptionLogin = Effect.fn("cli.auth.login.subscription")(function* (input: {
+  target: string
+  source?: "managed" | "native"
+  acceptTos: boolean
+}) {
+  const client = yield* createClient()
+  const progress = spinner()
+  progress.start("Connecting subscription...")
+  const response = yield* request((signal) =>
+    client.experimental["server.subscription"].login(
+      { integrationID: input.target, source: input.source, accept: input.acceptTos, location },
+      { signal },
+    ),
+  ).pipe(Effect.tapCause(() => Effect.sync(() => progress.stop("Authentication failed", 1))))
+  progress.stop("Subscription connected")
+  const result = response.data
+  if (result.status === "already_authenticated") {
+    log.success(`Already authenticated to ${input.target}`)
+    return
+  }
+  if (result.status === "authenticated") {
+    log.success(`Connected to ${input.target}`)
+    return
+  }
+  if (result.instructions) log.info(result.instructions)
+  if (result.url) log.info(result.url)
+})
+
+const subscriptionError = (error: unknown) => {
+  const code =
+    typeof error === "object" && error !== null && "code" in error && typeof error.code === "string"
+      ? error.code
+      : undefined
+  return code === undefined ? errorMessage(error) : `${code}: ${errorMessage(error)}`
+}
 
 const findIntegration = Effect.fn("cli.auth.login.integration")(function* (client: OpenCodeClient, target?: string) {
   if (target && URL.canParse(target)) {

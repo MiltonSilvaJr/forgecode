@@ -256,6 +256,26 @@ export type IntegrationCommandAttemptStatus =
       time: { created: number | "Infinity" | "-Infinity" | "NaN"; expires: number | "Infinity" | "-Infinity" | "NaN" }
     }
 
+export type SubscriptionAuthSourceState =
+  | "ready"
+  | "disabled"
+  | "expired"
+  | "refresh_required"
+  | "incompatible"
+  | "missing"
+
+export type SubscriptionAuthSourceKind = "env" | "store" | "native" | "keychain" | "api_key"
+
+export type SubscriptionLoginResponse = {
+  status: "already_authenticated" | "authenticated" | "started"
+  url?: string | undefined
+  instructions?: string | undefined
+}
+
+export type SubscriptionRefreshResponse = { state: string; expiresAt?: number | undefined }
+
+export type SubscriptionTestResponse = { ok: boolean; latencyMs: number; model?: string | undefined }
+
 export type McpStatusConnected = { status: "connected" }
 
 export type McpStatusPending = { status: "pending" }
@@ -379,6 +399,8 @@ export type ConfigWorktree = { directory: string }
 export type ConfigModelReasoning =
   | { supported: false }
   | { supported: true; toggle?: boolean; effort?: Array<string>; budget?: { min?: number; max?: number } }
+
+export type ConfigSubscriptionAuthSourceKind = "env" | "store" | "native" | "keychain" | "api_key"
 
 export type ConfigShellOption = { path: string; name: string; acceptable: boolean }
 
@@ -774,6 +796,18 @@ export type IntegrationAttempt = {
 }
 
 export type IntegrationCommandAttempt = { attemptID: IntegrationAttemptID; time: { created: number; expires: number } }
+
+export type SubscriptionAuthStatusProvider = {
+  id: string
+  state: SubscriptionAuthSourceState
+  source?: SubscriptionAuthSourceKind
+  expiresAt?: number | "Infinity" | "-Infinity" | "NaN"
+  accountLabel?: string
+  consent?: "required" | "acknowledged"
+  transport?: string
+  reason?: string
+  usable_by_forgecode?: boolean
+}
 
 export type McpServer = {
   name: string
@@ -1979,6 +2013,23 @@ export type ArtifactUpdated = {
   data: {}
 }
 
+export type SubscriptionAuthChanged = {
+  id: EventID
+  created: number
+  metadata?: { [x: string]: any }
+  type: "subscription.auth.changed"
+  location?: LocationRef
+  data: {
+    integrationID: string
+    action: "consent" | "login" | "logout" | "refresh" | "probe"
+    sourceKind?: string
+    outcome?: string
+    code?: string
+    expiresAt?: number
+    noticeVersion?: number
+  }
+}
+
 export type SessionStatusUpdated = {
   id: EventID
   created: number
@@ -2167,6 +2218,8 @@ export type VoiceSessionResponse = { data: { transport: VoiceTransport } }
 export type CredentialValue = CredentialOAuth | CredentialKey | CredentialExternal
 
 export type ConnectionInfo = ConnectionCredentialInfo | ConnectionEnvInfo
+
+export type SubscriptionAuthStatus = { enabled: boolean; providers: Array<SubscriptionAuthStatusProvider> }
 
 export type PtyCreated = {
   id: EventID
@@ -2569,6 +2622,11 @@ export type ConfigEntry =
           }>
           forgequeue?: { enabled?: boolean }
         }
+        subscription_auth?: {
+          enabled?: boolean
+          sources?: { [x: string]: Array<ConfigSubscriptionAuthSourceKind> }
+          fallback?: { api_key?: boolean }
+        }
       }
     }
   | { type: "directory"; path: AbsolutePath }
@@ -2927,6 +2985,7 @@ export type V2Event =
   | FormCancelled
   | WebsearchUpdated
   | ArtifactUpdated
+  | SubscriptionAuthChanged
   | SessionStatusUpdated
   | SessionIdle
   | TuiPromptAppend
@@ -3153,6 +3212,31 @@ export type IntegrationMethodNotFoundError = {
 export const isIntegrationMethodNotFoundError = (value: unknown): value is IntegrationMethodNotFoundError =>
   typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "IntegrationMethodNotFoundError"
 
+export type SubscriptionError = {
+  readonly _tag: "SubscriptionError"
+  readonly code:
+    | "subscription_auth_disabled"
+    | "provider_unsupported"
+    | "source_missing"
+    | "session_expired"
+    | "refresh_failed"
+    | "cli_missing"
+    | "keychain_denied"
+    | "account_mismatch"
+    | "transport_unavailable"
+    | "consent_required"
+    | "native_session_not_managed"
+    | "subscription_unavailable"
+    | "rate_limited"
+  readonly message: string
+}
+export const isSubscriptionError = (value: unknown): value is SubscriptionError =>
+  typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "SubscriptionError"
+
+export type ForbiddenError = { readonly _tag: "ForbiddenError"; readonly message: string }
+export const isForbiddenError = (value: unknown): value is ForbiddenError =>
+  typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "ForbiddenError"
+
 export type McpServerNotFoundError = {
   readonly _tag: "McpServerNotFoundError"
   readonly server: string
@@ -3160,10 +3244,6 @@ export type McpServerNotFoundError = {
 }
 export const isMcpServerNotFoundError = (value: unknown): value is McpServerNotFoundError =>
   typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "McpServerNotFoundError"
-
-export type ForbiddenError = { readonly _tag: "ForbiddenError"; readonly message: string }
-export const isForbiddenError = (value: unknown): value is ForbiddenError =>
-  typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "ForbiddenError"
 
 export type ProjectNotFoundError = {
   readonly _tag: "ProjectNotFoundError"
@@ -4091,6 +4171,47 @@ export type ExperimentalIntegrationWellknownAddInput = {
 
 export type ExperimentalIntegrationWellknownAddOutput = void
 
+export type ExperimentalServerSubscriptionStatusInput = {
+  readonly location?: { readonly directory?: string | undefined } | undefined
+}
+
+export type ExperimentalServerSubscriptionStatusOutput = { location: LocationPublicRef; data: SubscriptionAuthStatus }
+
+export type ExperimentalServerSubscriptionLoginInput = {
+  readonly integrationID: string
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly source?: "managed" | "native" | undefined
+  readonly accept: boolean
+}
+
+export type ExperimentalServerSubscriptionLoginOutput = { location: LocationPublicRef; data: SubscriptionLoginResponse }
+
+export type ExperimentalServerSubscriptionConsentInput = {
+  readonly integrationID: string
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly accept: boolean
+}
+
+export type ExperimentalServerSubscriptionConsentOutput = void
+
+export type ExperimentalServerSubscriptionRefreshInput = {
+  readonly integrationID: string
+  readonly location?: { readonly directory?: string | undefined } | undefined
+}
+
+export type ExperimentalServerSubscriptionRefreshOutput = {
+  location: LocationPublicRef
+  data: SubscriptionRefreshResponse
+}
+
+export type ExperimentalServerSubscriptionTestInput = {
+  readonly integrationID: string
+  readonly location?: { readonly directory?: string | undefined } | undefined
+  readonly model?: string | undefined
+}
+
+export type ExperimentalServerSubscriptionTestOutput = { location: LocationPublicRef; data: SubscriptionTestResponse }
+
 export type McpListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 
 export type McpListOutput = { location: LocationPublicRef; data: Array<McpServer> }
@@ -4419,6 +4540,7 @@ export type EventSubscribeInput = {
         | "form.cancelled"
         | "websearch.updated"
         | "artifact.updated"
+        | "subscription.auth.changed"
         | "session.status"
         | "session.idle"
         | "tui.prompt.append"
@@ -4942,6 +5064,36 @@ export type IntegrationWellknownAddInput = ExperimentalIntegrationWellknownAddIn
 
 /** @deprecated Use `ExperimentalIntegrationWellknownAddOutput`. Removed in the next minor. */
 export type IntegrationWellknownAddOutput = ExperimentalIntegrationWellknownAddOutput
+
+/** @deprecated Use `ExperimentalServerSubscriptionStatusInput`. Removed in the next minor. */
+export type ServerSubscriptionStatusInput = ExperimentalServerSubscriptionStatusInput
+
+/** @deprecated Use `ExperimentalServerSubscriptionStatusOutput`. Removed in the next minor. */
+export type ServerSubscriptionStatusOutput = ExperimentalServerSubscriptionStatusOutput
+
+/** @deprecated Use `ExperimentalServerSubscriptionLoginInput`. Removed in the next minor. */
+export type ServerSubscriptionLoginInput = ExperimentalServerSubscriptionLoginInput
+
+/** @deprecated Use `ExperimentalServerSubscriptionLoginOutput`. Removed in the next minor. */
+export type ServerSubscriptionLoginOutput = ExperimentalServerSubscriptionLoginOutput
+
+/** @deprecated Use `ExperimentalServerSubscriptionConsentInput`. Removed in the next minor. */
+export type ServerSubscriptionConsentInput = ExperimentalServerSubscriptionConsentInput
+
+/** @deprecated Use `ExperimentalServerSubscriptionConsentOutput`. Removed in the next minor. */
+export type ServerSubscriptionConsentOutput = ExperimentalServerSubscriptionConsentOutput
+
+/** @deprecated Use `ExperimentalServerSubscriptionRefreshInput`. Removed in the next minor. */
+export type ServerSubscriptionRefreshInput = ExperimentalServerSubscriptionRefreshInput
+
+/** @deprecated Use `ExperimentalServerSubscriptionRefreshOutput`. Removed in the next minor. */
+export type ServerSubscriptionRefreshOutput = ExperimentalServerSubscriptionRefreshOutput
+
+/** @deprecated Use `ExperimentalServerSubscriptionTestInput`. Removed in the next minor. */
+export type ServerSubscriptionTestInput = ExperimentalServerSubscriptionTestInput
+
+/** @deprecated Use `ExperimentalServerSubscriptionTestOutput`. Removed in the next minor. */
+export type ServerSubscriptionTestOutput = ExperimentalServerSubscriptionTestOutput
 
 /** @deprecated Use `ExperimentalMcpAddInput`. Removed in the next minor. */
 export type McpAddInput = ExperimentalMcpAddInput
