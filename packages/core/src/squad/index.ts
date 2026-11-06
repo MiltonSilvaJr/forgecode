@@ -12,6 +12,10 @@ export class DisabledError extends Schema.TaggedError<DisabledError>()("Squad.Di
   }
 }
 
+export class ForbiddenError extends Schema.TaggedError<ForbiddenError>()("ForbiddenError", {
+  message: Schema.String,
+}) {}
+
 export interface Interface {
   readonly enabled: () => Effect.Effect<boolean>
   readonly open: (input: { generation: string }) => Effect.Effect<{ generation: string }, DisabledError>
