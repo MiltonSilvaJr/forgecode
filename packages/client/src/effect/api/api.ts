@@ -2107,6 +2107,12 @@ export type ExperimentalSquadTransitionOperation<E = never> = (
   input: ExperimentalSquadTransitionInput,
 ) => Effect.Effect<ExperimentalSquadTransitionOutput, E>
 
+export type ExperimentalSquadActivateInput = { readonly generation?: Squad.GenerationID | undefined }
+export type ExperimentalSquadActivateOutput = Squad.EnqueueProof
+export type ExperimentalSquadActivateOperation<E = never> = (
+  input?: ExperimentalSquadActivateInput,
+) => Effect.Effect<ExperimentalSquadActivateOutput, E>
+
 export type ExperimentalSquadDispatchCreateInput = {
   readonly scope?: string | undefined
   readonly owner?: string | undefined
@@ -2173,6 +2179,7 @@ export interface ExperimentalSquadApi<E = never> {
   readonly audit: ExperimentalSquadAuditOperation<E>
   readonly checkpoint: ExperimentalSquadCheckpointOperation<E>
   readonly transition: ExperimentalSquadTransitionOperation<E>
+  readonly activate: ExperimentalSquadActivateOperation<E>
   readonly dispatch: {
     readonly create: ExperimentalSquadDispatchCreateOperation<E>
     readonly list: ExperimentalSquadDispatchListOperation<E>

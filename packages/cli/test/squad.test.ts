@@ -290,6 +290,13 @@ describe("squad command", () => {
     expect(result.stderr).toContain("--from")
   })
 
+  test("squad activate --help shows the flags and has no release parameter", async () => {
+    const help = await cli(["squad", "activate", "--help"])
+    expect(help.exitCode).toBe(0)
+    for (const flag of ["--generation", "--json"]) expect(help.stdout).toContain(flag)
+    expect(help.stdout).not.toContain("--productive")
+  })
+
   test("squad dispatch create --help shows the dispatch flags", async () => {
     const result = await cli(["squad", "dispatch", "create", "--help"])
     expect(result.exitCode).toBe(0)

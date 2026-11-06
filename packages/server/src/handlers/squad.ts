@@ -2,6 +2,7 @@ import { FileSystem } from "@opencode/core/filesystem"
 import { Location } from "@opencode/core/location"
 import { LocationServiceMap } from "@opencode/core/location-service-map"
 import { AbsolutePath } from "@opencode/core/schema"
+import { SquadActivate } from "@opencode/core/squad/activate"
 import { SquadAudit } from "@opencode/core/squad/audit"
 import { SquadBlock } from "@opencode/core/squad/block"
 import { SquadBroadcast } from "@opencode/core/squad/broadcast"
@@ -26,6 +27,7 @@ import {
 } from "@opencode/protocol/errors"
 import { Global } from "@opencode/util/global"
 import { Effect } from "effect"
+import path from "node:path"
 import { HttpApiBuilder } from "effect/http-api"
 import { Api } from "../api"
 
@@ -190,6 +192,17 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
       )
       .handle("squad.transition", (ctx) =>
         SquadTransition.transition(ctx.payload).pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(pendencyError),
+          Effect.map((data) => ({ data })),
+        ),
+      )
+      .handle("squad.activate", (ctx) =>
+        SquadActivate.activate({
+          generation: ctx.payload.generation,
+          registryPath: path.join(global.data, "opencode.db"),
+        }).pipe(
           Effect.provide(services),
           catchMissingGlobal,
           Effect.mapError(pendencyError),
