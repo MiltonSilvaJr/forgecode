@@ -6,7 +6,7 @@ import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { it } from "../../core/test/lib/effect"
-import { exportCheckpoint, formatEnqueue, insideGitTree, readMessageFile } from "../src/commands/squad"
+import { exportCheckpoint, formatEnqueue, formatReceipt, insideGitTree, readMessageFile } from "../src/commands/squad"
 
 const cliDir = path.join(import.meta.dir, "..")
 
@@ -200,5 +200,27 @@ describe("squad command", () => {
       ok: false,
       error: `refusing to export into a git work tree: ${path.join(dir, "repo", "sub")}`,
     })
+  })
+
+  test("squad close --help shows the close flags and a missing generation is a usage error", async () => {
+    const help = await cli(["squad", "close", "--help"])
+    expect(help.exitCode).toBe(0)
+    for (const flag of ["--generation", "--idempotency-key"]) expect(help.stdout).toContain(flag)
+    const result = await cli(["squad", "close"])
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr).toContain("--generation")
+  })
+
+  test("the receipt output names the digest and whether the orchestrator stayed open", () => {
+    const output = formatReceipt({
+      sourceGeneration: "gen-1",
+      sourceRegistryDigest: "abc",
+      closed: { ATLAS: {} },
+      previousOrchestratorKeptOpen: true,
+      closedBy: "ORQ",
+    })
+    expect(output).toContain("source registry digest abc")
+    expect(output).toContain("orchestrator kept open: true")
+    expect(output).toContain("ATLAS")
   })
 })

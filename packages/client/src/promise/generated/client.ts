@@ -196,6 +196,8 @@ import type {
   ExperimentalSquadAuditOutput,
   ExperimentalSquadCheckpointInput,
   ExperimentalSquadCheckpointOutput,
+  ExperimentalSquadGenerationCloseInput,
+  ExperimentalSquadGenerationCloseOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1430,6 +1432,18 @@ export function make(options: ClientOptions) {
                 },
                 successStatus: 200,
                 declaredStatuses: [400, 401, 403, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+          close: (input: ExperimentalSquadGenerationCloseInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadGenerationCloseOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/squad/generation/${encodeURIComponent(input.generationID)}/close`,
+                body: { from: input["from"], idempotencyKey: input["idempotencyKey"] },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 404, 409, 503],
                 empty: false,
               },
               requestOptions,

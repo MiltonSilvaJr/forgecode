@@ -51,6 +51,9 @@ it.live("forbids squad routes when the flag is off", () =>
       await expect(api.experimental.squad.checkpoint({ name: "ATLAS", body: "x" })).rejects.toMatchObject({
         _tag: "ForbiddenError",
       })
+      await expect(api.experimental.squad.generation.close({ generationID: "gen-1" })).rejects.toMatchObject({
+        _tag: "ForbiddenError",
+      })
     })
   }),
 )
@@ -89,6 +92,13 @@ it.live("creates and lists a generation when the flag is on", () =>
       const checkpoint = await api.experimental.squad.checkpoint({ name: "ATLAS", body })
       expect(checkpoint.sha256).toMatch(/^[0-9a-f]{64}$/u)
       expect(checkpoint.body).toBe(body)
+      await expect(api.experimental.squad.generation.close({ generationID: "gen-9" })).rejects.toMatchObject({
+        _tag: "SessionNotFoundError",
+      })
+      const receipt = await api.experimental.squad.generation.close({ generationID: "gen-1" })
+      expect(receipt.sourceRegistryDigest).toMatch(/^[0-9a-f]{64}$/u)
+      expect(receipt.checkpoints.ATLAS?.sha256).toBe(checkpoint.sha256)
+      expect(await api.experimental.squad.generation.close({ generationID: "gen-1" })).toEqual(receipt)
     })
   }),
 )

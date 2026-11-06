@@ -70,3 +70,19 @@ export async function exportCheckpoint(
   await Bun.write(target, file.content)
   return { ok: true, path: target }
 }
+
+/** Describe a transition receipt: what closed, what stayed open, and the digest a later transition must match. */
+export function formatReceipt(receipt: {
+  sourceGeneration: string
+  sourceRegistryDigest: string
+  closed: Record<string, unknown>
+  previousOrchestratorKeptOpen: boolean
+  closedBy: string
+}) {
+  return [
+    `Generation ${receipt.sourceGeneration} closed by ${receipt.closedBy}`,
+    `closed sessions: ${Object.keys(receipt.closed).join(", ") || "(none)"}`,
+    `orchestrator kept open: ${receipt.previousOrchestratorKeptOpen}`,
+    `source registry digest ${receipt.sourceRegistryDigest}`,
+  ].join(EOL)
+}

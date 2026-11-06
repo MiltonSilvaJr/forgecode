@@ -55,6 +55,11 @@ const CheckpointInput = Schema.Struct({
   reason: Schema.String.pipe(optional),
 }).annotate({ identifier: "Squad.CheckpointInput" })
 
+const CloseInput = Schema.Struct({
+  from: Schema.String.pipe(optional),
+  idempotencyKey: Schema.String.pipe(optional),
+}).annotate({ identifier: "Squad.CloseInput" })
+
 export const SquadGroup = HttpApiGroup.make("server.squad")
   .add(
     HttpApiEndpoint.post("squad.generation.create", "/api/experimental/squad/generation", {
@@ -165,6 +170,21 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
         summary: "Record a session checkpoint",
         description:
           "Validate the six required sections, normalize the body, scan for secret-like text and store it under its SHA-256. History is kept; the session points at the most recent checkpoint. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.generation.close", "/api/experimental/squad/generation/:generationID/close", {
+      params: { generationID: Squad.GenerationID },
+      payload: CloseInput,
+      success: Schema.Struct({ data: Squad.TransitionReceipt }),
+      error: [InvalidRequestError, ForbiddenError, SessionNotFoundError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.generation.close",
+        summary: "Close a squad generation",
+        description:
+          "Close the active generation once every session has an intact checkpoint and no execution is in flight, and return the transition receipt with the source registry digest. The orchestrator is kept open. Repeating the close returns the same receipt. Experimental: may change without compatibility guarantees.",
       }),
     ),
   )

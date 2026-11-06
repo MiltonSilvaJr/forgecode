@@ -202,6 +202,8 @@ import type {
   ExperimentalSquadAuditOutput,
   ExperimentalSquadCheckpointInput,
   ExperimentalSquadCheckpointOutput,
+  ExperimentalSquadGenerationCloseInput,
+  ExperimentalSquadGenerationCloseOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1439,8 +1441,23 @@ const EndpointExperimentalSquadCheckpoint =
       ),
     )
 
+const EndpointExperimentalSquadGenerationClose =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadGenerationCloseInput) =>
+    preserveEffect<ExperimentalSquadGenerationCloseOutput>()(
+      raw["squad.generation.close"]({
+        params: { generationID: input["generationID"] },
+        payload: { from: input["from"], idempotencyKey: input["idempotencyKey"] },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
 const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
-  generation: { create: EndpointExperimentalSquadGenerationCreate(raw) },
+  generation: {
+    create: EndpointExperimentalSquadGenerationCreate(raw),
+    close: EndpointExperimentalSquadGenerationClose(raw),
+  },
   session: { list: EndpointExperimentalSquadSessionList(raw), send: EndpointExperimentalSquadSessionSend(raw) },
   check: EndpointExperimentalSquadCheck(raw),
   plan: EndpointExperimentalSquadPlan(raw),

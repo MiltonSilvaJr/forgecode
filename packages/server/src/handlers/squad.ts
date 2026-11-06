@@ -5,6 +5,7 @@ import { AbsolutePath } from "@opencode/core/schema"
 import { SquadAudit } from "@opencode/core/squad/audit"
 import { SquadBroadcast } from "@opencode/core/squad/broadcast"
 import { SquadCheckpoint } from "@opencode/core/squad/checkpoint"
+import { SquadTransition } from "@opencode/core/squad/transition"
 import { SquadCheck } from "@opencode/core/squad/check"
 import { SquadPlan } from "@opencode/core/squad/plan"
 import { SquadRegistry } from "@opencode/core/squad/registry"
@@ -39,6 +40,15 @@ const sendError = (ref: string) => (error: unknown) => {
   const tagged = error as { _tag?: string; message?: string }
   if (tagged._tag === "SessionNotFoundError")
     return new SessionNotFoundError({ sessionID: ref, message: tagged.message ?? `session ${ref} not found` })
+  return squadError(error)
+}
+
+const closeError = (generation: string) => (error: unknown) => {
+  const tagged = error as { _tag?: string; message?: string; pendencies?: readonly string[] }
+  if (tagged._tag === "SessionNotFoundError")
+    return new SessionNotFoundError({ sessionID: generation, message: tagged.message ?? `generation ${generation} not found` })
+  if (tagged._tag === "ConflictError" && tagged.pendencies && tagged.pendencies.length > 0)
+    return new ConflictError({ message: `${tagged.message}: ${tagged.pendencies.join("; ")}` })
   return squadError(error)
 }
 
@@ -142,6 +152,18 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           )
           return { data: chain }
         }),
+      )
+      .handle("squad.generation.close", (ctx) =>
+        SquadTransition.close({
+          generation: ctx.params.generationID,
+          by: ctx.payload.from,
+          idempotencyKey: ctx.payload.idempotencyKey,
+        }).pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(closeError(ctx.params.generationID)),
+          Effect.map((data) => ({ data })),
+        ),
       )
       .handle("squad.checkpoint", (ctx) =>
         SquadCheckpoint.write({ ...ctx.payload, actor: ctx.payload.from }).pipe(

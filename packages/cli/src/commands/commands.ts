@@ -618,6 +618,18 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             }),
           ],
         }),
+        Spec.make("close", {
+          description: "Close a squad generation once every session has an intact checkpoint and is idle",
+          globalFlags: ServerFlags,
+          params: {
+            generation: Flag.String("generation").pipe(Flag.withDescription("Generation to close"), Flag.optional),
+            idempotencyKey: Flag.String("idempotency-key").pipe(
+              Flag.withDescription("Idempotency key (repeating the close returns the same receipt)"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
         Spec.make("checkpoint", {
           description: "Record a session checkpoint (six required sections, SHA-256, secret scan)",
           globalFlags: ServerFlags,

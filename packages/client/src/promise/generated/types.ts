@@ -880,6 +880,18 @@ export type SquadAuditEntry = {
   detail?: string
 }
 
+export type SquadTransitionReceipt = {
+  sourceGeneration: SquadGenerationID
+  sourceRegistryDigest: string
+  closed: { [x: string]: { sessionID?: SessionID; closedAt: number } }
+  checkpoints: { [x: string]: { sha256: string } }
+  previousSessionsClosed: boolean
+  previousOrchestratorKeptOpen: boolean
+  closedBy: string
+  targetGenerationID?: SquadGenerationID
+  createdAt: number
+}
+
 export type SquadEnqueueProof = {
   messageID: SessionMessageID
   name: SquadSessionName
@@ -4542,6 +4554,14 @@ export type ExperimentalSquadCheckpointInput = {
 }
 
 export type ExperimentalSquadCheckpointOutput = { data: SquadCheckpoint }["data"]
+
+export type ExperimentalSquadGenerationCloseInput = {
+  readonly generationID: string
+  readonly from?: string | undefined
+  readonly idempotencyKey?: string | undefined
+}
+
+export type ExperimentalSquadGenerationCloseOutput = { data: SquadTransitionReceipt }["data"]
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 
