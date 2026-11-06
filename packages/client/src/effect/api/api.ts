@@ -2015,6 +2015,12 @@ export type ExperimentalSquadSessionSendOperation<E = never> = (
   input: ExperimentalSquadSessionSendInput,
 ) => Effect.Effect<ExperimentalSquadSessionSendOutput, E>
 
+export type ExperimentalSquadAuditInput = { readonly since?: string | undefined }
+export type ExperimentalSquadAuditOutput = ReadonlyArray<Squad.AuditEntry>
+export type ExperimentalSquadAuditOperation<E = never> = (
+  input?: ExperimentalSquadAuditInput,
+) => Effect.Effect<ExperimentalSquadAuditOutput, E>
+
 export interface ExperimentalSquadApi<E = never> {
   readonly generation: { readonly create: ExperimentalSquadGenerationCreateOperation<E> }
   readonly session: {
@@ -2023,6 +2029,7 @@ export interface ExperimentalSquadApi<E = never> {
   }
   readonly check: ExperimentalSquadCheckOperation<E>
   readonly plan: ExperimentalSquadPlanOperation<E>
+  readonly audit: ExperimentalSquadAuditOperation<E>
 }
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }

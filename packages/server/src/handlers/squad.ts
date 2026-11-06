@@ -2,6 +2,7 @@ import { FileSystem } from "@opencode/core/filesystem"
 import { Location } from "@opencode/core/location"
 import { LocationServiceMap } from "@opencode/core/location-service-map"
 import { AbsolutePath } from "@opencode/core/schema"
+import { SquadAudit } from "@opencode/core/squad/audit"
 import { SquadCheck } from "@opencode/core/squad/check"
 import { SquadPlan } from "@opencode/core/squad/plan"
 import { SquadRegistry } from "@opencode/core/squad/registry"
@@ -9,6 +10,7 @@ import { SquadSend } from "@opencode/core/squad/send"
 import {
   ConflictError,
   ForbiddenError,
+  InvalidRequestError,
   ServiceUnavailableError,
   SessionNotFoundError,
 } from "@opencode/protocol/errors"
@@ -104,6 +106,21 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
             Effect.mapError(squadError),
           )
           return { data: document }
+        }),
+      )
+      .handle("squad.audit", (ctx) =>
+        Effect.gen(function* () {
+          const audit = yield* SquadAudit.Service
+          const registry = yield* SquadRegistry.Service
+          const since = ctx.query.since === undefined ? undefined : Date.parse(ctx.query.since)
+          if (since !== undefined && Number.isNaN(since))
+            return yield* new InvalidRequestError({ message: "since must be an ISO instant", field: "since" })
+          // Reading the trail is gated by the same flag as every squad route.
+          yield* registry.countActive().pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
+          const entries = yield* audit
+            .list(since === undefined ? undefined : { since })
+            .pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
+          return { data: entries }
         }),
       )
       .handle("squad.session.send", (ctx) =>

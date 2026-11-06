@@ -849,6 +849,37 @@ export type Project = {
   sandboxes: Array<string>
 }
 
+export type SquadAuditEntry = {
+  id: number
+  at: number
+  kind:
+    | "init"
+    | "launch"
+    | "send"
+    | "broadcast"
+    | "dispatch"
+    | "dispatch_accept"
+    | "checkpoint"
+    | "close"
+    | "transition"
+    | "activate"
+    | "release"
+    | "block"
+    | "block_clear"
+    | "session_replace"
+  generation?: SquadGenerationID
+  target: string
+  sessionID?: SessionID
+  messageID?: SessionMessageID
+  messageSha256?: string
+  delivery?: SessionInboxDelivery
+  result: string
+  idempotencyKey?: string
+  actor: string
+  prevHash: string
+  detail?: string
+}
+
 export type SquadEnqueueProof = {
   messageID: SessionMessageID
   name: SquadSessionName
@@ -4463,6 +4494,10 @@ export type ExperimentalSquadSessionSendInput = {
 }
 
 export type ExperimentalSquadSessionSendOutput = { data: SquadEnqueueProof }["data"]
+
+export type ExperimentalSquadAuditInput = { readonly since?: string | undefined }
+
+export type ExperimentalSquadAuditOutput = { data: Array<SquadAuditEntry> }["data"]
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 

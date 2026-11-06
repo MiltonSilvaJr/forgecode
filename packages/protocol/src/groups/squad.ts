@@ -111,4 +111,18 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
       }),
     ),
   )
+  .add(
+    HttpApiEndpoint.get("squad.audit", "/api/experimental/squad/audit", {
+      query: { since: Schema.String.pipe(optional) },
+      success: Schema.Struct({ data: Schema.Array(Squad.AuditEntry) }),
+      error: [InvalidRequestError, ConflictError, ForbiddenError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.audit",
+        summary: "List the squad audit trail",
+        description:
+          "List the append-only audit lines in order, optionally since an ISO instant. Read-only: there is no write parameter. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
   .annotateMerge(OpenApi.annotations({ title: "squad" }))

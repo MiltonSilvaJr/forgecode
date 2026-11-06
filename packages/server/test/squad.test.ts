@@ -43,6 +43,10 @@ it.live("forbids squad routes when the flag is off", () =>
     yield* Effect.promise(async () => {
       await expect(api.experimental.squad.generation.create(generation)).rejects.toMatchObject({ _tag: "ForbiddenError" })
       await expect(api.experimental.squad.session.list()).rejects.toMatchObject({ _tag: "ForbiddenError" })
+      await expect(api.experimental.squad.session.send({ sessionRef: "GHOST", text: "go" })).rejects.toMatchObject({
+        _tag: "ForbiddenError",
+      })
+      await expect(api.experimental.squad.audit()).rejects.toMatchObject({ _tag: "ForbiddenError" })
     })
   }),
 )
@@ -56,19 +60,14 @@ it.live("creates and lists a generation when the flag is on", () =>
     expect(listed.generation).toBe("gen-1")
     expect(listed.sessions).toHaveLength(1)
     expect(listed.sessions[0]?.name).toBe("ATLAS")
-  }),
-)
-
-it.live("send is forbidden when the flag is off and reports an unknown session when it is on", () =>
-  Effect.gen(function* () {
-    const off = yield* make()
-    const on = yield* make(JSON.stringify({ squad: { enabled: true } }))
     yield* Effect.promise(async () => {
-      await expect(off.experimental.squad.session.send({ sessionRef: "GHOST", text: "go" })).rejects.toMatchObject({
-        _tag: "ForbiddenError",
-      })
-      await expect(on.experimental.squad.session.send({ sessionRef: "GHOST", text: "go" })).rejects.toMatchObject({
+      await expect(api.experimental.squad.session.send({ sessionRef: "GHOST", text: "go" })).rejects.toMatchObject({
         _tag: "SessionNotFoundError",
+      })
+      const trail = await api.experimental.squad.audit()
+      expect(trail.map((entry) => [entry.kind, entry.result, entry.target])).toEqual([["send", "failed", "GHOST"]])
+      await expect(api.experimental.squad.audit({ since: "not-a-date" })).rejects.toMatchObject({
+        _tag: "InvalidRequestError",
       })
     })
   }),
