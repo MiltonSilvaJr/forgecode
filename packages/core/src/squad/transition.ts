@@ -201,15 +201,97 @@ export interface TransitionInput {
   readonly idempotencyKey?: string
 }
 
+/**
+ * Prove and bind a closed generation to the active one. Nothing is created or moved: the receipt must exist,
+ * the recorded session set and the registry digest must still match the source registry, and the receipt may
+ * point at the active generation only.
+ */
 export const transition = Effect.fn("SquadTransition.transition")(function* (input: TransitionInput) {
-  return Squad.TransitionReceipt.make({
-    sourceGeneration: Squad.GenerationID.make(input.from),
-    sourceRegistryDigest: "",
-    closed: {},
-    checkpoints: {},
-    previousSessionsClosed: false,
-    previousOrchestratorKeptOpen: false,
-    closedBy: "operator",
-    createdAt: DateTime.makeUnsafe(Date.now()),
-  })
+  yield* requireEnabled()
+  const db = (yield* Database.Service).db
+  const store = yield* SquadStore.Service
+  const audit = yield* SquadAudit.Service
+  const by = input.by ?? "operator"
+  const now = Date.now()
+
+  const result = yield* db.transaction((tx) =>
+    Effect.gen(function* () {
+      const row = yield* tx
+        .select()
+        .from(SquadTransitionTable)
+        .where(eq(SquadTransitionTable.source_generation_id, input.from))
+        .get()
+        .pipe(Effect.orDie)
+      if (!row)
+        return yield* new ConflictError({
+          message: `generation ${input.from} has no close receipt; run squad close --generation ${input.from} first`,
+          pendencies: [],
+        })
+      const active = yield* store.activeGeneration(tx)
+      if (!active)
+        return yield* new ConflictError({
+          message: "no active generation to bind the transition to; run squad init first",
+          pendencies: [],
+        })
+      if (row.target_generation_id === active.id) return { receipt: (yield* receiptOf(tx, input.from))!, fresh: false }
+      if (row.target_generation_id !== null)
+        return yield* new ConflictError({
+          message: `transition from ${input.from} is already bound to ${row.target_generation_id}, not ${active.id}`,
+          pendencies: [],
+        })
+
+      const sessions = yield* store.sessions(tx, input.from)
+      const entries = yield* tx
+        .select()
+        .from(SquadTransitionEntryTable)
+        .where(eq(SquadTransitionEntryTable.source_generation_id, input.from))
+        .all()
+        .pipe(Effect.orDie)
+      const divergent = [
+        ...entries.filter((entry) => !sessions.some((item) => item.name === entry.name)).map((entry) => `${entry.name}: not in the source registry`),
+        ...sessions.flatMap((item) => {
+          const entry = entries.find((candidate) => candidate.name === item.name)
+          if (!entry) return [`${item.name}: missing from the close receipt`]
+          if (entry.session_id !== item.session_id) return [`${item.name}: session id changed after the close`]
+          if (entry.checkpoint_sha256 !== item.checkpoint_sha256) return [`${item.name}: checkpoint changed after the close`]
+          return []
+        }),
+      ]
+      if (divergent.length > 0)
+        return yield* new ConflictError({
+          message: `transition blocked: the session set diverges from the close receipt (${divergent.join("; ")})`,
+          pendencies: divergent,
+        })
+      if (digestOf(input.from, sessions) !== row.source_registry_digest)
+        return yield* new ConflictError({
+          message: `transition blocked: the registry of ${input.from} changed after the close (digest mismatch)`,
+          pendencies: [],
+        })
+
+      yield* tx
+        .update(SquadTransitionTable)
+        .set({ target_generation_id: active.id })
+        .where(eq(SquadTransitionTable.source_generation_id, input.from))
+        .run()
+        .pipe(Effect.orDie)
+      yield* store.insertIdempotency(tx, {
+        key: sha256(`transition\n${input.from}\n${active.id}`),
+        generation_id: active.id,
+        kind: "transition",
+        result_ref: input.from,
+        created_at: now,
+      })
+      return { receipt: (yield* receiptOf(tx, input.from))!, fresh: true, target: active.id }
+    }),
+  )
+  if (result.fresh)
+    yield* audit.append({
+      kind: "transition",
+      generation: result.target,
+      target: input.from,
+      result: "accepted",
+      actor: by,
+      detail: result.receipt.sourceRegistryDigest,
+    })
+  return result.receipt
 })
