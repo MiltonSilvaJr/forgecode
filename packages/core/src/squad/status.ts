@@ -9,6 +9,7 @@ import { WorkspaceID } from "@opencode/schema/workspace-id"
 import { Config } from "../config.js"
 import { Database } from "../database/database.js"
 import { AbsolutePath } from "../schema.js"
+import { SquadBlock } from "./block.js"
 import { SquadChannel } from "./channel.js"
 import { DisabledError } from "./index.js"
 import { SquadLiveness } from "./liveness.js"
@@ -84,6 +85,8 @@ const sessionStatus = Effect.fn("SquadStatus.sessionStatus")(function* (
           presumedDead: false,
         })
       : yield* SquadLiveness.measure(info, events, thresholds, claim)
+  const declared = yield* SquadBlock.activeBlock(row.generation_id, row.name)
+  const cause = [declared ? SquadBlock.causeOf(declared) : undefined, measured.cause].filter((part) => part !== undefined).join("; ")
   return Squad.SessionStatus.make({
     name: Squad.SessionName.make(row.name),
     role: row.role,
@@ -97,7 +100,7 @@ const sessionStatus = Effect.fn("SquadStatus.sessionStatus")(function* (
     ...(row.branch === null ? {} : { branch: row.branch }),
     ...(sessionID === undefined ? {} : { sessionID }),
     state: row.state,
-    liveness: Squad.Liveness.make({ ...measured, sessionState: row.state }),
+    liveness: Squad.Liveness.make({ ...measured, sessionState: row.state, ...(cause === "" ? {} : { cause }) }),
     inboxPending: pending.length,
   })
 })
