@@ -103,6 +103,7 @@ export const Dispatch = Schema.Struct({
   acceptedBy: SessionName.pipe(optional),
   createdAt: DateTimeUtcFromMillis,
   warnings: Schema.Array(Schema.String).pipe(optional),
+  sent: Schema.Struct({ messageID: SessionMessage.ID, at: DateTimeUtcFromMillis }).pipe(optional),
 }).annotate({ identifier: "Squad.Dispatch" })
 
 export interface Checkpoint extends Schema.Schema.Type<typeof Checkpoint> {}

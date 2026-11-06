@@ -26,6 +26,7 @@ export interface CreateInput {
   readonly exigidos?: readonly string[]
   readonly milestone?: string
   readonly actor?: string
+  readonly send?: boolean
 }
 
 export class DispatchNotFoundError extends Schema.TaggedError<DispatchNotFoundError>()("DispatchNotFoundError", {

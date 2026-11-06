@@ -15,6 +15,7 @@ export interface SendInput {
   readonly from?: string
   readonly allowSelf?: boolean
   readonly idempotencyKey?: string
+  readonly dispatch?: string
 }
 
 export const send = Effect.fn("SquadSend.send")(function* (input: SendInput) {
