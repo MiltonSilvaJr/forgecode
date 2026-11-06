@@ -34,7 +34,7 @@ export const plan = Effect.fn("Squad.plan")(function* (input: {
       location: entry.location,
       branch: entry.branch,
       sessionID: entry.sessionID,
-      action: "create",
+      action: entry.sessionID === undefined ? "create" : "adopt",
       promptSha256: bootstrapSha256(input.generationID, entry.name),
     }),
   )
