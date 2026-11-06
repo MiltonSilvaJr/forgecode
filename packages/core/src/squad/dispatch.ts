@@ -195,3 +195,15 @@ export const list = Effect.fn("SquadDispatch.list")(function* () {
     .pipe(Effect.orDie)
   return rows.map((row) => toDispatch(row))
 })
+
+export interface AcceptInput {
+  readonly orq: string
+  readonly by?: string
+}
+
+export const accept = Effect.fn("SquadDispatch.accept")(function* (input: AcceptInput) {
+  const db = (yield* Database.Service).db
+  const row = yield* db.select().from(SquadDispatchTable).where(eq(SquadDispatchTable.orq_id, input.orq)).get().pipe(Effect.orDie)
+  if (!row) return yield* new DispatchNotFoundError({ message: `dispatch ${input.orq} not found` })
+  return toDispatch(row)
+})
