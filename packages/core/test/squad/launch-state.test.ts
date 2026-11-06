@@ -111,6 +111,20 @@ describe("SquadLaunch state machine", () => {
     )
   })
 
+  it.live("two concurrent launches of the same name create one session", () => {
+    const world = fakeWorld()
+    return run(
+      world,
+      Effect.gen(function* () {
+        yield* init("ATLAS")
+        const launch = SquadLaunch.launch({ only: "ATLAS", pollInterval: 10, timeout: 500 })
+        yield* Effect.all([launch, launch], { concurrency: 2 })
+        expect(new Set(world.creates).size).toBe(1)
+        expect((yield* stateOf("ATLAS"))?.state).toBe("verified")
+      }),
+    )
+  })
+
   it.live("--only touches only that name and fails when it is not in the active generation", () => {
     const world = fakeWorld()
     return run(

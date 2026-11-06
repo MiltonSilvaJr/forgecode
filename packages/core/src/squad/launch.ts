@@ -1,6 +1,6 @@
 export * as SquadLaunch from "./launch.js"
 
-import { Clock, Duration, Effect } from "effect"
+import { Clock, Duration, Effect, Semaphore } from "effect"
 import { and, eq } from "drizzle-orm"
 import { Location } from "@opencode/schema/location"
 import { Model } from "@opencode/schema/model"
@@ -29,6 +29,9 @@ export interface LaunchInput {
 
 const DefaultTimeout = 90_000
 const DefaultPollInterval = 500
+
+// Two concurrent launches of one name would each write-ahead a different session id; session creation is rare, so serialize it.
+const gate = Semaphore.makeUnsafe(1)
 
 export const launch = Effect.fn("SquadLaunch.launch")(function* (input: LaunchInput) {
   const registry = yield* SquadRegistry.Service
@@ -107,7 +110,6 @@ const advance = Effect.fn("SquadLaunch.advance")(function* (
     if (!input.reason)
       return yield* new ConflictError({ message: `--retry on session ${row.name} requires --reason <text>`, pendencies: [] })
   }
-  const sessions = yield* SquadChannel.SessionsService
   const channel = yield* SquadChannel.Service
   const marker = `SQUAD-${row.generation_id}-${row.name}`
   const adoptTarget = input.adopt?.[row.name]
@@ -128,7 +130,37 @@ const advance = Effect.fn("SquadLaunch.advance")(function* (
     return
   }
 
-  if (row.state === "failed") yield* patch(row, { state: "creating" })
+  yield* gate.withPermits(1)(ensureSession(row, marker, adoptTarget))
+
+  const started = (yield* currentRow(row)) ?? row
+  const sessionID = SessionSchema.ID.make(started.session_id!)
+  yield* channel
+    .enqueue({
+      sessionID,
+      text: bootstrapPrompt(row.generation_id, row.name),
+      delivery: "queue",
+      idempotencyKey: launchKey(row),
+      metadata: { squad: { marker } },
+    })
+    .pipe(Effect.tapError((error) => patch(row, { last_error: error.message })))
+  const deadline = (yield* Clock.currentTimeMillis) + input.timeout
+  const report = yield* verifyUntil(() => verifyOnce(sessionID, started.adopted_at), deadline, input.pollInterval ?? DefaultPollInterval)
+  if (report.missing.length > 0) {
+    const reason = report.modelMismatch ?? `evidence missing: ${report.missing.join(", ")}`
+    yield* patch(row, { last_error: reason })
+    return yield* new ConflictError({ message: `session ${row.name} stays starting; ${reason}`, pendencies: [] })
+  }
+  yield* patch(row, { state: "verified", last_error: null })
+})
+
+const ensureSession = Effect.fn("SquadLaunch.ensureSession")(function* (
+  row: SquadStore.SessionRow,
+  marker: string,
+  adoptTarget: string | undefined,
+) {
+  const sessions = yield* SquadChannel.SessionsService
+  const fresh = (yield* currentRow(row)) ?? row
+  if (fresh.state === "failed") yield* patch(row, { state: "creating" })
   const current = (yield* currentRow(row)) ?? row
 
   if (current.state === "creating") {
@@ -157,26 +189,6 @@ const advance = Effect.fn("SquadLaunch.advance")(function* (
     }
     yield* patch(row, { state: "starting", last_error: null })
   }
-
-  const started = (yield* currentRow(row)) ?? row
-  const sessionID = SessionSchema.ID.make(started.session_id!)
-  yield* channel
-    .enqueue({
-      sessionID,
-      text: bootstrapPrompt(row.generation_id, row.name),
-      delivery: "queue",
-      idempotencyKey: launchKey(row),
-      metadata: { squad: { marker } },
-    })
-    .pipe(Effect.tapError((error) => patch(row, { last_error: error.message })))
-  const deadline = (yield* Clock.currentTimeMillis) + input.timeout
-  const report = yield* verifyUntil(() => verifyOnce(sessionID, started.adopted_at), deadline, input.pollInterval ?? DefaultPollInterval)
-  if (report.missing.length > 0) {
-    const reason = report.modelMismatch ?? `evidence missing: ${report.missing.join(", ")}`
-    yield* patch(row, { last_error: reason })
-    return yield* new ConflictError({ message: `session ${row.name} stays starting; ${reason}`, pendencies: [] })
-  }
-  yield* patch(row, { state: "verified", last_error: null })
 })
 
 const verifyUntil = (
