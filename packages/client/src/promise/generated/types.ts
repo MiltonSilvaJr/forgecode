@@ -318,6 +318,8 @@ export type SquadSessionState = "creating" | "starting" | "verified" | "closed" 
 
 export type SquadCheckItem = { check: string; verdict: "ok" | "warn" | "fail"; reason?: string }
 
+export type SquadCostSnapshot = { cost?: number; tokens?: { input?: number; output?: number }; unknown: boolean }
+
 export type SquadReleaseReceipt = { released: string; to: string; trees: number; checkpointSha256: string }
 
 export type PermissionID = string
@@ -411,8 +413,6 @@ export type ConfigWorktree = { directory: string }
 export type ConfigModelReasoning =
   | { supported: false }
   | { supported: true; toggle?: boolean; effort?: Array<string>; budget?: { min?: number; max?: number } }
-
-export type ConfigSquadLiveness = { stale_after: string; dead_after: string }
 
 export type ConfigSquadLaunch = { verify_timeout: string }
 
@@ -910,6 +910,18 @@ export type SquadBroadcastResult = {
   reason?: string
 }
 
+export type SquadBlock = {
+  generationID: SquadGenerationID
+  name: SquadSessionName
+  waitingOn: "human" | "tool"
+  reason: string
+  author: string
+  createdAt: number
+  clearedAt?: number
+}
+
+export type SquadPreviousSession = { name: SquadSessionName; sessionID?: SessionID; state: "closed" }
+
 export type SquadCheckpoint = {
   generationID: SquadGenerationID
   name: SquadSessionName
@@ -946,6 +958,18 @@ export type SquadDispatch = {
   createdAt: number
   warnings?: Array<string>
   sent?: { messageID: SessionMessageID; at: number }
+}
+
+export type SquadLiveness = {
+  verdict: "working" | "idle" | "stalled" | "presumed_dead" | "unknown"
+  measuredAt: number
+  lastActivity?: number
+  sentAt?: number
+  source?: "execution" | "inbox"
+  sessionState?: SquadSessionState
+  workingStale: boolean
+  presumedDead: boolean
+  cause?: string
 }
 
 export type SquadSessionCheck = {
@@ -2387,6 +2411,28 @@ export type SquadAuditChain = {
 
 export type SquadBroadcastReport = { results: Array<SquadBroadcastResult> }
 
+export type SquadPreviousGeneration = {
+  id: SquadGenerationID
+  closedAt?: number
+  closedBy?: string
+  sessions: Array<SquadPreviousSession>
+}
+
+export type SquadSessionStatus = {
+  name: SquadSessionName
+  role: SquadRole
+  provider: string
+  model: string
+  variant?: string
+  location: LocationRef
+  branch?: string
+  sessionID?: SessionID
+  state: SquadSessionState
+  liveness: SquadLiveness
+  inboxPending: number
+  cost: SquadCostSnapshot
+}
+
 export type SquadCheckReport = { sessions: Array<SquadSessionCheck> }
 
 export type PtyCreated = {
@@ -2793,7 +2839,7 @@ export type ConfigEntry =
         squad?: {
           enabled?: boolean | null
           state_dir?: string
-          liveness?: ConfigSquadLiveness
+          liveness?: { stale_after: string; dead_after: string }
           writer_scope?: "worktree" | "repository"
           launch?: ConfigSquadLaunch
           checkpoint?: ConfigSquadCheckpoint
@@ -2889,6 +2935,14 @@ export type CredentialEntry = {
   label: string
   active: boolean
   value: CredentialValue
+}
+
+export type SquadLivenessReport = {
+  generation: SquadGenerationID | null
+  sessions: Array<SquadSessionStatus>
+  inboxPending: number
+  cost: SquadCostSnapshot
+  previous: SquadPreviousGeneration | null
 }
 
 export type FormFields1 = [FormField1, ...Array<FormField1>]
@@ -4572,6 +4626,16 @@ export type ExperimentalSquadSessionSendInput = {
 
 export type ExperimentalSquadSessionSendOutput = { data: SquadEnqueueProof }["data"]
 
+export type ExperimentalSquadSessionLaunchInput = {
+  readonly sessionRef: string | string
+  readonly retry?: boolean | undefined
+  readonly reason?: string | undefined
+  readonly adopt?: string | undefined
+  readonly timeout?: number | undefined
+}
+
+export type ExperimentalSquadSessionLaunchOutput = { data: SquadSessionEntry }["data"]
+
 export type ExperimentalSquadBroadcastInput = {
   readonly text: string
   readonly from?: string | undefined
@@ -4580,6 +4644,30 @@ export type ExperimentalSquadBroadcastInput = {
 }
 
 export type ExperimentalSquadBroadcastOutput = { data: SquadBroadcastReport }["data"]
+
+export type ExperimentalSquadSessionReplaceInput = {
+  readonly sessionRef: string | string
+  readonly provider: string
+  readonly model?: string | undefined
+  readonly variant?: string | undefined
+  readonly reason?: string | undefined
+  readonly from?: string | undefined
+  readonly timeout?: number | undefined
+}
+
+export type ExperimentalSquadSessionReplaceOutput = { data: SquadSessionEntry }["data"]
+
+export type ExperimentalSquadBlockInput = {
+  readonly name: string
+  readonly waitingOn: "human" | "tool"
+  readonly reason: string
+  readonly clear?: boolean | undefined
+  readonly from?: string | undefined
+}
+
+export type ExperimentalSquadBlockOutput = { data: SquadBlock }["data"]
+
+export type ExperimentalSquadLivenessOutput = { data: SquadLivenessReport }["data"]
 
 export type ExperimentalSquadAuditInput = { readonly since?: string | undefined }
 

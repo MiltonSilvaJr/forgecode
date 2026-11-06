@@ -101,6 +101,12 @@ const Handlers = Runtime.handlers(Commands, {
     close: () => import("./commands/handlers/squad/close"),
     transition: () => import("./commands/handlers/squad/transition"),
     broadcast: () => import("./commands/handlers/squad/broadcast"),
+    launch: () => import("./commands/handlers/squad/launch"),
+    status: () => import("./commands/handlers/squad/status"),
+    block: () => import("./commands/handlers/squad/block"),
+    session: {
+      replace: () => import("./commands/handlers/squad/session-replace"),
+    },
     audit: {
       export: () => import("./commands/handlers/squad/audit-export"),
     },

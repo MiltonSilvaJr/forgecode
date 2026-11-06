@@ -97,6 +97,29 @@ const ReleaseReceipt = Schema.Struct({
   trees: Schema.Int,
   checkpointSha256: Schema.String,
 }).annotate({ identifier: "Squad.ReleaseReceipt" })
+const LaunchInput = Schema.Struct({
+  retry: Schema.Boolean.pipe(optional),
+  reason: Schema.String.pipe(optional),
+  adopt: Session.ID.pipe(optional),
+  timeout: Schema.Int.pipe(optional).annotate({ description: "Verification timeout in milliseconds." }),
+}).annotate({ identifier: "Squad.LaunchInput" })
+
+const BlockInput = Schema.Struct({
+  name: Squad.SessionName,
+  waitingOn: Squad.WaitingOn,
+  reason: Schema.String,
+  clear: Schema.Boolean.pipe(optional),
+  from: Schema.String.pipe(optional),
+}).annotate({ identifier: "Squad.BlockInput" })
+
+const ReplaceInput = Schema.Struct({
+  provider: Schema.String,
+  model: Schema.String.pipe(optional),
+  variant: Schema.String.pipe(optional),
+  reason: Schema.String.pipe(optional),
+  from: Schema.String.pipe(optional),
+  timeout: Schema.Int.pipe(optional).annotate({ description: "Verification timeout in milliseconds." }),
+}).annotate({ identifier: "Squad.ReplaceInput" })
 
 export const SquadGroup = HttpApiGroup.make("server.squad")
   .add(
@@ -170,6 +193,21 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
     ),
   )
   .add(
+    HttpApiEndpoint.post("squad.session.launch", "/api/experimental/squad/session/:sessionRef/launch", {
+      params: { sessionRef: Squad.SessionRef },
+      payload: LaunchInput,
+      success: Schema.Struct({ data: Squad.SessionEntry }),
+      error: [InvalidRequestError, ForbiddenError, SessionNotFoundError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.session.launch",
+        summary: "Launch a squad session",
+        description:
+          "Create or adopt the session, admit the bootstrap marker and verify it by durable evidence (model, enqueued, delivered, execution started). A session that lacks evidence stays starting and the error names what is missing. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
     HttpApiEndpoint.post("squad.broadcast", "/api/experimental/squad/broadcast", {
       payload: BroadcastInput,
       success: Schema.Struct({ data: Squad.BroadcastReport }),
@@ -180,6 +218,48 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
         summary: "Broadcast a message to the active generation",
         description:
           "Validate every recipient first, then enqueue in configuration order. Delivery is best-effort and not transactional: a failure in the middle keeps what was queued and reports the rest as not_attempted. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.session.replace", "/api/experimental/squad/session/:sessionRef/replace", {
+      params: { sessionRef: Squad.SessionRef },
+      payload: ReplaceInput,
+      success: Schema.Struct({ data: Squad.SessionEntry }),
+      error: [InvalidRequestError, ForbiddenError, SessionNotFoundError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.session.replace",
+        summary: "Replace a squad session",
+        description:
+          "Give the name a new session on another provider, model or variant, inheriting the checkpoint, and launch it. The registry keeps one entry per generation and name; the old session is left untouched. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.block", "/api/experimental/squad/block", {
+      payload: BlockInput,
+      success: Schema.Struct({ data: Squad.Block }),
+      error: [InvalidRequestError, ForbiddenError, SessionNotFoundError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.block",
+        summary: "Declare or clear why a squad session is stopped",
+        description:
+          "Record that a verified session waits on a human or a tool, with a reason, or clear that declaration. It only feeds the liveness cause: it never changes the verdict or releases the execution claim. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.get("squad.liveness", "/api/experimental/squad/liveness", {
+      success: Schema.Struct({ data: Squad.LivenessReport }),
+      error: [ConflictError, ForbiddenError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.liveness",
+        summary: "Report squad status and liveness",
+        description:
+          "Read-only report of the active and previous generation: per session its registry state, measured activity (instant and source) and liveness verdict, and the pending inbox count. Experimental: may change without compatibility guarantees.",
       }),
     ),
   )

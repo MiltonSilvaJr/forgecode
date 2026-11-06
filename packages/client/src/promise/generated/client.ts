@@ -190,8 +190,15 @@ import type {
   ExperimentalSquadPlanOutput,
   ExperimentalSquadSessionSendInput,
   ExperimentalSquadSessionSendOutput,
+  ExperimentalSquadSessionLaunchInput,
+  ExperimentalSquadSessionLaunchOutput,
   ExperimentalSquadBroadcastInput,
   ExperimentalSquadBroadcastOutput,
+  ExperimentalSquadSessionReplaceInput,
+  ExperimentalSquadSessionReplaceOutput,
+  ExperimentalSquadBlockInput,
+  ExperimentalSquadBlockOutput,
+  ExperimentalSquadLivenessOutput,
   ExperimentalSquadAuditInput,
   ExperimentalSquadAuditOutput,
   ExperimentalSquadCheckpointInput,
@@ -1494,6 +1501,42 @@ export function make(options: ClientOptions) {
               },
               requestOptions,
             ).then((value) => value.data),
+          launch: (input: ExperimentalSquadSessionLaunchInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadSessionLaunchOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/squad/session/${encodeURIComponent(input.sessionRef)}/launch`,
+                body: {
+                  retry: input["retry"],
+                  reason: input["reason"],
+                  adopt: input["adopt"],
+                  timeout: input["timeout"],
+                },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 404, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+          replace: (input: ExperimentalSquadSessionReplaceInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadSessionReplaceOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/squad/session/${encodeURIComponent(input.sessionRef)}/replace`,
+                body: {
+                  provider: input["provider"],
+                  model: input["model"],
+                  variant: input["variant"],
+                  reason: input["reason"],
+                  from: input["from"],
+                  timeout: input["timeout"],
+                },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 404, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
         },
         check: (requestOptions?: RequestOptions) =>
           request<{ readonly data: ExperimentalSquadCheckOutput }>(
@@ -1528,6 +1571,35 @@ export function make(options: ClientOptions) {
                 includeSelf: input["includeSelf"],
                 idempotencyKey: input["idempotencyKey"],
               },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        block: (input: ExperimentalSquadBlockInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadBlockOutput }>(
+            {
+              method: "POST",
+              path: `/api/experimental/squad/block`,
+              body: {
+                name: input["name"],
+                waitingOn: input["waitingOn"],
+                reason: input["reason"],
+                clear: input["clear"],
+                from: input["from"],
+              },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 404, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        liveness: (requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadLivenessOutput }>(
+            {
+              method: "GET",
+              path: `/api/experimental/squad/liveness`,
               successStatus: 200,
               declaredStatuses: [400, 401, 403, 409, 503],
               empty: false,

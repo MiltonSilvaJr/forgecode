@@ -196,8 +196,15 @@ import type {
   ExperimentalSquadPlanOutput,
   ExperimentalSquadSessionSendInput,
   ExperimentalSquadSessionSendOutput,
+  ExperimentalSquadSessionLaunchInput,
+  ExperimentalSquadSessionLaunchOutput,
   ExperimentalSquadBroadcastInput,
   ExperimentalSquadBroadcastOutput,
+  ExperimentalSquadSessionReplaceInput,
+  ExperimentalSquadSessionReplaceOutput,
+  ExperimentalSquadBlockInput,
+  ExperimentalSquadBlockOutput,
+  ExperimentalSquadLivenessOutput,
   ExperimentalSquadAuditInput,
   ExperimentalSquadAuditOutput,
   ExperimentalSquadCheckpointInput,
@@ -1410,6 +1417,18 @@ const EndpointExperimentalSquadSessionSend =
       ),
     )
 
+const EndpointExperimentalSquadSessionLaunch =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadSessionLaunchInput) =>
+    preserveEffect<ExperimentalSquadSessionLaunchOutput>()(
+      raw["squad.session.launch"]({
+        params: { sessionRef: input["sessionRef"] },
+        payload: { retry: input["retry"], reason: input["reason"], adopt: input["adopt"], timeout: input["timeout"] },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
 const EndpointExperimentalSquadBroadcast =
   (raw: RawClient["server.squad"]) => (input: ExperimentalSquadBroadcastInput) =>
     preserveEffect<ExperimentalSquadBroadcastOutput>()(
@@ -1425,6 +1444,49 @@ const EndpointExperimentalSquadBroadcast =
         Effect.map((value) => value.data),
       ),
     )
+
+const EndpointExperimentalSquadSessionReplace =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadSessionReplaceInput) =>
+    preserveEffect<ExperimentalSquadSessionReplaceOutput>()(
+      raw["squad.session.replace"]({
+        params: { sessionRef: input["sessionRef"] },
+        payload: {
+          provider: input["provider"],
+          model: input["model"],
+          variant: input["variant"],
+          reason: input["reason"],
+          from: input["from"],
+          timeout: input["timeout"],
+        },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
+const EndpointExperimentalSquadBlock = (raw: RawClient["server.squad"]) => (input: ExperimentalSquadBlockInput) =>
+  preserveEffect<ExperimentalSquadBlockOutput>()(
+    raw["squad.block"]({
+      payload: {
+        name: input["name"],
+        waitingOn: input["waitingOn"],
+        reason: input["reason"],
+        clear: input["clear"],
+        from: input["from"],
+      },
+    }).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
+const EndpointExperimentalSquadLiveness = (raw: RawClient["server.squad"]) => () =>
+  preserveEffect<ExperimentalSquadLivenessOutput>()(
+    raw["squad.liveness"]({}).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
 
 const EndpointExperimentalSquadAudit = (raw: RawClient["server.squad"]) => (input?: ExperimentalSquadAuditInput) =>
   preserveEffect<ExperimentalSquadAuditOutput>()(
@@ -1533,10 +1595,17 @@ const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
     create: EndpointExperimentalSquadGenerationCreate(raw),
     close: EndpointExperimentalSquadGenerationClose(raw),
   },
-  session: { list: EndpointExperimentalSquadSessionList(raw), send: EndpointExperimentalSquadSessionSend(raw) },
+  session: {
+    list: EndpointExperimentalSquadSessionList(raw),
+    send: EndpointExperimentalSquadSessionSend(raw),
+    launch: EndpointExperimentalSquadSessionLaunch(raw),
+    replace: EndpointExperimentalSquadSessionReplace(raw),
+  },
   check: EndpointExperimentalSquadCheck(raw),
   plan: EndpointExperimentalSquadPlan(raw),
   broadcast: EndpointExperimentalSquadBroadcast(raw),
+  block: EndpointExperimentalSquadBlock(raw),
+  liveness: EndpointExperimentalSquadLiveness(raw),
   audit: EndpointExperimentalSquadAudit(raw),
   checkpoint: EndpointExperimentalSquadCheckpoint(raw),
   transition: EndpointExperimentalSquadTransition(raw),

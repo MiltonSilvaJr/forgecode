@@ -333,3 +333,40 @@ export const PlanDocument = Schema.Struct({
   generationID: GenerationID,
   sessions: Schema.Array(PlanEntry),
 }).annotate({ identifier: "Squad.PlanDocument" })
+
+export const SessionStatus = Schema.Struct({
+  name: SessionName,
+  role: Role,
+  provider: Schema.String,
+  model: Schema.String,
+  variant: Schema.String.pipe(optional),
+  location: Location.Ref,
+  branch: Schema.String.pipe(optional),
+  sessionID: Session.ID.pipe(optional),
+  state: SessionState,
+  liveness: Liveness,
+  inboxPending: Schema.Int,
+  cost: CostSnapshot,
+}).annotate({ identifier: "Squad.SessionStatus" })
+
+export const PreviousSession = Schema.Struct({
+  name: SessionName,
+  sessionID: Session.ID.pipe(optional),
+  state: Schema.Literal("closed"),
+}).annotate({ identifier: "Squad.PreviousSession" })
+
+export const PreviousGeneration = Schema.Struct({
+  id: GenerationID,
+  closedAt: DateTimeUtcFromMillis.pipe(optional),
+  closedBy: Schema.String.pipe(optional),
+  sessions: Schema.Array(PreviousSession),
+}).annotate({ identifier: "Squad.PreviousGeneration" })
+
+export interface LivenessReport extends Schema.Schema.Type<typeof LivenessReport> {}
+export const LivenessReport = Schema.Struct({
+  generation: Schema.NullOr(GenerationID),
+  sessions: Schema.Array(SessionStatus),
+  inboxPending: Schema.Int,
+  cost: CostSnapshot,
+  previous: Schema.NullOr(PreviousGeneration),
+}).annotate({ identifier: "Squad.LivenessReport" })

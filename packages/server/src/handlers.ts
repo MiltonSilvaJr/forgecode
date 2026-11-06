@@ -76,5 +76,5 @@ export const handlers = Layer.mergeAll(
   WorktreeHandler,
   VcsHandler,
   ConfigHandler,
-  SquadHandler.pipe(Layer.provide(SquadRegistry.layer), Layer.provide(SquadStore.layer), Layer.provide(CredentialPresence.layer), Layer.provide(SquadChannel.layer), Layer.provide(SquadAudit.layer), Layer.provide(SquadActivity.layer), Layer.provide(SquadOwnership.checkpointLayer)),
+  SquadHandler.pipe(Layer.provide(SquadRegistry.layer), Layer.provide(SquadStore.layer), Layer.provide(CredentialPresence.layer), Layer.provide(SquadChannel.layer), Layer.provide(SquadAudit.layer), Layer.provide(SquadActivity.layer), Layer.provide(SquadOwnership.checkpointLayer), Layer.provide(SquadChannel.sessionsLayer)),
 )

@@ -21,7 +21,23 @@ const PositiveDuration = Schema.DurationFromString.pipe(
 const Liveness = Schema.Struct({
   stale_after: PositiveDuration,
   dead_after: PositiveDuration,
-}).annotate({ identifier: "Config.Squad.Liveness" })
+})
+  .check(
+    Schema.makeFilter(
+      (value) =>
+        Duration.toMillis(value.dead_after) > Duration.toMillis(value.stale_after)
+          ? undefined
+          : "Expected dead_after to be greater than stale_after",
+      {
+        expected: "dead_after greater than stale_after",
+        representation: { id: "squad/dead-after-greater", payload: null },
+        toJsonSchema: () => ({}),
+        toCode: () => ({ runtime: "Schema.Struct" }),
+        arbitraryConstraint: {},
+      },
+    ),
+  )
+  .annotate({ identifier: "Config.Squad.Liveness" })
 
 const Launch = Schema.Struct({
   verify_timeout: PositiveDuration,

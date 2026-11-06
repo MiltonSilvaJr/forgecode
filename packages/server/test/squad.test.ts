@@ -63,6 +63,16 @@ it.live("forbids squad routes when the flag is off", () =>
       await expect(api.experimental.squad.dispatch.accept({ orqId: "ORQ-gen-1-001" })).rejects.toMatchObject({
         _tag: "ForbiddenError",
       })
+      await expect(api.experimental.squad.session.launch({ sessionRef: "GHOST" })).rejects.toMatchObject({
+        _tag: "ForbiddenError",
+      })
+      await expect(api.experimental.squad.liveness()).rejects.toMatchObject({ _tag: "ForbiddenError" })
+      await expect(api.experimental.squad.session.replace({ sessionRef: "GHOST", provider: "openai" })).rejects.toMatchObject({
+        _tag: "ForbiddenError",
+      })
+      await expect(
+        api.experimental.squad.block({ name: "ATLAS", waitingOn: "human", reason: "approval" }),
+      ).rejects.toMatchObject({ _tag: "ForbiddenError" })
     })
   }),
 )
@@ -90,6 +100,20 @@ it.live("creates and lists a generation when the flag is on", () =>
       await expect(api.experimental.squad.release({ from: "ATLAS", to: "ATLAS", reason: "r" })).rejects.toMatchObject({
         _tag: "ConflictError",
       })
+      await expect(api.experimental.squad.session.launch({ sessionRef: "GHOST" })).rejects.toMatchObject({
+        _tag: "SessionNotFoundError",
+      })
+      await expect(
+        api.experimental.squad.block({ name: "ATLAS", waitingOn: "human", reason: "approval" }),
+      ).rejects.toMatchObject({ _tag: "ConflictError" })
+      await expect(api.experimental.squad.session.replace({ sessionRef: "GHOST", provider: "openai" })).rejects.toMatchObject({
+        _tag: "SessionNotFoundError",
+      })
+      const liveness = await api.experimental.squad.liveness()
+      expect(liveness.generation).toBe("gen-1")
+      expect(liveness.previous).toBeNull()
+      expect(liveness.sessions[0]?.cost.unknown).toBe(true)
+      expect(liveness.sessions.map((row) => row.name)).toEqual(["ATLAS"])
       const report = await api.experimental.squad.broadcast({ text: "go", from: "ATLAS" })
       expect(report.results).toEqual([])
       const trail = await api.experimental.squad.audit()
@@ -129,6 +153,32 @@ it.live("creates and lists a generation when the flag is on", () =>
       const bound = await api.experimental.squad.transition({ from: "gen-1" })
       expect(bound.targetGenerationID).toBe("gen-2")
       expect(bound.sourceRegistryDigest).toBe(receipt.sourceRegistryDigest)
+    })
+  }),
+)
+
+it.live("launch creates a real session through the wired services and never reports verified without evidence", () =>
+  Effect.gen(function* () {
+    const api = yield* make(JSON.stringify({ squad: { enabled: true } }))
+    const directory = (yield* tmpdirScoped("opencode-squad-launch-")).path
+    yield* Effect.promise(() =>
+      api.experimental.squad.generation.create({
+        generation: "gen-1",
+        sessions: [
+          { name: "ATLAS", role: "worker", provider: "deepseek", model: "deepseek-flash", location: { directory } },
+        ],
+      }),
+    )
+    yield* Effect.promise(async () => {
+      const outcome = await api.experimental.squad.session.launch({ sessionRef: "ATLAS", timeout: 1000 }).then(
+        (entry) => entry.state,
+        (error: { _tag?: string }) => error._tag,
+      )
+      const listed = await api.experimental.squad.session.list()
+      expect(listed.sessions[0]?.sessionID).toBeDefined()
+      expect(listed.sessions[0]?.marker).toBe("SQUAD-gen-1-ATLAS")
+      expect(["verified", "ConflictError", "ServiceUnavailableError"]).toContain(outcome)
+      expect(["starting", "verified", "failed"]).toContain(listed.sessions[0]?.state)
     })
   }),
 )

@@ -3,15 +3,19 @@ import { Location } from "@opencode/core/location"
 import { LocationServiceMap } from "@opencode/core/location-service-map"
 import { AbsolutePath } from "@opencode/core/schema"
 import { SquadAudit } from "@opencode/core/squad/audit"
+import { SquadBlock } from "@opencode/core/squad/block"
 import { SquadBroadcast } from "@opencode/core/squad/broadcast"
 import { SquadCheckpoint } from "@opencode/core/squad/checkpoint"
 import { SquadTransition } from "@opencode/core/squad/transition"
 import { SquadCheck } from "@opencode/core/squad/check"
 import { SquadDispatch } from "@opencode/core/squad/dispatch"
 import { SquadOwnership } from "@opencode/core/squad/ownership"
+import { SquadLaunch } from "@opencode/core/squad/launch"
 import { SquadPlan } from "@opencode/core/squad/plan"
 import { SquadRegistry } from "@opencode/core/squad/registry"
+import { SquadReplace } from "@opencode/core/squad/replace"
 import { SquadSend } from "@opencode/core/squad/send"
+import { SquadStatus } from "@opencode/core/squad/status"
 import {
   ConflictError,
   DispatchNotFoundError,
@@ -198,6 +202,66 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           catchMissingGlobal,
           Effect.mapError(checkpointError(ctx.payload.name)),
           Effect.map((data) => ({ data })),
+        ),
+      )
+      .handle("squad.block", (ctx) =>
+        SquadBlock.block({
+          name: ctx.payload.name,
+          waitingOn: ctx.payload.waitingOn,
+          reason: ctx.payload.reason,
+          clear: ctx.payload.clear,
+          author: ctx.payload.from,
+        }).pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(sendError(ctx.payload.name)),
+          Effect.map((data) => ({ data })),
+        ),
+      )
+      .handle("squad.session.replace", (ctx) =>
+        Effect.gen(function* () {
+          const registry = yield* SquadRegistry.Service
+          const target = yield* registry.resolve(ctx.params.sessionRef)
+          const entry = yield* SquadReplace.replace({
+            name: target.name,
+            provider: ctx.payload.provider,
+            model: ctx.payload.model,
+            variant: ctx.payload.variant,
+            reason: ctx.payload.reason,
+            author: ctx.payload.from,
+            timeout: ctx.payload.timeout,
+          })
+          return { data: entry }
+        }).pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(sendError(ctx.params.sessionRef)),
+        ),
+      )
+      .handle("squad.liveness", () =>
+        SquadStatus.status().pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(squadError),
+          Effect.map((data) => ({ data })),
+        ),
+      )
+      .handle("squad.session.launch", (ctx) =>
+        Effect.gen(function* () {
+          const registry = yield* SquadRegistry.Service
+          const target = yield* registry.resolve(ctx.params.sessionRef)
+          const launched = yield* SquadLaunch.launch({
+            only: target.name,
+            retry: ctx.payload.retry,
+            reason: ctx.payload.reason,
+            adopt: ctx.payload.adopt === undefined ? undefined : { [target.name]: ctx.payload.adopt },
+            timeout: ctx.payload.timeout,
+          })
+          return { data: launched[0]! }
+        }).pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(sendError(ctx.params.sessionRef)),
         ),
       )
       .handle("squad.session.send", (ctx) =>

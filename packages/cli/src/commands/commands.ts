@@ -604,6 +604,62 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
           },
         }),
+        Spec.make("status", {
+          description: "Show the active and previous generation with measured activity and liveness (read-only)",
+          globalFlags: ServerFlags,
+          params: {
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("session", {
+          description: "Manage squad sessions",
+          commands: [
+            Spec.make("replace", {
+              description: "Give a session name a new session on another provider, model or variant",
+              globalFlags: ServerFlags,
+              params: {
+                name: Flag.String("name").pipe(Flag.withDescription("Session name in the active generation"), Flag.optional),
+                provider: Flag.String("provider").pipe(Flag.withDescription("New provider"), Flag.optional),
+                model: Flag.String("model").pipe(Flag.withDescription("New model (defaults to the current one)"), Flag.optional),
+                variant: Flag.String("variant").pipe(Flag.withDescription("New variant (defaults to the current one)"), Flag.optional),
+                reason: Flag.String("reason").pipe(Flag.withDescription("Why the session is replaced"), Flag.optional),
+                json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+              },
+            }),
+          ],
+        }),
+        Spec.make("block", {
+          description: "Declare why a verified session is stopped (human or tool), or clear the declaration",
+          globalFlags: ServerFlags,
+          params: {
+            name: Flag.String("name").pipe(Flag.withDescription("Session name in the active generation"), Flag.optional),
+            waiting: Flag.String("waiting").pipe(Flag.withDescription("What the session waits on: human or tool"), Flag.optional),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Why the session is blocked"), Flag.optional),
+            clear: Flag.Boolean("clear").pipe(Flag.withDescription("Clear the declared block"), Flag.withDefault(false)),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("launch", {
+          description: "Create or adopt the active generation's sessions and verify each by durable evidence",
+          globalFlags: ServerFlags,
+          params: {
+            only: Flag.String("only").pipe(Flag.withDescription("Launch only this session name"), Flag.optional),
+            retry: Flag.Boolean("retry").pipe(
+              Flag.withDescription("Retry a failed or starting session (requires --reason)"),
+              Flag.withDefault(false),
+            ),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Reason for --retry"), Flag.optional),
+            adopt: Flag.String("adopt").pipe(
+              Flag.withDescription("Adopt an existing session: name=ses_... (comma separated for several)"),
+              Flag.optional,
+            ),
+            timeout: Flag.String("timeout").pipe(
+              Flag.withDescription("Verification timeout in seconds (default: squad.launch.verify_timeout)"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
         Spec.make("audit", {
           description: "Inspect the append-only squad audit trail",
           commands: [

@@ -28,6 +28,10 @@ test("squad routes carry the canonical experimental.squad identifiers", () => {
     ["experimental.squad.dispatch.list", "GET", "/api/experimental/squad/dispatch"],
     ["experimental.squad.release", "POST", "/api/experimental/squad/release"],
     ["experimental.squad.dispatch.accept", "POST", "/api/experimental/squad/dispatch/{orqId}/accept"],
+    ["experimental.squad.session.replace", "POST", "/api/experimental/squad/session/{sessionRef}/replace"],
+    ["experimental.squad.block", "POST", "/api/experimental/squad/block"],
+    ["experimental.squad.liveness", "GET", "/api/experimental/squad/liveness"],
+    ["experimental.squad.session.launch", "POST", "/api/experimental/squad/session/{sessionRef}/launch"],
   ] as const
   const offenders = required
     .filter(

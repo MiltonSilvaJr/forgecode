@@ -157,6 +157,50 @@ describe("squad command", () => {
     for (const flag of ["--since", "--out", "--json"]) expect(result.stdout).toContain(flag)
   })
 
+  test("squad status --help shows the status flags", async () => {
+    const result = await cli(["squad", "status", "--help"])
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toContain("--json")
+  })
+
+  test("squad block --help shows the block flags", async () => {
+    const result = await cli(["squad", "block", "--help"])
+    expect(result.exitCode).toBe(0)
+    for (const flag of ["--name", "--waiting", "--reason", "--clear", "--json"]) expect(result.stdout).toContain(flag)
+  })
+
+  test("block rejects an invalid --waiting before reaching the server", async () => {
+    const result = await cli(["squad", "block", "--name", "ATLAS", "--waiting", "nobody", "--reason", "x"])
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr).toContain("--waiting")
+  })
+
+  test("squad session replace --help shows the replace flags", async () => {
+    const result = await cli(["squad", "session", "replace", "--help"])
+    expect(result.exitCode).toBe(0)
+    for (const flag of ["--name", "--provider", "--model", "--variant", "--reason", "--json"])
+      expect(result.stdout).toContain(flag)
+  })
+
+  test("session replace without --provider is a usage error before reaching the server", async () => {
+    const result = await cli(["squad", "session", "replace", "--name", "ATLAS"])
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr).toContain("--provider")
+  })
+
+  test("squad launch --help shows the launch flags", async () => {
+    const result = await cli(["squad", "launch", "--help"])
+    expect(result.exitCode).toBe(0)
+    for (const flag of ["--only", "--retry", "--reason", "--adopt", "--timeout", "--json"])
+      expect(result.stdout).toContain(flag)
+  })
+
+  test("launch --retry without --reason is a usage error before reaching the server", async () => {
+    const result = await cli(["squad", "launch", "--retry"])
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr).toContain("--reason")
+  })
+
   test("send rejects an invalid delivery before any effect", async () => {
     const result = await cli(["squad", "send", "--to", "ATLAS", "--message-file", "/nonexistent", "--delivery", "now"])
     expect(result.exitCode).toBe(2)
