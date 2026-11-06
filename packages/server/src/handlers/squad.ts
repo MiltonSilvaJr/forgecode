@@ -5,7 +5,13 @@ import { AbsolutePath } from "@opencode/core/schema"
 import { SquadCheck } from "@opencode/core/squad/check"
 import { SquadPlan } from "@opencode/core/squad/plan"
 import { SquadRegistry } from "@opencode/core/squad/registry"
-import { ConflictError, ForbiddenError, ServiceUnavailableError } from "@opencode/protocol/errors"
+import { SquadSend } from "@opencode/core/squad/send"
+import {
+  ConflictError,
+  ForbiddenError,
+  ServiceUnavailableError,
+  SessionNotFoundError,
+} from "@opencode/protocol/errors"
 import { Global } from "@opencode/util/global"
 import { Effect } from "effect"
 import { HttpApiBuilder } from "effect/http-api"
@@ -18,9 +24,18 @@ const squadError = (error: unknown) => {
       return new ForbiddenError({ message: tagged.message ?? "squad is disabled" })
     case "ConflictError":
       return new ConflictError({ message: tagged.message ?? "conflict" })
+    case "ForbiddenError":
+      return new ForbiddenError({ message: tagged.message ?? "forbidden" })
     default:
       return new ServiceUnavailableError({ message: tagged.message ?? "squad operation failed" })
   }
+}
+
+const sendError = (ref: string) => (error: unknown) => {
+  const tagged = error as { _tag?: string; message?: string }
+  if (tagged._tag === "SessionNotFoundError")
+    return new SessionNotFoundError({ sessionID: ref, message: tagged.message ?? `session ${ref} not found` })
+  return squadError(error)
 }
 
 export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers) =>
@@ -90,6 +105,14 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           )
           return { data: document }
         }),
+      )
+      .handle("squad.session.send", (ctx) =>
+        SquadSend.send({ to: ctx.params.sessionRef, ...ctx.payload }).pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(sendError(ctx.params.sessionRef)),
+          Effect.map((data) => ({ data })),
+        ),
       )
   }),
 )

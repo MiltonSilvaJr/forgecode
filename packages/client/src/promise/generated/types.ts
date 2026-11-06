@@ -849,6 +849,14 @@ export type Project = {
   sandboxes: Array<string>
 }
 
+export type SquadEnqueueProof = {
+  messageID: SessionMessageID
+  name: SquadSessionName
+  sessionID: SessionID
+  delivery: SessionInboxDelivery
+  at: number
+}
+
 export type SquadSessionCheck = {
   name: SquadSessionName
   checks: Array<SquadCheckItem>
@@ -4444,6 +4452,17 @@ export type ExperimentalSquadSessionListOutput = {
 export type ExperimentalSquadCheckOutput = { data: SquadCheckReport }["data"]
 
 export type ExperimentalSquadPlanOutput = { data: SquadPlanDocument }["data"]
+
+export type ExperimentalSquadSessionSendInput = {
+  readonly sessionRef: string | string
+  readonly text: string
+  readonly delivery?: ("steer" | "queue") | undefined
+  readonly from?: string | undefined
+  readonly allowSelf?: boolean | undefined
+  readonly idempotencyKey?: string | undefined
+}
+
+export type ExperimentalSquadSessionSendOutput = { data: SquadEnqueueProof }["data"]
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 

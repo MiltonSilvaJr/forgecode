@@ -4,7 +4,14 @@ import { Squad } from "@opencode/schema/squad"
 import { optional } from "@opencode/schema/schema"
 import { Schema } from "effect"
 import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "effect/http-api"
-import { ConflictError, ForbiddenError, ServiceUnavailableError } from "../errors.js"
+import { SessionInbox } from "@opencode/schema/session-inbox"
+import {
+  ConflictError,
+  ForbiddenError,
+  InvalidRequestError,
+  ServiceUnavailableError,
+  SessionNotFoundError,
+} from "../errors.js"
 
 const InitSession = Schema.Struct({
   name: Squad.SessionName,
@@ -24,6 +31,14 @@ const GenerationCreateInput = Schema.Struct({
   reason: Schema.String.pipe(optional),
   idempotencyKey: Schema.String.pipe(optional),
 }).annotate({ identifier: "Squad.GenerationCreateInput" })
+
+const SendInput = Schema.Struct({
+  text: Schema.String,
+  delivery: SessionInbox.Delivery.pipe(optional),
+  from: Schema.String.pipe(optional),
+  allowSelf: Schema.Boolean.pipe(optional),
+  idempotencyKey: Schema.String.pipe(optional),
+}).annotate({ identifier: "Squad.SendInput" })
 
 export const SquadGroup = HttpApiGroup.make("server.squad")
   .add(
@@ -78,6 +93,21 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
         summary: "Plan the active generation's launch",
         description:
           "Simulate the launch of the active squad generation without side effects: per session, whether it would be created or adopted and the SHA-256 of the bootstrap prompt. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.session.send", "/api/experimental/squad/session/:sessionRef/send", {
+      params: { sessionRef: Squad.SessionRef },
+      payload: SendInput,
+      success: Schema.Struct({ data: Squad.EnqueueProof }),
+      error: [InvalidRequestError, ForbiddenError, SessionNotFoundError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.session.send",
+        summary: "Send a message to a squad session",
+        description:
+          "Enqueue a message in a verified squad session's inbox and return the enqueue proof (message id and acceptance, never a read receipt). Experimental: may change without compatibility guarantees.",
       }),
     ),
   )

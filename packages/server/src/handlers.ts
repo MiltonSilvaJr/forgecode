@@ -34,6 +34,7 @@ import { EventFeed } from "./event-feed"
 import { MigrationHandler } from "./handlers/migration"
 import { ConfigHandler } from "./handlers/config"
 import { SquadHandler } from "./handlers/squad"
+import { SquadChannel } from "@opencode/core/squad/channel"
 import { CredentialPresence } from "@opencode/core/squad/credential"
 import { SquadRegistry } from "@opencode/core/squad/registry"
 import { SquadStore } from "@opencode/core/squad/store"
@@ -72,5 +73,5 @@ export const handlers = Layer.mergeAll(
   WorktreeHandler,
   VcsHandler,
   ConfigHandler,
-  SquadHandler.pipe(Layer.provide(SquadRegistry.layer), Layer.provide(SquadStore.layer), Layer.provide(CredentialPresence.layer)),
+  SquadHandler.pipe(Layer.provide(SquadRegistry.layer), Layer.provide(SquadStore.layer), Layer.provide(CredentialPresence.layer), Layer.provide(SquadChannel.layer)),
 )

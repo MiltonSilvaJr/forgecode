@@ -58,3 +58,18 @@ it.live("creates and lists a generation when the flag is on", () =>
     expect(listed.sessions[0]?.name).toBe("ATLAS")
   }),
 )
+
+it.live("send is forbidden when the flag is off and reports an unknown session when it is on", () =>
+  Effect.gen(function* () {
+    const off = yield* make()
+    const on = yield* make(JSON.stringify({ squad: { enabled: true } }))
+    yield* Effect.promise(async () => {
+      await expect(off.experimental.squad.session.send({ sessionRef: "GHOST", text: "go" })).rejects.toMatchObject({
+        _tag: "ForbiddenError",
+      })
+      await expect(on.experimental.squad.session.send({ sessionRef: "GHOST", text: "go" })).rejects.toMatchObject({
+        _tag: "SessionNotFoundError",
+      })
+    })
+  }),
+)

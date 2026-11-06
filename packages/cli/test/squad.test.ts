@@ -6,6 +6,7 @@ import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { it } from "../../core/test/lib/effect"
+import { formatEnqueue, readMessageFile } from "../src/commands/squad"
 
 const cliDir = path.join(import.meta.dir, "..")
 
@@ -106,4 +107,37 @@ describe("squad command", () => {
       expect(parsed.error).toHaveProperty("details")
     }),
   )
+
+  test("squad send --help shows the send flags", async () => {
+    const result = await cli(["squad", "send", "--help"])
+    expect(result.exitCode).toBe(0)
+    for (const flag of ["--to", "--session-id", "--message-file", "--delivery", "--idempotency-key", "--allow-self"])
+      expect(result.stdout).toContain(flag)
+  })
+
+  test("send rejects an invalid delivery before any effect", async () => {
+    const result = await cli(["squad", "send", "--to", "ATLAS", "--message-file", "/nonexistent", "--delivery", "now"])
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr).toContain("invalid delivery")
+  })
+
+  test("send fails on a missing message file before reaching the server", async () => {
+    const result = await cli(["squad", "send", "--to", "ATLAS", "--message-file", "/nonexistent/message.txt"])
+    expect(result.exitCode).toBe(1)
+    expect(result.stderr).toContain("cannot read message file")
+  })
+
+  test("readMessageFile rejects an empty file", async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "squad-msg-"))
+    const file = path.join(dir, "empty.txt")
+    await fs.writeFile(file, "  \n")
+    expect(await readMessageFile(file)).toEqual({ ok: false, error: "message file is empty" })
+  })
+
+  test("the enqueue output states acceptance and never claims reading or completion", () => {
+    const output = formatEnqueue({ messageID: "msg_1", name: "ATLAS", sessionID: "ses_1", delivery: "queue", at: 0 })
+    expect(output).toContain("Queued message msg_1")
+    for (const word of ["lida", "processada", "concluída", "read", "processed", "completed"])
+      expect(output.toLowerCase()).not.toContain(word)
+  })
 })

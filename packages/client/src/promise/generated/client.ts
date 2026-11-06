@@ -188,6 +188,8 @@ import type {
   ExperimentalSquadSessionListOutput,
   ExperimentalSquadCheckOutput,
   ExperimentalSquadPlanOutput,
+  ExperimentalSquadSessionSendInput,
+  ExperimentalSquadSessionSendOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1435,6 +1437,24 @@ export function make(options: ClientOptions) {
                 path: `/api/experimental/squad/session`,
                 successStatus: 200,
                 declaredStatuses: [400, 401, 403, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+          send: (input: ExperimentalSquadSessionSendInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadSessionSendOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/squad/session/${encodeURIComponent(input.sessionRef)}/send`,
+                body: {
+                  text: input["text"],
+                  delivery: input["delivery"],
+                  from: input["from"],
+                  allowSelf: input["allowSelf"],
+                  idempotencyKey: input["idempotencyKey"],
+                },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 404, 409, 503],
                 empty: false,
               },
               requestOptions,

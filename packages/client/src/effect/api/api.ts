@@ -2002,9 +2002,25 @@ export type ExperimentalSquadCheckOperation<E = never> = () => Effect.Effect<Exp
 export type ExperimentalSquadPlanOutput = Squad.PlanDocument
 export type ExperimentalSquadPlanOperation<E = never> = () => Effect.Effect<ExperimentalSquadPlanOutput, E>
 
+export type ExperimentalSquadSessionSendInput = {
+  readonly sessionRef: Squad.SessionRef
+  readonly text: string
+  readonly delivery?: SessionInbox.Delivery | undefined
+  readonly from?: string | undefined
+  readonly allowSelf?: boolean | undefined
+  readonly idempotencyKey?: string | undefined
+}
+export type ExperimentalSquadSessionSendOutput = Squad.EnqueueProof
+export type ExperimentalSquadSessionSendOperation<E = never> = (
+  input: ExperimentalSquadSessionSendInput,
+) => Effect.Effect<ExperimentalSquadSessionSendOutput, E>
+
 export interface ExperimentalSquadApi<E = never> {
   readonly generation: { readonly create: ExperimentalSquadGenerationCreateOperation<E> }
-  readonly session: { readonly list: ExperimentalSquadSessionListOperation<E> }
+  readonly session: {
+    readonly list: ExperimentalSquadSessionListOperation<E>
+    readonly send: ExperimentalSquadSessionSendOperation<E>
+  }
   readonly check: ExperimentalSquadCheckOperation<E>
   readonly plan: ExperimentalSquadPlanOperation<E>
 }
