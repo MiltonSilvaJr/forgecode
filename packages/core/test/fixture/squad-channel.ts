@@ -6,8 +6,9 @@ import { SessionMessage } from "@opencode/schema/session-message"
 type PromptInput = Parameters<Session.Interface["prompt"]>[0]
 
 /**
- * Fake inbox server: admission is idempotent by message id, as in the real core, and `fail` makes
- * every admission fail so a test can observe that the adapter does not retry.
+ * A fast double of the core inbox, not evidence about it: it copies the core's idempotent admission by message id,
+ * and `inbox` never shrinks because delivery is not modeled. Use it to observe the adapter's calls (and, with
+ * `fail`, that it does not retry). What the core really does is asserted in squad/channel-contract.test.ts.
  */
 export const fakeSessionServer = (options: { fail?: boolean } = {}) => {
   const calls: PromptInput[] = []

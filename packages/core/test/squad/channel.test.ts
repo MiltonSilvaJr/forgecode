@@ -15,7 +15,9 @@ const otherID = Session.ID.make("ses_def456")
 const channelFor = (server: ReturnType<typeof fakeSessionServer>) =>
   SquadChannel.layer.pipe(Layer.provide(server.layer))
 
-describe("SquadChannel", () => {
+// Adapter behavior against `fakeSessionServer`, a fast double. The core semantics (idempotent admission by id,
+// pending dropping after delivery) are proven against the real primitives in channel-contract.test.ts.
+describe("SquadChannel with a fake session server", () => {
   it.live("derives the message id from the key and the session", () =>
     Effect.gen(function* () {
       const server = fakeSessionServer()
