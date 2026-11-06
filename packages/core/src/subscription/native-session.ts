@@ -1,6 +1,6 @@
 export * as SubscriptionNativeSession from "./native-session.js"
 
-import { Effect } from "effect"
+import { Effect, Option, Schema } from "effect"
 import { SubscriptionAuth } from "@opencode/schema/subscription-auth"
 import path from "path"
 
@@ -119,6 +119,15 @@ export const kimiShareDir = (env: Env) => env.KIMI_SHARE_DIR ?? path.join(home(e
 export const kimiCredentialsPath = (env: Env) => path.join(kimiShareDir(env), "credentials", "kimi-code.json")
 
 export const kimiConfigPath = (env: Env) => path.join(kimiShareDir(env), "config.toml")
+
+/** Acquire only at the request boundary; never persist the native credential. */
+export const kimiAccessToken = (env: Env) =>
+  readJsonFile(kimiCredentialsPath(env)).pipe(
+    Effect.map((value) => {
+      const parsed = Schema.decodeUnknownOption(Schema.Struct({ access_token: Schema.NonEmptyString }))(value)
+      return Option.isSome(parsed) ? parsed.value.access_token : undefined
+    }),
+  )
 
 interface KimiCredentials {
   readonly access_token?: string

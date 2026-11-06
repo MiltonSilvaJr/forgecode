@@ -1,4 +1,5 @@
 import {
+  measureEditText,
   parseColor,
   Renderable,
   RGBA,
@@ -8,7 +9,6 @@ import {
   type RenderContext,
 } from "@opentui/core"
 import { extend } from "@opentui/solid"
-import { stringWidth } from "../util/string-width"
 import { SPINNER_FRAMES } from "./spinner-frames"
 
 export type ColorGenerator = (
@@ -55,7 +55,11 @@ export class SpinnerRenderable extends Renderable {
       return
     this.frameTexts = value
     this.glyphs = value.map((frame) =>
-      Array.from(graphemes.segment(frame), (part) => ({ char: part.segment, width: stringWidth(part.segment) })),
+      // Match drawText's terminal width policy: wcwidth can give an emoji sequence more than two cells.
+      Array.from(graphemes.segment(frame), (part) => ({
+        char: part.segment,
+        width: measureEditText(part.segment, { widthMethod: this._ctx.widthMethod }),
+      })),
     )
     this.index = 0
     const width = Math.max(0, ...this.glyphs.map((glyphs) => glyphs.reduce((sum, glyph) => sum + glyph.width, 0)))

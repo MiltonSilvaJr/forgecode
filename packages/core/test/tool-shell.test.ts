@@ -502,6 +502,9 @@ describe("ShellTool scanner permissions", () => {
 
 describe("ShellTool conditional process substitution", () => {
   const test = isWindows || !Bun.which("bash") ? permissionIt.live.skip : permissionIt.live
+  // Bash 3.2 cannot wait on a process-substitution PID. A FIFO acknowledges the
+  // marker write without relying on child scheduling or inherited output pipes.
+  const command = '[[ -n <(printf reached > marker; printf "done\\n" > completion) ]]; read -r < completion'
   test("a nested deny prevents the substitution from running", () =>
     withScanner(
       (registry, directory) =>
@@ -516,12 +519,7 @@ describe("ShellTool conditional process substitution", () => {
             }),
           )
           const marker = path.join(directory.active, "marker")
-          const result = yield* runPermissionCommand(
-            registry,
-            '[[ -n <(printf reached > marker) ]]; wait "$!"',
-            marker,
-            [],
-          )
+          const result = yield* runPermissionCommand(registry, command, marker, [])
           expect(result.exit).toMatchObject({
             _tag: "Success",
             value: { status: "error", error: { message: expect.stringContaining("Permission denied: shell") } },
@@ -538,12 +536,18 @@ describe("ShellTool conditional process substitution", () => {
           Effect.gen(function* () {
             const saved = yield* PermissionSaved.Service
             const location = yield* Location.Service
-            yield* saved.add({ projectID: location.project.id, action: "shell", resources: ["wait *"] })
+            yield* saved.add({ projectID: location.project.id, action: "shell", resources: ["read *"] })
             const marker = path.join(directory.active, "marker")
-            const command = '[[ -n <(printf reached > marker) ]]; wait "$!"'
+            const fifo = yield* Effect.sync(() => Bun.spawnSync(["mkfifo", path.join(directory.active, "completion")]))
+            expect(fifo.stderr.toString()).toBe("")
+            expect(fifo.exitCode).toBe(0)
             const result = yield* runPermissionCommand(registry, command, marker, [reply])
             expect(result.requests).toMatchObject([
-              { action: "shell", resources: ["printf reached > marker", 'wait "$!"'], save: ["printf *", "wait *"] },
+              {
+                action: "shell",
+                resources: ["printf reached > marker", 'printf "done\\n" > completion', "read -r < completion"],
+                save: ["printf *", "printf *", "read *"],
+              },
             ])
             if (reply === "reject") {
               expect(Exit.isFailure(result.exit)).toBe(true)

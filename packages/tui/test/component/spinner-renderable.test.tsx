@@ -11,7 +11,7 @@ const RED = RGBA.fromInts(255, 0, 0)
 const GREEN = RGBA.fromInts(0, 255, 0)
 const BLUE = RGBA.fromInts(0, 0, 255)
 
-async function mount(spinner: () => JSX.Element) {
+async function mount(spinner: () => JSX.Element, environment: Record<string, string> = {}) {
   const clock = new ManualClock()
   const app = await testRender(
     () => (
@@ -20,7 +20,7 @@ async function mount(spinner: () => JSX.Element) {
         <text>|</text>
       </box>
     ),
-    { width: 12, height: 1, clock },
+    { width: 12, height: 1, clock, forwardEnvKeys: [], environment },
   )
   await app.renderOnce()
   return Object.assign(app, {
@@ -130,4 +130,27 @@ test("paints a static color and an explicit background", async () => {
   await using spinner = await mount(() => <spinner frames={["ab"]} color={RED} backgroundColor={GREEN} />)
   const span = spinner.captureSpans().lines[0]!.spans[0]!
   expect([span.text, span.fg.equals(RED), span.bg.equals(GREEN)]).toEqual(["ab", true, true])
+})
+
+test.each([
+  { name: "unicode", environment: { TERM_PROGRAM: "" }, width: 4 },
+  { name: "wcwidth", environment: { TERM_PROGRAM: "Apple_Terminal" }, width: 6 },
+])("preserves colored graphemes with the $name terminal width policy", async (item) => {
+  let node: SpinnerRenderable | undefined
+  await using spinner = await mount(
+    () => <spinner ref={(value) => (node = value)} frames={["a👍🏽b"]} color={(_, char) => (char === 0 ? RED : GREEN)} />,
+    item.environment,
+  )
+  expect(spinner.renderer.widthMethod).toBe(item.name)
+  expect(node?.width).toBe(item.width)
+  expect(spinner.captureCharFrame()).toStartWith("a👍🏽b|")
+  expect(
+    spinner
+      .captureSpans()
+      .lines[0]!.spans.slice(0, 2)
+      .map((span) => [span.text, span.fg.equals(GREEN)]),
+  ).toEqual([
+    ["a", false],
+    ["👍🏽b", true],
+  ])
 })

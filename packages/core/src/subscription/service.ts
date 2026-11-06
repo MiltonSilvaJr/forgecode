@@ -1,6 +1,8 @@
 export * as SubscriptionService from "./service.js"
 
-import { Context, Effect, Layer } from "effect"
+import { Clock, Context, Effect, Layer } from "effect"
+import { HttpClient } from "effect/http"
+import { httpClient } from "@opencode/util/effect/app-node-platform"
 import { SubscriptionAuth } from "@opencode/schema/subscription-auth"
 import { makeLocationNode } from "@opencode/util/effect/app-node"
 import { Config } from "../config.js"
@@ -14,6 +16,10 @@ import { SubscriptionConsent } from "./consent.js"
 import { SubscriptionNotice } from "./notice.js"
 import { SubscriptionResolver } from "./resolver.js"
 import { SubscriptionRedaction } from "./redaction.js"
+import { SubscriptionProbe } from "./probe.js"
+import { ClaudeIO } from "../plugin/provider/claude-agent/claude/io.js"
+import { ClaudeProbe } from "../plugin/provider/claude-agent/claude/probe.js"
+import { ClaudeQueryOptions } from "../plugin/provider/claude-agent/claude/query-options.js"
 import type { Adapter, LoginResult } from "./adapters/adapter.js"
 
 const adapters = [ClaudeCodeAdapter.claudeCode, CodexChatGPTAdapter.codexChatGPT, KimiCodeAdapter.kimiCode]
@@ -54,6 +60,13 @@ const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
     const bus = yield* Bus.Service
+    const http = yield* HttpClient.HttpClient
+    const context = yield* Effect.context<Config.Service | KV.Service | Integration.Service>()
+
+    const requireConsent = Effect.fnUntraced(function* (integrationID: string) {
+      if ((yield* SubscriptionConsent.status(integrationID, SubscriptionNotice.VERSION)) !== "acknowledged")
+        return yield* Effect.fail(fail("consent_required", `Accept the terms first: opencode auth login ${integrationID} --accept-tos`))
+    })
 
     const requireEnabled = Effect.fnUntraced(function* () {
       if (!(yield* flagEnabled()))
@@ -111,7 +124,7 @@ const layer = Layer.effect(
         const flag = yield* flagEnabled()
         const providers = yield* Effect.forEach(adapters, (adapter) => providerStatus(adapter, process.env))
         return SubscriptionAuth.Status.make({ enabled: flag, providers })
-      }),
+      }, Effect.provide(context)),
 
       login: Effect.fnUntraced(function* (input) {
         yield* requireEnabled()
@@ -136,17 +149,33 @@ const layer = Layer.effect(
           sourceKind: input.source ?? "native",
         })
         return result
-      }),
+      }, Effect.provide(context)),
 
       consent: Effect.fnUntraced(function* (integrationID, accept) {
         yield* requireEnabled()
         const adapter = yield* adapterFor(integrationID)
         if (accept) yield* SubscriptionConsent.acknowledge(adapter.integrationID, SubscriptionNotice.VERSION)
-      }),
+      }, Effect.provide(context)),
 
       refresh: Effect.fnUntraced(function* (integrationID) {
         yield* requireEnabled()
         const adapter = yield* adapterFor(integrationID)
+        yield* requireConsent(adapter.integrationID)
+        const integration = yield* Integration.Service
+        const connection = yield* integration.connection.active(Integration.ID.make(adapter.providerID))
+        if (connection?.type === "credential") {
+          // Reuse the shared credential lock, 5-minute window, 30-second deadline and atomic update.
+          const value = yield* integration.connection.resolve(connection).pipe(
+            Effect.mapError(() => fail("refresh_failed", `Refresh failed; the saved credential was preserved. Run opencode auth login ${adapter.integrationID}.`)),
+          )
+          if (value?.type === "oauth") {
+            const now = yield* Clock.currentTimeMillis
+            if (value.expires <= now)
+              return yield* Effect.fail(fail("refresh_failed", `OAuth refresh is unavailable. Run opencode auth login ${adapter.integrationID}.`))
+            yield* bus.publish(SubscriptionAuth.Event.Changed, { integrationID, action: "refresh", sourceKind: "store", expiresAt: value.expires })
+            return { state: "ready", expiresAt: value.expires }
+          }
+        }
         const report = yield* adapter.report(process.env)
         if (report.present && report.state === "ready")
           return { state: "ready", ...(report.expiresAt !== undefined ? { expiresAt: report.expiresAt } : {}) }
@@ -156,21 +185,58 @@ const layer = Layer.effect(
             `The ${adapter.integrationID} session is expired or missing. Run opencode auth login ${adapter.integrationID}.`,
           ),
         )
-      }),
+      }, Effect.provide(context)),
 
       test: Effect.fnUntraced(function* (integrationID, model) {
         yield* requireEnabled()
         const adapter = yield* adapterFor(integrationID)
-        const report = yield* adapter.report(process.env)
-        if (!report.present || report.state !== "ready")
-          return yield* Effect.fail(
-            fail("subscription_unavailable", `No ${adapter.integrationID} subscription session is available`),
+        yield* requireConsent(adapter.integrationID)
+        if (adapter.integrationID === "claude-code") {
+          const executable = ClaudeIO.real.which()
+          if (!executable) return yield* Effect.fail(fail("cli_missing", `Install Claude Code: ${ClaudeCodeAdapter.installUrl}`))
+          const started = yield* Clock.currentTimeMillis
+          const result = yield* ClaudeProbe.run(ClaudeQueryOptions.base({ executable, io: ClaudeIO.real, connection: {} })).pipe(
+            Effect.timeout("15 seconds"),
+            Effect.mapError(() => fail("transport_unavailable", "Claude Code probe failed. Run opencode auth login claude-code.")),
           )
-        const started = Date.now()
-        return { ok: true, latencyMs: Date.now() - started, ...(model !== undefined ? { model } : {}) }
-      }),
-    } as Interface)
+          if (!ClaudeProbe.isLoggedIn(result.account))
+            return yield* Effect.fail(fail("session_expired", "Claude Code is signed out. Run opencode auth login claude-code."))
+          const selected = model ?? result.models[0]?.value
+          if (!selected || !result.models.some((entry) => entry.value === selected))
+            return yield* Effect.fail(fail("transport_unavailable", "Claude Code did not report this model. Run opencode auth test claude-code --model <id>."))
+          return { ok: true, latencyMs: Math.max(0, (yield* Clock.currentTimeMillis) - started), model: selected }
+        }
+        const integration = yield* Integration.Service
+        const connection = yield* integration.connection.active(Integration.ID.make(adapter.providerID))
+        const managed = connection ? yield* integration.connection.resolve(connection).pipe(
+          Effect.mapError(() => fail("refresh_failed", `Credential resolution failed. Run opencode auth login ${adapter.integrationID}.`)),
+        ) : undefined
+        const config = yield* readConfig()
+        const resolved = managed ? undefined : yield* SubscriptionResolver.resolve({
+          integrationID,
+          // Codex's native token is intentionally not transferable. Never inspect it for inference.
+          sources: (yield* adapter.sources(process.env)).filter((source) => adapter.integrationID !== "codex-chatgpt" || source.kind === "api_key"),
+          order: config?.sources?.[integrationID],
+          fallbackApiKey: config?.fallback?.api_key ?? true,
+        })
+        const value = managed ?? (resolved?.source ? yield* resolved.source.acquire() : undefined)
+        if (!value || value.type === "external")
+          return yield* Effect.fail(fail("subscription_unavailable", `No usable credential. Run opencode auth login ${integrationID}${integrationID === "codex-chatgpt" ? " --source managed" : ""}.`))
+        if (value.type === "key" && !(config?.fallback?.api_key ?? true) && adapter.integrationID === "codex-chatgpt")
+          return yield* Effect.fail(fail("subscription_unavailable", "API key fallback is disabled. Run opencode auth login codex-chatgpt --source managed."))
+        if (value.type === "oauth" && adapter.integrationID === "codex-chatgpt" && value.methodID !== "chatgpt-token-sharing")
+          return yield* Effect.fail(fail("transport_unavailable", "This OAuth credential does not support token sharing. Run opencode auth login codex-chatgpt --source managed."))
+        const result = yield* SubscriptionProbe.http({
+          url: adapter.integrationID === "kimi-code" ? `${KimiCodeAdapter.baseURL}/messages` : "https://api.openai.com/v1/responses",
+          token: value.type === "key" ? value.key : value.access,
+          model: model ?? (adapter.integrationID === "kimi-code" ? "k3" : "gpt-5.5"),
+          protocol: adapter.integrationID === "kimi-code" ? "messages" : "responses",
+        }).pipe(Effect.provideService(HttpClient.HttpClient, http))
+        yield* bus.publish(SubscriptionAuth.Event.Changed, { integrationID, action: "probe", sourceKind: managed ? "store" : resolved?.resolution.source, outcome: "ok" })
+        return result
+      }, Effect.provide(context)),
+    })
   }),
 )
 
-export const node = makeLocationNode({ service: Service, layer, deps: [Config.node, KV.node, Bus.node, Integration.node] })
+export const node = makeLocationNode({ service: Service, layer, deps: [Config.node, KV.node, Bus.node, Integration.node, httpClient] })
