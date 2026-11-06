@@ -544,6 +544,35 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
         }),
       ],
     }),
+    Spec.make("squad", {
+      description: "Orchestrate multi-session squads",
+      commands: [
+        Spec.make("init", {
+          description: "Create a squad generation from a JSON config file",
+          globalFlags: ServerFlags,
+          params: {
+            generation: Flag.String("generation").pipe(
+              Flag.withDescription("Generation ID slug"),
+              Flag.optional,
+            ),
+            config: Flag.String("config").pipe(
+              Flag.withDescription("JSON config file declaring the sessions"),
+              Flag.optional,
+            ),
+            replace: Flag.Boolean("replace").pipe(
+              Flag.withDescription("Replace the active generation (requires --reason)"),
+              Flag.withDefault(false),
+            ),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Reason for --replace"), Flag.optional),
+            idempotencyKey: Flag.String("idempotency-key").pipe(
+              Flag.withDescription("Idempotency key (a retry with the same key is a no-op)"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+      ],
+    }),
     Spec.make("queue", {
       description: "Queue a message for a session's inbox",
       globalFlags: ServerFlags,
