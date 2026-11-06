@@ -19,6 +19,8 @@ export interface Facts {
   readonly lastTerminal?: number
   readonly lastDelivered?: number
   readonly lastEnqueued?: number
+  readonly claimed?: boolean
+  readonly claimSince?: number
 }
 
 export interface Thresholds {
@@ -42,24 +44,37 @@ const times = (events: ReadonlyArray<LogEvent>, match: (type: string) => boolean
  * Reads only the session's own durable clock and its execution and inbox events. Title, metadata and
  * `time.updated` never enter: renaming a session or a message claiming it is alive is not activity.
  */
-export const factsFrom = (info: Session.Info, events: ReadonlyArray<LogEvent>): Facts => ({
+export const factsFrom = (info: Session.Info, events: ReadonlyArray<LogEvent>, claim?: Claim): Facts => ({
   busy: info.time.busy === undefined ? undefined : DateTime.toEpochMillis(info.time.busy),
   idle: info.time.idle === undefined ? undefined : DateTime.toEpochMillis(info.time.idle),
   lastTerminal: times(events, (type) => terminals.has(type)),
   lastDelivered: times(events, (type) => type === "session.inbox.delivered"),
   lastEnqueued: times(events, (type) => type === "session.inbox.enqueued"),
+  claimed: claim !== undefined,
+  claimSince: claim?.since,
 })
 
 export const classify = (facts: Facts, now: number, thresholds: Thresholds): Squad.Liveness => {
   const running =
+    facts.claimed === true ||
+    (facts.busy !== undefined &&
+      (facts.idle === undefined || facts.busy > facts.idle) &&
+      (facts.lastTerminal === undefined || facts.lastTerminal < facts.busy))
+  const busyByClock =
     facts.busy !== undefined &&
     (facts.idle === undefined || facts.busy > facts.idle) &&
     (facts.lastTerminal === undefined || facts.lastTerminal < facts.busy)
+  const busySince = busyByClock ? facts.busy : facts.claimSince
+  const workingStale = running && busySince !== undefined && busySince < now - thresholds.staleAfter
+  const presumedDead =
+    workingStale && thresholds.deadAfter !== undefined && busySince! < now - thresholds.deadAfter
   const executionActivity = latest([facts.idle, facts.lastTerminal].filter((value) => value !== undefined))
   const lastActivity = latest([executionActivity, facts.lastDelivered].filter((value) => value !== undefined))
   const source: Squad.LivenessSource | undefined =
     lastActivity === undefined ? undefined : lastActivity === executionActivity ? "execution" : "inbox"
-  const verdict: Squad.LivenessVerdict = running
+  const verdict: Squad.LivenessVerdict = presumedDead
+    ? "presumed_dead"
+    : running
     ? "working"
     : lastActivity === undefined
       ? "unknown"
@@ -72,21 +87,26 @@ export const classify = (facts: Facts, now: number, thresholds: Thresholds): Squ
     ...(lastActivity === undefined ? {} : { lastActivity: DateTime.makeUnsafe(lastActivity) }),
     ...(facts.lastEnqueued === undefined ? {} : { sentAt: DateTime.makeUnsafe(facts.lastEnqueued) }),
     ...(source === undefined ? {} : { source }),
-    workingStale: running && facts.busy! < now - thresholds.staleAfter,
-    presumedDead: false,
+    workingStale,
+    presumedDead,
+    ...(presumedDead ? { cause: "presumed dead: execution in flight longer than dead_after, the claim is kept for explicit reconciliation" } : {}),
   })
 }
 
-export const measure = (info: Session.Info, events: ReadonlyArray<LogEvent>, thresholds: Thresholds, _claim?: Claim) =>
-  Clock.currentTimeMillis.pipe(Effect.map((now) => classify(factsFrom(info, events), now, thresholds)))
+export const measure = (info: Session.Info, events: ReadonlyArray<LogEvent>, thresholds: Thresholds, claim?: Claim) =>
+  Clock.currentTimeMillis.pipe(Effect.map((now) => classify(factsFrom(info, events, claim), now, thresholds)))
 
 const DefaultStaleAfter = Duration.toMillis(Duration.minutes(60))
+const DefaultDeadAfter = Duration.toMillis(Duration.hours(24))
 
-/** `stale_after` from `squad.liveness`, defaulting to 60 minutes. The schema already rejects a non-positive value. */
+/** `stale_after` (60 minutes) and `dead_after` (24 hours) from `squad.liveness`. The schema rejects invalid values. */
 export const thresholds = () =>
   Effect.gen(function* () {
     const config = yield* Config.Service
     const entries = yield* config.entries()
     const liveness = Config.latest(entries, "squad")?.liveness
-    return { staleAfter: liveness === undefined ? DefaultStaleAfter : Duration.toMillis(liveness.stale_after) } satisfies Thresholds
+    return {
+      staleAfter: liveness === undefined ? DefaultStaleAfter : Duration.toMillis(liveness.stale_after),
+      deadAfter: liveness === undefined ? DefaultDeadAfter : Duration.toMillis(liveness.dead_after),
+    } satisfies Thresholds
   })

@@ -125,6 +125,22 @@ describe("SquadStatus", () => {
     ),
   )
 
+  it.live("a claim kept past dead_after reads presumed_dead and status leaves the claim alone", () =>
+    scenario((world) =>
+      Effect.gen(function* () {
+        const now = Date.now()
+        world.seed("ses_a", model, [], { idle: now - 40 * hour, outcome: "interrupted" })
+        world.claims.set("ses_a", { since: now - 30 * hour })
+        const registry = yield* SquadRegistry.Service
+        yield* registry.init({ generation: "gen-1", sessions: [entry("A", "ses_a")] })
+        const report = yield* SquadStatus.status()
+        expect<unknown>(report.sessions[0]?.liveness.verdict).toBe("presumed_dead")
+        expect<unknown>(report.sessions[0]?.liveness.presumedDead).toBe(true)
+        expect<unknown>(world.claims.get("ses_a")?.since).toBe(now - 30 * hour)
+      }),
+    ),
+  )
+
   it.live("NFR-01: p95 of 28 runs over 20 sessions stays under 2s", () =>
     scenario((world) =>
       Effect.gen(function* () {

@@ -73,6 +73,7 @@ const sessionStatus = Effect.fn("SquadStatus.sessionStatus")(function* (
   const sessionID = row.session_id === null ? undefined : Session.ID.make(row.session_id)
   const info = sessionID === undefined ? undefined : yield* sessions.get(sessionID)
   const events = sessionID === undefined || info === undefined ? [] : yield* sessions.events(sessionID)
+  const claim = sessionID === undefined || info === undefined ? undefined : yield* sessions.claim(sessionID)
   const pending = sessionID === undefined || info === undefined ? [] : yield* channel.pending(sessionID)
   const measured =
     info === undefined
@@ -82,7 +83,7 @@ const sessionStatus = Effect.fn("SquadStatus.sessionStatus")(function* (
           workingStale: false,
           presumedDead: false,
         })
-      : yield* SquadLiveness.measure(info, events, thresholds)
+      : yield* SquadLiveness.measure(info, events, thresholds, claim)
   return Squad.SessionStatus.make({
     name: Squad.SessionName.make(row.name),
     role: row.role,

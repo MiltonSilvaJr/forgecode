@@ -27,6 +27,7 @@ export const fakeWorld = (options: WorldOptions = {}) => {
   const enqueues: SquadChannel.EnqueueInput[] = []
   const stored = new Map<string, Stored>()
   const pending = new Map<string, Pending[]>()
+  const claims = new Map<string, { since?: number }>()
   let failures = options.failEnqueues ?? 0
 
   const append = (sessionID: string, type: string, data: Record<string, unknown> = {}, created = Date.now()) => {
@@ -66,6 +67,7 @@ export const fakeWorld = (options: WorldOptions = {}) => {
           return created
         }),
       get: (sessionID) => Effect.sync(() => stored.get(sessionID)?.info),
+      claim: (sessionID) => Effect.sync(() => claims.get(sessionID)),
       events: (sessionID) =>
         Effect.sync(() =>
           (stored.get(sessionID)?.events ?? []).map((event) => ({
@@ -101,5 +103,5 @@ export const fakeWorld = (options: WorldOptions = {}) => {
     }),
   )
 
-  return { creates, enqueues, stored, pending, seed, append, sessionLayer, channelLayer }
+  return { creates, enqueues, stored, pending, claims, seed, append, sessionLayer, channelLayer }
 }
