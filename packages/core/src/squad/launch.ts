@@ -42,7 +42,7 @@ export const launch = Effect.fn("SquadLaunch.launch")(function* (input: LaunchIn
   const timeout = input.timeout ?? (yield* configuredTimeout())
   const exits = yield* Effect.forEach(rows, (row) => launchOne(row, { ...input, timeout }).pipe(Effect.exit))
   const failed = exits.find((exit) => exit._tag === "Failure")
-  if (failed) return yield* failed
+  if (failed) return yield* Effect.failCause(failed.cause)
   const generation = yield* registry.generation(active.id)
   const names = new Set(rows.map((row) => row.name))
   return generation!.sessions.filter((entry) => names.has(entry.name))

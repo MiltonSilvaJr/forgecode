@@ -190,6 +190,8 @@ import type {
   ExperimentalSquadPlanOutput,
   ExperimentalSquadSessionSendInput,
   ExperimentalSquadSessionSendOutput,
+  ExperimentalSquadSessionLaunchInput,
+  ExperimentalSquadSessionLaunchOutput,
   ExperimentalSquadBroadcastInput,
   ExperimentalSquadBroadcastOutput,
   ExperimentalSquadAuditInput,
@@ -1456,6 +1458,23 @@ export function make(options: ClientOptions) {
                   from: input["from"],
                   allowSelf: input["allowSelf"],
                   idempotencyKey: input["idempotencyKey"],
+                },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 404, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+          launch: (input: ExperimentalSquadSessionLaunchInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadSessionLaunchOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/squad/session/${encodeURIComponent(input.sessionRef)}/launch`,
+                body: {
+                  retry: input["retry"],
+                  reason: input["reason"],
+                  adopt: input["adopt"],
+                  timeout: input["timeout"],
                 },
                 successStatus: 200,
                 declaredStatuses: [400, 401, 403, 404, 409, 503],

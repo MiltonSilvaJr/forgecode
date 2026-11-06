@@ -47,6 +47,13 @@ const BroadcastInput = Schema.Struct({
   idempotencyKey: Schema.String.pipe(optional),
 }).annotate({ identifier: "Squad.BroadcastInput" })
 
+const LaunchInput = Schema.Struct({
+  retry: Schema.Boolean.pipe(optional),
+  reason: Schema.String.pipe(optional),
+  adopt: Session.ID.pipe(optional),
+  timeout: Schema.Int.pipe(optional).annotate({ description: "Verification timeout in milliseconds." }),
+}).annotate({ identifier: "Squad.LaunchInput" })
+
 export const SquadGroup = HttpApiGroup.make("server.squad")
   .add(
     HttpApiEndpoint.post("squad.generation.create", "/api/experimental/squad/generation", {
@@ -115,6 +122,21 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
         summary: "Send a message to a squad session",
         description:
           "Enqueue a message in a verified squad session's inbox and return the enqueue proof (message id and acceptance, never a read receipt). Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.session.launch", "/api/experimental/squad/session/:sessionRef/launch", {
+      params: { sessionRef: Squad.SessionRef },
+      payload: LaunchInput,
+      success: Schema.Struct({ data: Squad.SessionEntry }),
+      error: [InvalidRequestError, ForbiddenError, SessionNotFoundError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.session.launch",
+        summary: "Launch a squad session",
+        description:
+          "Create or adopt the session, admit the bootstrap marker and verify it by durable evidence (model, enqueued, delivered, execution started). A session that lacks evidence stays starting and the error names what is missing. Experimental: may change without compatibility guarantees.",
       }),
     ),
   )

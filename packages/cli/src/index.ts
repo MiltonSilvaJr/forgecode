@@ -98,6 +98,7 @@ const Handlers = Runtime.handlers(Commands, {
     plan: () => import("./commands/handlers/squad/plan"),
     send: () => import("./commands/handlers/squad/send"),
     broadcast: () => import("./commands/handlers/squad/broadcast"),
+    launch: () => import("./commands/handlers/squad/launch"),
     audit: {
       export: () => import("./commands/handlers/squad/audit-export"),
     },

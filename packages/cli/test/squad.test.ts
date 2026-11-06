@@ -148,6 +148,19 @@ describe("squad command", () => {
     for (const flag of ["--since", "--out", "--json"]) expect(result.stdout).toContain(flag)
   })
 
+  test("squad launch --help shows the launch flags", async () => {
+    const result = await cli(["squad", "launch", "--help"])
+    expect(result.exitCode).toBe(0)
+    for (const flag of ["--only", "--retry", "--reason", "--adopt", "--timeout", "--json"])
+      expect(result.stdout).toContain(flag)
+  })
+
+  test("launch --retry without --reason is a usage error before reaching the server", async () => {
+    const result = await cli(["squad", "launch", "--retry"])
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr).toContain("--reason")
+  })
+
   test("send rejects an invalid delivery before any effect", async () => {
     const result = await cli(["squad", "send", "--to", "ATLAS", "--message-file", "/nonexistent", "--delivery", "now"])
     expect(result.exitCode).toBe(2)

@@ -4511,6 +4511,16 @@ export type ExperimentalSquadSessionSendInput = {
 
 export type ExperimentalSquadSessionSendOutput = { data: SquadEnqueueProof }["data"]
 
+export type ExperimentalSquadSessionLaunchInput = {
+  readonly sessionRef: string | string
+  readonly retry?: boolean | undefined
+  readonly reason?: string | undefined
+  readonly adopt?: string | undefined
+  readonly timeout?: number | undefined
+}
+
+export type ExperimentalSquadSessionLaunchOutput = { data: SquadSessionEntry }["data"]
+
 export type ExperimentalSquadBroadcastInput = {
   readonly text: string
   readonly from?: string | undefined

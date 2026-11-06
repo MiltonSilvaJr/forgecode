@@ -604,6 +604,27 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
           },
         }),
+        Spec.make("launch", {
+          description: "Create or adopt the active generation's sessions and verify each by durable evidence",
+          globalFlags: ServerFlags,
+          params: {
+            only: Flag.String("only").pipe(Flag.withDescription("Launch only this session name"), Flag.optional),
+            retry: Flag.Boolean("retry").pipe(
+              Flag.withDescription("Retry a failed or starting session (requires --reason)"),
+              Flag.withDefault(false),
+            ),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Reason for --retry"), Flag.optional),
+            adopt: Flag.String("adopt").pipe(
+              Flag.withDescription("Adopt an existing session: name=ses_... (comma separated for several)"),
+              Flag.optional,
+            ),
+            timeout: Flag.String("timeout").pipe(
+              Flag.withDescription("Verification timeout in seconds (default: squad.launch.verify_timeout)"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
         Spec.make("audit", {
           description: "Inspect the append-only squad audit trail",
           commands: [

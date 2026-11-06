@@ -196,6 +196,8 @@ import type {
   ExperimentalSquadPlanOutput,
   ExperimentalSquadSessionSendInput,
   ExperimentalSquadSessionSendOutput,
+  ExperimentalSquadSessionLaunchInput,
+  ExperimentalSquadSessionLaunchOutput,
   ExperimentalSquadBroadcastInput,
   ExperimentalSquadBroadcastOutput,
   ExperimentalSquadAuditInput,
@@ -1396,6 +1398,18 @@ const EndpointExperimentalSquadSessionSend =
       ),
     )
 
+const EndpointExperimentalSquadSessionLaunch =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadSessionLaunchInput) =>
+    preserveEffect<ExperimentalSquadSessionLaunchOutput>()(
+      raw["squad.session.launch"]({
+        params: { sessionRef: input["sessionRef"] },
+        payload: { retry: input["retry"], reason: input["reason"], adopt: input["adopt"], timeout: input["timeout"] },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
 const EndpointExperimentalSquadBroadcast =
   (raw: RawClient["server.squad"]) => (input: ExperimentalSquadBroadcastInput) =>
     preserveEffect<ExperimentalSquadBroadcastOutput>()(
@@ -1422,7 +1436,11 @@ const EndpointExperimentalSquadAudit = (raw: RawClient["server.squad"]) => (inpu
 
 const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
   generation: { create: EndpointExperimentalSquadGenerationCreate(raw) },
-  session: { list: EndpointExperimentalSquadSessionList(raw), send: EndpointExperimentalSquadSessionSend(raw) },
+  session: {
+    list: EndpointExperimentalSquadSessionList(raw),
+    send: EndpointExperimentalSquadSessionSend(raw),
+    launch: EndpointExperimentalSquadSessionLaunch(raw),
+  },
   check: EndpointExperimentalSquadCheck(raw),
   plan: EndpointExperimentalSquadPlan(raw),
   broadcast: EndpointExperimentalSquadBroadcast(raw),

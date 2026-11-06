@@ -5,6 +5,7 @@ import { AbsolutePath } from "@opencode/core/schema"
 import { SquadAudit } from "@opencode/core/squad/audit"
 import { SquadBroadcast } from "@opencode/core/squad/broadcast"
 import { SquadCheck } from "@opencode/core/squad/check"
+import { SquadLaunch } from "@opencode/core/squad/launch"
 import { SquadPlan } from "@opencode/core/squad/plan"
 import { SquadRegistry } from "@opencode/core/squad/registry"
 import { SquadSend } from "@opencode/core/squad/send"
@@ -132,6 +133,24 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           )
           return { data: chain }
         }),
+      )
+      .handle("squad.session.launch", (ctx) =>
+        Effect.gen(function* () {
+          const registry = yield* SquadRegistry.Service
+          const target = yield* registry.resolve(ctx.params.sessionRef)
+          const launched = yield* SquadLaunch.launch({
+            only: target.name,
+            retry: ctx.payload.retry,
+            reason: ctx.payload.reason,
+            adopt: ctx.payload.adopt === undefined ? undefined : { [target.name]: ctx.payload.adopt },
+            timeout: ctx.payload.timeout,
+          })
+          return { data: launched[0]! }
+        }).pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(sendError(ctx.params.sessionRef)),
+        ),
       )
       .handle("squad.session.send", (ctx) =>
         SquadSend.send({ to: ctx.params.sessionRef, ...ctx.payload }).pipe(
