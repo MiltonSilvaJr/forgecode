@@ -39,6 +39,7 @@ const SendInput = Schema.Struct({
   from: Schema.String.pipe(optional),
   allowSelf: Schema.Boolean.pipe(optional),
   idempotencyKey: Schema.String.pipe(optional),
+  dispatch: Schema.String.pipe(optional),
 }).annotate({ identifier: "Squad.SendInput" })
 
 const BroadcastInput = Schema.Struct({
@@ -61,6 +62,7 @@ const DispatchCreateInput = Schema.Struct({
   exigidos: Schema.Array(Squad.Exigidos).pipe(optional),
   milestone: Schema.String.pipe(optional),
   from: Schema.String.pipe(optional),
+  send: Schema.Boolean.pipe(optional),
 }).annotate({ identifier: "Squad.DispatchCreateInput" })
 
 const ReleaseInput = Schema.Struct({

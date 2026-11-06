@@ -125,7 +125,7 @@ describe("squad command", () => {
   test("squad send --help shows the send flags", async () => {
     const result = await cli(["squad", "send", "--help"])
     expect(result.exitCode).toBe(0)
-    for (const flag of ["--to", "--session-id", "--message-file", "--delivery", "--idempotency-key", "--allow-self"])
+    for (const flag of ["--to", "--session-id", "--message-file", "--delivery", "--idempotency-key", "--allow-self", "--dispatch"])
       expect(result.stdout).toContain(flag)
   })
 
@@ -177,7 +177,7 @@ describe("squad command", () => {
   test("squad dispatch create --help shows the dispatch flags", async () => {
     const result = await cli(["squad", "dispatch", "create", "--help"])
     expect(result.exitCode).toBe(0)
-    for (const flag of ["--file", "--to", "--exigidos", "--json"]) expect(result.stdout).toContain(flag)
+    for (const flag of ["--file", "--to", "--exigidos", "--send", "--json"]) expect(result.stdout).toContain(flag)
   })
 
   test("dispatch create fails on a missing dispatch file before reaching the server", async () => {

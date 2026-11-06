@@ -924,6 +924,7 @@ export type SquadDispatch = {
   acceptedBy?: SquadSessionName
   createdAt: number
   warnings?: Array<string>
+  sent?: { messageID: SessionMessageID; at: number }
 }
 
 export type SquadSessionCheck = {
@@ -4545,6 +4546,7 @@ export type ExperimentalSquadSessionSendInput = {
   readonly from?: string | undefined
   readonly allowSelf?: boolean | undefined
   readonly idempotencyKey?: string | undefined
+  readonly dispatch?: string | undefined
 }
 
 export type ExperimentalSquadSessionSendOutput = { data: SquadEnqueueProof }["data"]
@@ -4574,6 +4576,7 @@ export type ExperimentalSquadDispatchCreateInput = {
   readonly exigidos?: ReadonlyArray<"jira" | "ci" | "merge" | "deploy" | "acceptance"> | undefined
   readonly milestone?: string | undefined
   readonly from?: string | undefined
+  readonly send?: boolean | undefined
 }
 
 export type ExperimentalSquadDispatchCreateOutput = { data: SquadDispatch }["data"]

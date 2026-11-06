@@ -39,6 +39,7 @@ const handler = Effect.fn("cli.squad.dispatch.create")(function* (
         ...dispatch.fields,
         owner: Option.getOrUndefined(input.to),
         exigidos,
+        send: input.send,
         from: process.env.OPENCODE_SESSION_ID,
       }),
     catch: (cause) => cause,

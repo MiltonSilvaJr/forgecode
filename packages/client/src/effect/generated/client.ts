@@ -1396,6 +1396,7 @@ const EndpointExperimentalSquadSessionSend =
           from: input["from"],
           allowSelf: input["allowSelf"],
           idempotencyKey: input["idempotencyKey"],
+          dispatch: input["dispatch"],
         },
       }).pipe(
         Effect.mapError(mapClientError),
@@ -1443,6 +1444,7 @@ const EndpointExperimentalSquadDispatchCreate =
           exigidos: input?.["exigidos"],
           milestone: input?.["milestone"],
           from: input?.["from"],
+          send: input?.["send"],
         },
       }).pipe(
         Effect.mapError(mapClientError),

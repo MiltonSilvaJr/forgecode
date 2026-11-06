@@ -80,11 +80,13 @@ export function formatDispatch(dispatch: {
   headOid?: string
   state: string
   warnings?: readonly string[]
+  sent?: { messageID: string }
 }) {
   return [
     `Dispatch ${dispatch.orqID} for ${dispatch.owner} (${dispatch.state}, validation ${dispatch.validation})`,
     `  base ${dispatch.baseOid ?? "unknown"} head ${dispatch.headOid ?? "unknown"}`,
     ...(dispatch.warnings ?? []).map((warning) => `  warning: ${warning}`),
+    ...(dispatch.sent ? [`  queued message ${dispatch.sent.messageID} for ${dispatch.owner}`] : []),
   ].join(EOL)
 }
 

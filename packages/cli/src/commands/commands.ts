@@ -640,6 +640,10 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
               Flag.withDescription("Allow sending to the calling session"),
               Flag.withDefault(false),
             ),
+            dispatch: Flag.String("dispatch").pipe(
+              Flag.withDescription("Dispatch id (ORQ-...): the target must own the dispatch's tree"),
+              Flag.optional,
+            ),
             json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
           },
         }),
@@ -655,6 +659,10 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
                   Flag.optional,
                 ),
                 to: Flag.String("to").pipe(Flag.withDescription("Owner session name in the active generation"), Flag.optional),
+                send: Flag.Boolean("send").pipe(
+                  Flag.withDescription("Also deliver the dispatch to its owner through the channel"),
+                  Flag.withDefault(false),
+                ),
                 exigidos: Flag.String("exigidos").pipe(
                   Flag.withDescription("Required stages, comma separated: jira,ci,merge,deploy,acceptance (default ci,merge,acceptance)"),
                   Flag.optional,

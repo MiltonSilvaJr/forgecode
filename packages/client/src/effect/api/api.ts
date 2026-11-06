@@ -2009,6 +2009,7 @@ export type ExperimentalSquadSessionSendInput = {
   readonly from?: string | undefined
   readonly allowSelf?: boolean | undefined
   readonly idempotencyKey?: string | undefined
+  readonly dispatch?: string | undefined
 }
 export type ExperimentalSquadSessionSendOutput = Squad.EnqueueProof
 export type ExperimentalSquadSessionSendOperation<E = never> = (
@@ -2044,6 +2045,7 @@ export type ExperimentalSquadDispatchCreateInput = {
   readonly exigidos?: ReadonlyArray<"jira" | "ci" | "merge" | "deploy" | "acceptance"> | undefined
   readonly milestone?: string | undefined
   readonly from?: string | undefined
+  readonly send?: boolean | undefined
 }
 export type ExperimentalSquadDispatchCreateOutput = Squad.Dispatch
 export type ExperimentalSquadDispatchCreateOperation<E = never> = (
