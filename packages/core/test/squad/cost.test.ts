@@ -80,35 +80,32 @@ describe("squad cost", () => {
 const day = 86_400_000
 
 const credentialFor = (expiresIn: number | undefined, squad: ConstructorParameters<typeof ConfigSquad.Info>[0] = { enabled: true }) =>
-  CredentialPresence.layer.pipe(
-    Layer.provide(
-      Layer.mergeAll(
-        Config.testLayer([
-          new Document({
-            type: "document",
-            info: Info.make({ squad: new ConfigSquad.Info(squad), subscription_auth: { enabled: true } }),
+  Layer.mergeAll(
+    CredentialPresence.layer,
+    Config.testLayer([
+      new Document({
+        type: "document",
+        info: Info.make({ squad: new ConfigSquad.Info(squad), subscription_auth: { enabled: true } }),
+      }),
+    ]),
+    Layer.mock(SubscriptionService.Service, {
+      status: () =>
+        Effect.succeed(
+          SubscriptionAuth.Status.make({
+            enabled: true,
+            providers: [
+              {
+                id: "deepseek",
+                state: "ready",
+                ...(expiresIn === undefined ? {} : { expiresAt: Date.now() + expiresIn }),
+              },
+            ],
           }),
-        ]),
-        Layer.mock(SubscriptionService.Service, {
-          status: () =>
-            Effect.succeed(
-              SubscriptionAuth.Status.make({
-                enabled: true,
-                providers: [
-                  {
-                    id: "deepseek",
-                    state: "ready",
-                    ...(expiresIn === undefined ? {} : { expiresAt: Date.now() + expiresIn }),
-                  },
-                ],
-              }),
-            ),
-        }),
-      ),
-    ),
+        ),
+    }),
   )
 
-const statusWith = (layer: Layer.Layer<CredentialPresence.Service>) =>
+const statusWith = (layer: ReturnType<typeof credentialFor>) =>
   Effect.gen(function* () {
     const credential = yield* CredentialPresence.Service
     return yield* credential.status("deepseek")

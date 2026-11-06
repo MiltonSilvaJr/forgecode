@@ -61,7 +61,7 @@ export const status = Effect.fn("SquadStatus.status")(function* () {
     generation: active ? Squad.GenerationID.make(active.id) : null,
     sessions,
     inboxPending: sessions.reduce((total, row) => total + row.inboxPending, 0),
-    cost: Squad.CostSnapshot.make({ unknown: true }),
+    cost: totalCost(sessions.map((row) => row.cost)),
     previous,
   })
 })
@@ -103,6 +103,29 @@ const sessionStatus = Effect.fn("SquadStatus.sessionStatus")(function* (
     state: row.state,
     liveness: Squad.Liveness.make({ ...measured, sessionState: row.state, ...(cause === "" ? {} : { cause }) }),
     inboxPending: pending.length,
-    cost: Squad.CostSnapshot.make({ unknown: true }),
+    cost: costOf(info),
   })
 })
+
+const costOf = (info: Session.Info | undefined) =>
+  info === undefined || (info.cost === 0 && info.tokens.input === 0 && info.tokens.output === 0)
+    ? Squad.CostSnapshot.make({ unknown: true })
+    : Squad.CostSnapshot.make({
+        cost: info.cost,
+        tokens: { input: Math.round(info.tokens.input), output: Math.round(info.tokens.output) },
+        unknown: false,
+      })
+
+/** Sum of the known sessions; `unknown` marks a total that is only a lower bound. */
+const totalCost = (rows: ReadonlyArray<Squad.CostSnapshot>) => {
+  const known = rows.filter((row) => !row.unknown)
+  if (rows.length > 0 && known.length === 0) return Squad.CostSnapshot.make({ unknown: true })
+  return Squad.CostSnapshot.make({
+    cost: known.reduce((total, row) => total + (row.cost ?? 0), 0),
+    tokens: {
+      input: known.reduce((total, row) => total + (row.tokens?.input ?? 0), 0),
+      output: known.reduce((total, row) => total + (row.tokens?.output ?? 0), 0),
+    },
+    unknown: known.length < rows.length,
+  })
+}

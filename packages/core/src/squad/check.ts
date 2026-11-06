@@ -72,7 +72,10 @@ const checkSession = (session: CheckSession) =>
       }
     }
 
-    const presence = (yield* credential.status(session.provider)).presence
+    const credentialStatus = yield* credential.status(session.provider)
+    const presence = credentialStatus.presence
+    if (credentialStatus.expiryWarn && credentialStatus.expiresAt !== undefined)
+      checks.push(item("credential", "warn", `credential expires at ${new Date(credentialStatus.expiresAt).toISOString()}`))
 
     return Squad.SessionCheck.make({
       name: Squad.SessionName.make(session.name),
