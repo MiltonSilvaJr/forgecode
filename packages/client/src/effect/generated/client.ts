@@ -213,6 +213,8 @@ import type {
   ExperimentalSquadGenerationCloseOutput,
   ExperimentalSquadTransitionInput,
   ExperimentalSquadTransitionOutput,
+  ExperimentalSquadActivateInput,
+  ExperimentalSquadActivateOutput,
   ExperimentalSquadDispatchCreateInput,
   ExperimentalSquadDispatchCreateOutput,
   ExperimentalSquadDispatchListOutput,
@@ -1539,6 +1541,15 @@ const EndpointExperimentalSquadTransition =
       ),
     )
 
+const EndpointExperimentalSquadActivate =
+  (raw: RawClient["server.squad"]) => (input?: ExperimentalSquadActivateInput) =>
+    preserveEffect<ExperimentalSquadActivateOutput>()(
+      raw["squad.activate"]({ payload: { generation: input?.["generation"] } }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
 const EndpointExperimentalSquadDispatchCreate =
   (raw: RawClient["server.squad"]) => (input?: ExperimentalSquadDispatchCreateInput) =>
     preserveEffect<ExperimentalSquadDispatchCreateOutput>()(
@@ -1609,6 +1620,7 @@ const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
   audit: EndpointExperimentalSquadAudit(raw),
   checkpoint: EndpointExperimentalSquadCheckpoint(raw),
   transition: EndpointExperimentalSquadTransition(raw),
+  activate: EndpointExperimentalSquadActivate(raw),
   dispatch: {
     create: EndpointExperimentalSquadDispatchCreate(raw),
     list: EndpointExperimentalSquadDispatchList(raw),

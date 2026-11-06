@@ -68,6 +68,9 @@ const TransitionInput = Schema.Struct({
   from: Squad.GenerationID,
   idempotencyKey: Schema.String.pipe(optional),
 }).annotate({ identifier: "Squad.TransitionInput" })
+const ActivateInput = Schema.Struct({
+  generation: Squad.GenerationID.pipe(optional),
+}).annotate({ identifier: "Squad.ActivateInput" })
 // Every field is optional on the wire so the core can answer with all the missing ones at once.
 const DispatchCreateInput = Schema.Struct({
   scope: Schema.String.pipe(optional),
@@ -317,6 +320,20 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
         summary: "Bind a closed generation to the active one",
         description:
           "Prove that the closed generation's receipt, session set and registry digest still match and bind it to the active generation. Repeating with the same target is a no-op; a different target is a conflict. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.activate", "/api/experimental/squad/activate", {
+      payload: ActivateInput,
+      success: Schema.Struct({ data: Squad.EnqueueProof }),
+      error: [InvalidRequestError, ForbiddenError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.activate",
+        summary: "Activate a squad generation",
+        description:
+          "Deliver the transfer message to the orchestrator once every session is verified and a transition receipt is bound to the generation. Only bootstrap and continuity are authorized: productive stays false. Repeating returns the same message id. Experimental: may change without compatibility guarantees.",
       }),
     ),
   )

@@ -100,6 +100,7 @@ const Handlers = Runtime.handlers(Commands, {
     checkpoint: () => import("./commands/handlers/squad/checkpoint"),
     close: () => import("./commands/handlers/squad/close"),
     transition: () => import("./commands/handlers/squad/transition"),
+    activate: () => import("./commands/handlers/squad/activate"),
     broadcast: () => import("./commands/handlers/squad/broadcast"),
     launch: () => import("./commands/handlers/squad/launch"),
     status: () => import("./commands/handlers/squad/status"),

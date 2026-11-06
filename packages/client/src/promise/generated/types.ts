@@ -4697,6 +4697,10 @@ export type ExperimentalSquadTransitionInput = { readonly from: string; readonly
 
 export type ExperimentalSquadTransitionOutput = { data: SquadTransitionReceipt }["data"]
 
+export type ExperimentalSquadActivateInput = { readonly generation?: string | undefined }
+
+export type ExperimentalSquadActivateOutput = { data: SquadEnqueueProof }["data"]
+
 export type ExperimentalSquadDispatchCreateInput = {
   readonly scope?: string | undefined
   readonly owner?: string | undefined

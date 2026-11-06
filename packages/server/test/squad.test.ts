@@ -55,6 +55,7 @@ it.live("forbids squad routes when the flag is off", () =>
         _tag: "ForbiddenError",
       })
       await expect(api.experimental.squad.transition({ from: "gen-1" })).rejects.toMatchObject({ _tag: "ForbiddenError" })
+      await expect(api.experimental.squad.activate()).rejects.toMatchObject({ _tag: "ForbiddenError" })
       await expect(api.experimental.squad.dispatch.create({})).rejects.toMatchObject({ _tag: "ForbiddenError" })
       await expect(api.experimental.squad.dispatch.list()).rejects.toMatchObject({ _tag: "ForbiddenError" })
       await expect(api.experimental.squad.release({ from: "A", to: "B", reason: "r" })).rejects.toMatchObject({
@@ -153,6 +154,8 @@ it.live("creates and lists a generation when the flag is on", () =>
       const bound = await api.experimental.squad.transition({ from: "gen-1" })
       expect(bound.targetGenerationID).toBe("gen-2")
       expect(bound.sourceRegistryDigest).toBe(receipt.sourceRegistryDigest)
+      await expect(api.experimental.squad.activate()).rejects.toMatchObject({ _tag: "ConflictError" })
+      await expect(api.experimental.squad.activate({ generation: "gen-1" })).rejects.toMatchObject({ _tag: "ConflictError" })
     })
   }),
 )

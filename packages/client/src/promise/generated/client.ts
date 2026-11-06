@@ -207,6 +207,8 @@ import type {
   ExperimentalSquadGenerationCloseOutput,
   ExperimentalSquadTransitionInput,
   ExperimentalSquadTransitionOutput,
+  ExperimentalSquadActivateInput,
+  ExperimentalSquadActivateOutput,
   ExperimentalSquadDispatchCreateInput,
   ExperimentalSquadDispatchCreateOutput,
   ExperimentalSquadDispatchListOutput,
@@ -1642,6 +1644,18 @@ export function make(options: ClientOptions) {
               method: "POST",
               path: `/api/experimental/squad/transition`,
               body: { from: input["from"], idempotencyKey: input["idempotencyKey"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        activate: (input?: ExperimentalSquadActivateInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadActivateOutput }>(
+            {
+              method: "POST",
+              path: `/api/experimental/squad/activate`,
+              body: { generation: input?.["generation"] },
               successStatus: 200,
               declaredStatuses: [400, 401, 403, 409, 503],
               empty: false,

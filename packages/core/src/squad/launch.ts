@@ -13,6 +13,7 @@ import { Database } from "../database/database.js"
 import { SquadAudit } from "./audit.js"
 import { SquadChannel } from "./channel.js"
 import { SquadEvidence } from "./evidence.js"
+import { SquadOwnership } from "./ownership.js"
 import { bootstrapPrompt, bootstrapSha256 } from "./plan.js"
 import { ConflictError, SessionNotFoundError, SquadRegistry } from "./registry.js"
 import { SquadSessionTable } from "./sql.js"
@@ -150,6 +151,12 @@ const advance = Effect.fn("SquadLaunch.advance")(function* (
     yield* patch(row, { last_error: reason })
     return yield* new ConflictError({ message: `session ${row.name} stays starting; ${reason}`, pendencies: [] })
   }
+  yield* SquadOwnership.acquireTree({
+    generationID: row.generation_id,
+    name: row.name,
+    directory: row.location.directory,
+    via: "launch",
+  }).pipe(Effect.tapError((error) => patch(row, { last_error: error.message })))
   yield* patch(row, { state: "verified", last_error: null })
 })
 
