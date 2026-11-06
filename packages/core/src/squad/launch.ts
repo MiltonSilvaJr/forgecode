@@ -1,6 +1,6 @@
 export * as SquadLaunch from "./launch.js"
 
-import { Duration, Effect } from "effect"
+import { Clock, Duration, Effect } from "effect"
 import { and, eq } from "drizzle-orm"
 import { Location } from "@opencode/schema/location"
 import { Model } from "@opencode/schema/model"
@@ -28,6 +28,7 @@ export interface LaunchInput {
 }
 
 const DefaultTimeout = 90_000
+const DefaultPollInterval = 500
 
 export const launch = Effect.fn("SquadLaunch.launch")(function* (input: LaunchInput) {
   const registry = yield* SquadRegistry.Service
@@ -118,7 +119,12 @@ const advance = Effect.fn("SquadLaunch.advance")(function* (
     })
 
   if (row.state === "verified") {
-    yield* verifyOnce(SessionSchema.ID.make(row.session_id!), row.adopted_at)
+    const report = yield* verifyOnce(SessionSchema.ID.make(row.session_id!), row.adopted_at)
+    if (report.missing.length > 0)
+      return yield* new ConflictError({
+        message: `session ${row.name} is verified but evidence is now missing: ${report.missing.join(", ")}`,
+        pendencies: [],
+      })
     return
   }
 
@@ -163,14 +169,28 @@ const advance = Effect.fn("SquadLaunch.advance")(function* (
       metadata: { squad: { marker } },
     })
     .pipe(Effect.tapError((error) => patch(row, { last_error: error.message })))
-  const missing = yield* verifyOnce(sessionID, started.adopted_at)
-  if (missing.length > 0) {
-    const reason = `evidence missing: ${missing.join(", ")}`
+  const deadline = (yield* Clock.currentTimeMillis) + input.timeout
+  const report = yield* verifyUntil(() => verifyOnce(sessionID, started.adopted_at), deadline, input.pollInterval ?? DefaultPollInterval)
+  if (report.missing.length > 0) {
+    const reason = report.modelMismatch ?? `evidence missing: ${report.missing.join(", ")}`
     yield* patch(row, { last_error: reason })
     return yield* new ConflictError({ message: `session ${row.name} stays starting; ${reason}`, pendencies: [] })
   }
   yield* patch(row, { state: "verified", last_error: null })
 })
+
+const verifyUntil = (
+  measure: () => ReturnType<typeof SquadEvidence.verify>,
+  deadline: number,
+  pollInterval: number,
+): ReturnType<typeof SquadEvidence.verify> =>
+  Effect.gen(function* () {
+    const report = yield* measure()
+    if (report.missing.length === 0 || report.modelMismatch !== undefined) return report
+    if ((yield* Clock.currentTimeMillis) >= deadline) return report
+    yield* Effect.sleep(pollInterval)
+    return yield* verifyUntil(measure, deadline, pollInterval)
+  })
 
 const launchKey = (row: SquadStore.SessionRow) => `launch:${row.generation_id}:${row.name}`
 
