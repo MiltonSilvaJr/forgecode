@@ -2,6 +2,7 @@ import { FileSystem } from "@opencode/core/filesystem"
 import { Location } from "@opencode/core/location"
 import { LocationServiceMap } from "@opencode/core/location-service-map"
 import { AbsolutePath } from "@opencode/core/schema"
+import { SquadCheck } from "@opencode/core/squad/check"
 import { SquadRegistry } from "@opencode/core/squad/registry"
 import { ConflictError, ForbiddenError, ServiceUnavailableError } from "@opencode/protocol/errors"
 import { Global } from "@opencode/util/global"
@@ -50,6 +51,27 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
             .generation(active.id)
             .pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
           return { data: { generation: generation!.id, sessions: generation!.sessions } }
+        }),
+      )
+      .handle("squad.check", () =>
+        Effect.gen(function* () {
+          const registry = yield* SquadRegistry.Service
+          const active = yield* registry.active().pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
+          if (!active) return yield* new ConflictError({ message: "no active generation" })
+          const generation = yield* registry
+            .generation(active.id)
+            .pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
+          const report = yield* SquadCheck.check({
+            sessions: generation!.sessions.map((entry) => ({
+              name: entry.name,
+              provider: entry.provider,
+              model: entry.model,
+              variant: entry.variant,
+              location: entry.location.directory,
+              branch: entry.branch,
+            })),
+          }).pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
+          return { data: report }
         }),
       )
   }),

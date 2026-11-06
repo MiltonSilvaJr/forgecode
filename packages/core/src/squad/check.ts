@@ -26,7 +26,7 @@ const requireEnabled = () =>
     if (Config.latest(entries, "squad")?.enabled !== true) return yield* new DisabledError()
   })
 
-const item = (check: string, verdict: Squad.CheckVerdict, reason?: string): Squad.CheckItem =>
+const item = (check: string, verdict: Squad.CheckVerdict, reason?: string) =>
   Squad.CheckItem.make({ check, verdict, ...(reason === undefined ? {} : { reason }) })
 
 const checkSession = (session: CheckSession) =>
@@ -35,7 +35,7 @@ const checkSession = (session: CheckSession) =>
     const git = yield* Git.Service
     const credential = yield* CredentialPresence.Service
 
-    const checks: Squad.CheckItem[] = []
+    const checks: (typeof Squad.CheckItem.Type)[] = []
 
     const configured =
       session.name !== "" && session.provider !== "" && session.model !== "" && session.location !== ""

@@ -186,6 +186,7 @@ import type {
   ExperimentalSquadGenerationCreateInput,
   ExperimentalSquadGenerationCreateOutput,
   ExperimentalSquadSessionListOutput,
+  ExperimentalSquadCheckOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1438,6 +1439,17 @@ export function make(options: ClientOptions) {
               requestOptions,
             ).then((value) => value.data),
         },
+        check: (requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadCheckOutput }>(
+            {
+              method: "GET",
+              path: `/api/experimental/squad/check`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
       },
       file: {
         write: (input: ExperimentalFileWriteInput, requestOptions?: RequestOptions) =>

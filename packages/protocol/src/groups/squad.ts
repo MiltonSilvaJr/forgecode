@@ -55,4 +55,17 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
       }),
     ),
   )
+  .add(
+    HttpApiEndpoint.get("squad.check", "/api/experimental/squad/check", {
+      success: Schema.Struct({ data: Squad.CheckReport }),
+      error: [ConflictError, ForbiddenError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.check",
+        summary: "Check the active generation's sessions",
+        description:
+          "Validate configuration, model, location, branch and credential presence for each session of the active squad generation. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
   .annotateMerge(OpenApi.annotations({ title: "squad" }))

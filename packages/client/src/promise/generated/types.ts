@@ -316,6 +316,8 @@ export type SquadRole = "orchestrator" | "worker"
 
 export type SquadSessionState = "creating" | "starting" | "verified" | "closed" | "failed"
 
+export type SquadCheckItem = { check: string; verdict: "ok" | "warn" | "fail"; reason?: string }
+
 export type PermissionID = string
 
 export type PermissionSource = { type: "tool"; messageID: string; id: string }
@@ -845,6 +847,12 @@ export type Project = {
   commands?: ProjectCommands
   time: ProjectTime
   sandboxes: Array<string>
+}
+
+export type SquadSessionCheck = {
+  name: SquadSessionName
+  checks: Array<SquadCheckItem>
+  credential: "present" | "absent" | "unknown"
 }
 
 export type PermissionRequest = {
@@ -2259,6 +2267,8 @@ export type CredentialValue = CredentialOAuth | CredentialKey | CredentialExtern
 export type ConnectionInfo = ConnectionCredentialInfo | ConnectionEnvInfo
 
 export type SubscriptionAuthStatus = { enabled: boolean; providers: Array<SubscriptionAuthStatusProvider> }
+
+export type SquadCheckReport = { sessions: Array<SquadSessionCheck> }
 
 export type PtyCreated = {
   id: EventID
@@ -4416,6 +4426,8 @@ export type ExperimentalSquadGenerationCreateOutput = { data: SquadGeneration }[
 export type ExperimentalSquadSessionListOutput = {
   data: { generation: SquadGenerationID; sessions: Array<SquadSessionEntry> }
 }["data"]
+
+export type ExperimentalSquadCheckOutput = { data: SquadCheckReport }["data"]
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 

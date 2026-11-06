@@ -571,6 +571,13 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
           },
         }),
+        Spec.make("check", {
+          description: "Validate the active generation's sessions without mutating anything",
+          globalFlags: ServerFlags,
+          params: {
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
       ],
     }),
     Spec.make("queue", {

@@ -47,10 +47,13 @@ const checkLayer = (options: {
   Layer.mergeAll(
     Config.testLayer(enabled),
     Layer.mock(Model.Service, { get: () => Effect.succeed(options.model) }),
-    Layer.mock(Git.Service, {
-      repo: { discover: () => Effect.succeed(options.repository) },
-      history: { branch: () => Effect.succeed(options.branch) },
-    }),
+    Layer.succeed(
+      Git.Service,
+      {
+        repo: { discover: () => Effect.succeed(options.repository) },
+        history: { branch: () => Effect.succeed(options.branch) },
+      } as unknown as Git.Interface,
+    ),
     options.credential ??
       Layer.succeed(
         CredentialPresence.Service,

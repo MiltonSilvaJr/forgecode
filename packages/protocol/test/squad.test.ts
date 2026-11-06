@@ -16,6 +16,7 @@ test("squad routes carry the canonical experimental.squad identifiers", () => {
   const required = [
     ["experimental.squad.generation.create", "POST", "/api/experimental/squad/generation"],
     ["experimental.squad.session.list", "GET", "/api/experimental/squad/session"],
+    ["experimental.squad.check", "GET", "/api/experimental/squad/check"],
   ] as const
   const offenders = required
     .filter(
