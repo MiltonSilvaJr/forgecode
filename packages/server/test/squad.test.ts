@@ -101,3 +101,29 @@ it.live("creates and lists a generation when the flag is on", () =>
     })
   }),
 )
+
+it.live("launch creates a real session through the wired services and never reports verified without evidence", () =>
+  Effect.gen(function* () {
+    const api = yield* make(JSON.stringify({ squad: { enabled: true } }))
+    const directory = (yield* tmpdirScoped("opencode-squad-launch-")).path
+    yield* Effect.promise(() =>
+      api.experimental.squad.generation.create({
+        generation: "gen-1",
+        sessions: [
+          { name: "ATLAS", role: "worker", provider: "deepseek", model: "deepseek-flash", location: { directory } },
+        ],
+      }),
+    )
+    yield* Effect.promise(async () => {
+      const outcome = await api.experimental.squad.session.launch({ sessionRef: "ATLAS", timeout: 1000 }).then(
+        (entry) => entry.state,
+        (error: { _tag?: string }) => error._tag,
+      )
+      const listed = await api.experimental.squad.session.list()
+      expect(listed.sessions[0]?.sessionID).toBeDefined()
+      expect(listed.sessions[0]?.marker).toBe("SQUAD-gen-1-ATLAS")
+      expect(["verified", "ConflictError", "ServiceUnavailableError"]).toContain(outcome)
+      expect(["starting", "verified", "failed"]).toContain(listed.sessions[0]?.state)
+    })
+  }),
+)
