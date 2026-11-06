@@ -1,11 +1,36 @@
 import type { SquadPanelDocument, SquadSessionStatus, SquadStage } from "@opencode/client"
 
 export function renderSessionLine(status: SquadSessionStatus): string {
-  return JSON.stringify(status)
+  const liveness = status.liveness
+  const parts = [
+    `${status.name} · ${status.role} · ${status.state}`,
+    `${status.provider}/${status.model}${status.variant ? `/${status.variant}` : ""}`,
+    `veredito: ${liveness.verdict}`,
+    `medido em ${formatInstant(liveness.measuredAt)}`,
+  ]
+  if (liveness.lastActivity !== undefined) parts.push(`última atividade em ${formatInstant(liveness.lastActivity)}`)
+  if (liveness.source !== undefined) parts.push(`origem: ${liveness.source}`)
+  if (liveness.workingStale) parts.push("workingStale")
+  if (liveness.presumedDead) parts.push("presumedDead")
+  if (liveness.cause !== undefined) parts.push(`causa: ${liveness.cause}`)
+  if (status.branch !== undefined) parts.push(`branch: ${status.branch}`)
+  if (status.inboxPending > 0) parts.push(`inbox: ${status.inboxPending}`)
+  return parts.join(" · ")
 }
 
 export function renderStageLine(key: string, stage: SquadStage, exigido: boolean): string {
-  return JSON.stringify({ key, stage, exigido })
+  const parts = [
+    `${key}: ${stage.status}`,
+    exigido ? "exigido" : "não exigido",
+    `origem: ${stage.source}`,
+  ]
+  if (stage.evidence) {
+    parts.push(`evidência ${stage.evidence.type}: ${stage.evidence.reference}`)
+    if (stage.evidence.at !== undefined) parts.push(`em ${formatInstant(stage.evidence.at)}`)
+  } else {
+    parts.push("sem evidência")
+  }
+  return parts.join(" · ")
 }
 
 export function formatInstant(ms: number): string {
