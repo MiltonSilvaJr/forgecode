@@ -1,8 +1,9 @@
 export * as SquadLiveness from "./liveness.js"
 
-import { Clock, DateTime, Effect } from "effect"
+import { Clock, DateTime, Duration, Effect } from "effect"
 import { Squad } from "@opencode/schema/squad"
 import type { Session } from "@opencode/schema/session"
+import { Config } from "../config.js"
 
 /** One durable event of a session's log, reduced to what liveness reads. */
 export interface LogEvent {
@@ -72,3 +73,14 @@ export const classify = (facts: Facts, now: number, thresholds: Thresholds): Squ
 
 export const measure = (info: Session.Info, events: ReadonlyArray<LogEvent>, thresholds: Thresholds) =>
   Clock.currentTimeMillis.pipe(Effect.map((now) => classify(factsFrom(info, events), now, thresholds)))
+
+const DefaultStaleAfter = Duration.toMillis(Duration.minutes(60))
+
+/** `stale_after` from `squad.liveness`, defaulting to 60 minutes. The schema already rejects a non-positive value. */
+export const thresholds = () =>
+  Effect.gen(function* () {
+    const config = yield* Config.Service
+    const entries = yield* config.entries()
+    const liveness = Config.latest(entries, "squad")?.liveness
+    return { staleAfter: liveness === undefined ? DefaultStaleAfter : Duration.toMillis(liveness.stale_after) } satisfies Thresholds
+  })
