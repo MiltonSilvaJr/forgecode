@@ -70,14 +70,42 @@ function describeError(error: unknown): string {
 export function useSquadBoard(port: SquadReadPort, options: SquadBoardOptions): SquadBoardHandle {
   const [state, setState] = createSignal<SquadBoardState>({ type: "loading" })
   let disposed = false
+  let inflight: Promise<void> | undefined
 
-  void port.panel().then((panel) => {
-    if (!disposed)
-      setState({ type: "ready", panel, panelError: null, liveness: null, livenessError: null, staleSince: null })
-  })
+  const refresh = (): Promise<void> => {
+    if (inflight) return inflight
+    const run = (async () => {
+      const [panel, liveness] = await Promise.allSettled([port.panel(), port.liveness()])
+      if (disposed) return
+      const prior = state().type === "ready" ? state() : undefined
+      if (!prior && panel.status === "rejected") {
+        const terminal = terminalState(panel.reason, options)
+        if (terminal) {
+          setState(terminal)
+          return
+        }
+      }
+      const failed = panel.status === "rejected" || liveness.status === "rejected"
+      setState({
+        type: "ready",
+        panel: panel.status === "fulfilled" ? panel.value : (prior?.panel ?? null),
+        panelError: panel.status === "rejected" ? describeError(panel.reason) : null,
+        liveness: liveness.status === "fulfilled" ? liveness.value : (prior?.liveness ?? null),
+        livenessError: liveness.status === "rejected" ? describeError(liveness.reason) : null,
+        staleSince: failed ? options.now() : null,
+      })
+    })()
+    inflight = run
+    void run.finally(() => {
+      if (inflight === run) inflight = undefined
+    })
+    return run
+  }
+
+  void refresh()
   onCleanup(() => {
     disposed = true
   })
 
-  return { state, refresh: async () => {} }
+  return { state, refresh }
 }
