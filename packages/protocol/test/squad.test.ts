@@ -43,3 +43,15 @@ test("squad routes carry the canonical experimental.squad identifiers", () => {
     .map(([identifier, method, path]) => `${identifier} ${method} ${path}`)
   expect(offenders).toEqual([])
 })
+
+test("the squad group only adds routes under /api/experimental/squad and none of them is stable", () => {
+  const squad = operations().filter((op) => op.path.startsWith("/api/experimental/squad"))
+  expect(squad.length).toBeGreaterThan(0)
+  expect(squad.filter((op) => !op.identifier.startsWith("experimental.squad."))).toEqual([])
+  expect(
+    operations()
+      .filter((op) => op.identifier.startsWith("experimental.squad.") && !op.path.startsWith("/api/experimental/squad/"))
+      .map((op) => op.identifier),
+  ).toEqual([])
+  expect(operations().filter((op) => /squad/iu.test(op.path) && !op.path.startsWith("/api/experimental/squad/"))).toEqual([])
+})
