@@ -131,8 +131,8 @@ describe("SquadTransition.close and a user interrupt (REQ-11)", () => {
       yield* Deferred.await(running)
 
       const activity = SquadActivity.layer.pipe(
-        Layer.provide(Layer.succeed(SessionExecution.Service, execution)),
         Layer.provideMerge(SquadChannel.sessionsLayer),
+        Layer.provide(Layer.succeed(SessionExecution.Service, execution)),
       )
       const closeWith = SquadTransition.close({ generation: "gen-1" }).pipe(Effect.provide(activity))
 

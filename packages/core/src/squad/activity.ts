@@ -1,13 +1,14 @@
 export * as SquadActivity from "./activity.js"
 
-import { Context, Effect, Layer } from "effect"
-import { DateTime } from "effect"
+import { Context, DateTime, Effect, Layer } from "effect"
 import { Session as SessionSchema } from "@opencode/schema/session"
-import { Session } from "../session.js"
-import { SessionExecution } from "../session/execution.js"
+import { SquadChannel } from "./channel.js"
 
 export interface Interface {
-  /** Whether the session has an execution in flight, or one a restart left claimed (`busy` newer than `idle`). */
+  /**
+   * Whether the session has an execution in flight, one the process still owns, or a durable claim a shutdown or
+   * crash left behind. Liveness reads the same claim, so `close` and `status` never disagree about it.
+   */
   readonly isActive: (sessionID: SessionSchema.ID) => Effect.Effect<boolean>
 }
 
@@ -16,11 +17,11 @@ export class Service extends Context.Service<Service, Interface>()("@opencode/Sq
 export const layer = Layer.effect(
   Service,
   Effect.gen(function* () {
-    const sessions = yield* Session.Service
-    const execution = yield* SessionExecution.Service
+    const sessions = yield* SquadChannel.SessionsService
     return Service.of({
       isActive: Effect.fn("SquadActivity.isActive")(function* (sessionID) {
-        if (yield* execution.isActive(sessionID)) return true
+        // An unreadable session is not proof of activity: `close` names what it can observe.
+        if ((yield* sessions.claim(sessionID).pipe(Effect.catch(() => Effect.succeed(undefined)))) !== undefined) return true
         const info = yield* sessions.get(sessionID).pipe(Effect.catch(() => Effect.succeed(undefined)))
         const busy = info?.time.busy
         if (busy === undefined) return false

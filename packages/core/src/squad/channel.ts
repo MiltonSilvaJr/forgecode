@@ -6,10 +6,8 @@ import { Session } from "@opencode/schema/session"
 import { SessionMessage } from "@opencode/schema/session-message"
 import type { SessionInbox } from "@opencode/schema/session-inbox"
 import { Session as Sessions } from "../session.js"
-import { eq } from "drizzle-orm"
-import { Database } from "../database/database.js"
-import { SessionTable } from "../session/sql.js"
 import { SessionExecution } from "../session/execution.js"
+import { SessionStore } from "../session/store.js"
 import type { Claim, LogEvent } from "./liveness.js"
 
 export class ChannelError extends Schema.TaggedError<ChannelError>()("ChannelError", {
@@ -90,7 +88,7 @@ export interface SessionsInterface {
   readonly get: (sessionID: Session.ID) => Effect.Effect<Session.Info | undefined, ChannelError>
   readonly events: (sessionID: Session.ID) => Effect.Effect<ReadonlyArray<LogEvent>, ChannelError>
   /** The durable execution claim, or `undefined` when the session holds none. Reading it never releases it. */
-  readonly claim: (sessionID: Session.ID) => Effect.Effect<Claim | undefined, ChannelError, Database.Service>
+  readonly claim: (sessionID: Session.ID) => Effect.Effect<Claim | undefined, ChannelError>
 }
 
 export class SessionsService extends Context.Service<SessionsService, SessionsInterface>()("@opencode/Squad/Sessions") {}
@@ -108,6 +106,8 @@ export const sessionsLayer = Layer.effect(
   SessionsService,
   Effect.gen(function* () {
     const sessions = yield* Sessions.Service
+    const store = yield* SessionStore.Service
+    const execution = yield* Effect.serviceOption(SessionExecution.Service)
     return SessionsService.of({
       create: Effect.fn("SquadSessions.create")(function* (input) {
         return yield* sessions
@@ -121,16 +121,9 @@ export const sessionsLayer = Layer.effect(
         )
       }),
       claim: Effect.fn("SquadSessions.claim")(function* (sessionID) {
-        const db = (yield* Database.Service).db
-        const row = yield* db
-          .select({ since: SessionTable.time_suspended })
-          .from(SessionTable)
-          .where(eq(SessionTable.id, sessionID))
-          .get()
-          .pipe(Effect.catch(() => rejected(`claim of session ${sessionID} is unavailable`)))
-        const execution = yield* Effect.serviceOption(SessionExecution.Service)
+        const since = yield* store.claimedAt(sessionID).pipe(Effect.catchDefect(() => rejected(`claim of session ${sessionID} is unavailable`)))
+        if (since !== undefined) return { since }
         const local = execution._tag === "Some" ? yield* execution.value.isActive(sessionID) : false
-        if (row?.since !== null && row?.since !== undefined) return { since: row.since }
         return local ? {} : undefined
       }),
       events: Effect.fn("SquadSessions.events")(function* (sessionID) {
