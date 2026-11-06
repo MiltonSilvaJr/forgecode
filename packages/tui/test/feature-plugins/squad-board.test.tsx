@@ -1,38 +1,11 @@
 /** @jsxImportSource @opentui/solid */
 import { expect, test } from "bun:test"
-import { RGBA } from "@opentui/core"
 import { testRender } from "@opentui/solid"
 import type { Plugin } from "@opencode/plugin/tui"
 import type { SquadLivenessReport, SquadPanelDocument } from "@opencode/client"
 import { Board } from "../../src/feature-plugins/squad/board"
 import { useSquadBoard, type SquadBoardHandle, type SquadReadPort } from "../../src/feature-plugins/squad/use-squad-board"
-import { T0, livenessReport, panelCard, panelDocument, sessionStatus } from "./squad-fixtures"
-
-function themeFixture() {
-  const color = RGBA.fromInts(200, 200, 200)
-  return {
-    text: {
-      base: color,
-      muted: color,
-      faint: color,
-      formfield: { focused: color },
-      feedback: { error: { base: color, muted: color }, warning: { base: color, muted: color } },
-    },
-    background: {
-      base: color,
-      raised: { base: color, high: color, max: color },
-      formfield: { focused: color },
-    },
-  }
-}
-
-export function contextFixture(version = "2.2.5-test"): Plugin.Context {
-  return {
-    theme: themeFixture(),
-    app: { version, channel: "test" },
-    keymap: { layer: () => {} },
-  } as unknown as Plugin.Context
-}
+import { T0, contextFixture, livenessReport, panelCard, panelDocument, sessionStatus } from "./squad-fixtures"
 
 function portFixture(options: {
   panel?: SquadPanelDocument

@@ -1,3 +1,5 @@
+import { RGBA } from "@opentui/core"
+import type { Plugin } from "@opencode/plugin/tui"
 import type { SquadLivenessReport, SquadPanelCard, SquadPanelDocument, SquadSessionStatus, SquadStage } from "@opencode/client"
 
 export const COLUNAS = ["backlog", "in_progress", "in_review", "blocked", "done"] as const
@@ -72,4 +74,31 @@ export function livenessReport(overrides: Partial<SquadLivenessReport> = {}): Sq
     previous: null,
     ...overrides,
   }
+}
+
+export function themeFixture() {
+  const color = RGBA.fromInts(200, 200, 200)
+  const focused = RGBA.fromInts(80, 80, 80)
+  return {
+    text: {
+      base: color,
+      muted: color,
+      faint: color,
+      formfield: { focused },
+      feedback: { error: { base: color, muted: color }, warning: { base: color, muted: color } },
+    },
+    background: {
+      base: color,
+      raised: { base: color, high: color, max: color },
+      formfield: { focused },
+    },
+  }
+}
+
+export function contextFixture(version = "2.2.5-test"): Plugin.Context {
+  return {
+    theme: themeFixture(),
+    app: { version, channel: "test" },
+    keymap: { layer: () => {} },
+  } as unknown as Plugin.Context
 }
