@@ -433,4 +433,28 @@ describe("squad command", () => {
     expect(output).toContain("A")
     expect(output).toContain("desconhecido: ci")
   })
+
+  test("demo-squad runs end to end on the fake provider without credentials", async () => {
+    const child = Bun.spawn([process.execPath, "run", path.join(cliDir, "script/demo-squad.ts")], {
+      cwd: cliDir,
+      env: { ...process.env, OPENCODE_PASSWORD: "" },
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stdout, exitCode] = await Promise.all([new Response(child.stdout).text(), child.exited])
+    expect(exitCode).toBe(0)
+    expect(stdout).toContain("session.inbox.delivered")
+    expect(stdout).toContain("transition demo-1 -> demo-2")
+  }, 60_000)
+
+  test("demo-squad fails readably when the server is unavailable", async () => {
+    const child = Bun.spawn([process.execPath, "run", path.join(cliDir, "script/demo-squad.ts"), "--server", "http://127.0.0.1:1"], {
+      cwd: cliDir,
+      stdout: "pipe",
+      stderr: "pipe",
+    })
+    const [stderr, exitCode] = await Promise.all([new Response(child.stderr).text(), child.exited])
+    expect(exitCode).toBe(1)
+    expect(stderr).toContain("demo-squad: cannot reach a server at http://127.0.0.1:1")
+  })
 })
