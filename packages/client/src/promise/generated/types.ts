@@ -4171,46 +4171,43 @@ export type ExperimentalIntegrationWellknownAddInput = {
 
 export type ExperimentalIntegrationWellknownAddOutput = void
 
-export type ExperimentalServerSubscriptionStatusInput = {
+export type ExperimentalSubscriptionStatusInput = {
   readonly location?: { readonly directory?: string | undefined } | undefined
 }
 
-export type ExperimentalServerSubscriptionStatusOutput = { location: LocationPublicRef; data: SubscriptionAuthStatus }
+export type ExperimentalSubscriptionStatusOutput = { location: LocationPublicRef; data: SubscriptionAuthStatus }
 
-export type ExperimentalServerSubscriptionLoginInput = {
+export type ExperimentalSubscriptionLoginInput = {
   readonly integrationID: string
   readonly location?: { readonly directory?: string | undefined } | undefined
   readonly source?: "managed" | "native" | undefined
   readonly accept: boolean
 }
 
-export type ExperimentalServerSubscriptionLoginOutput = { location: LocationPublicRef; data: SubscriptionLoginResponse }
+export type ExperimentalSubscriptionLoginOutput = { location: LocationPublicRef; data: SubscriptionLoginResponse }
 
-export type ExperimentalServerSubscriptionConsentInput = {
+export type ExperimentalSubscriptionConsentInput = {
   readonly integrationID: string
   readonly location?: { readonly directory?: string | undefined } | undefined
   readonly accept: boolean
 }
 
-export type ExperimentalServerSubscriptionConsentOutput = void
+export type ExperimentalSubscriptionConsentOutput = void
 
-export type ExperimentalServerSubscriptionRefreshInput = {
+export type ExperimentalSubscriptionRefreshInput = {
   readonly integrationID: string
   readonly location?: { readonly directory?: string | undefined } | undefined
 }
 
-export type ExperimentalServerSubscriptionRefreshOutput = {
-  location: LocationPublicRef
-  data: SubscriptionRefreshResponse
-}
+export type ExperimentalSubscriptionRefreshOutput = { location: LocationPublicRef; data: SubscriptionRefreshResponse }
 
-export type ExperimentalServerSubscriptionTestInput = {
+export type ExperimentalSubscriptionTestInput = {
   readonly integrationID: string
   readonly location?: { readonly directory?: string | undefined } | undefined
   readonly model?: string | undefined
 }
 
-export type ExperimentalServerSubscriptionTestOutput = { location: LocationPublicRef; data: SubscriptionTestResponse }
+export type ExperimentalSubscriptionTestOutput = { location: LocationPublicRef; data: SubscriptionTestResponse }
 
 export type McpListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 
@@ -5064,36 +5061,6 @@ export type IntegrationWellknownAddInput = ExperimentalIntegrationWellknownAddIn
 
 /** @deprecated Use `ExperimentalIntegrationWellknownAddOutput`. Removed in the next minor. */
 export type IntegrationWellknownAddOutput = ExperimentalIntegrationWellknownAddOutput
-
-/** @deprecated Use `ExperimentalServerSubscriptionStatusInput`. Removed in the next minor. */
-export type ServerSubscriptionStatusInput = ExperimentalServerSubscriptionStatusInput
-
-/** @deprecated Use `ExperimentalServerSubscriptionStatusOutput`. Removed in the next minor. */
-export type ServerSubscriptionStatusOutput = ExperimentalServerSubscriptionStatusOutput
-
-/** @deprecated Use `ExperimentalServerSubscriptionLoginInput`. Removed in the next minor. */
-export type ServerSubscriptionLoginInput = ExperimentalServerSubscriptionLoginInput
-
-/** @deprecated Use `ExperimentalServerSubscriptionLoginOutput`. Removed in the next minor. */
-export type ServerSubscriptionLoginOutput = ExperimentalServerSubscriptionLoginOutput
-
-/** @deprecated Use `ExperimentalServerSubscriptionConsentInput`. Removed in the next minor. */
-export type ServerSubscriptionConsentInput = ExperimentalServerSubscriptionConsentInput
-
-/** @deprecated Use `ExperimentalServerSubscriptionConsentOutput`. Removed in the next minor. */
-export type ServerSubscriptionConsentOutput = ExperimentalServerSubscriptionConsentOutput
-
-/** @deprecated Use `ExperimentalServerSubscriptionRefreshInput`. Removed in the next minor. */
-export type ServerSubscriptionRefreshInput = ExperimentalServerSubscriptionRefreshInput
-
-/** @deprecated Use `ExperimentalServerSubscriptionRefreshOutput`. Removed in the next minor. */
-export type ServerSubscriptionRefreshOutput = ExperimentalServerSubscriptionRefreshOutput
-
-/** @deprecated Use `ExperimentalServerSubscriptionTestInput`. Removed in the next minor. */
-export type ServerSubscriptionTestInput = ExperimentalServerSubscriptionTestInput
-
-/** @deprecated Use `ExperimentalServerSubscriptionTestOutput`. Removed in the next minor. */
-export type ServerSubscriptionTestOutput = ExperimentalServerSubscriptionTestOutput
 
 /** @deprecated Use `ExperimentalMcpAddInput`. Removed in the next minor. */
 export type McpAddInput = ExperimentalMcpAddInput

@@ -19,7 +19,7 @@ export default Runtime.handler(Commands.commands.auth.commands.refresh, (input) 
 const refresh = Effect.fn("cli.auth.refresh")(function* (target: string) {
   const client = yield* createClient()
   const response = yield* request((signal) =>
-    client.experimental["server.subscription"].refresh({ integrationID: target, location }, { signal }),
+    client.experimental.subscription.refresh({ integrationID: target, location }, { signal }),
   )
   const { state, expiresAt } = response.data
   process.stdout.write(`state: ${state}${expiresAt !== undefined ? ` (expires ${expiresAt})` : ""}` + EOL)

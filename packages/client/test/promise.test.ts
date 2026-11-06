@@ -57,6 +57,7 @@ test("exposes every standard HTTP API group", () => {
     "generate",
     "voice",
     "integration",
+    "subscription",
     "mcp",
     "file",
     "persistentPty",
@@ -68,6 +69,7 @@ test("exposes every standard HTTP API group", () => {
     "usage",
     "config",
   ])
+  expect(Object.keys(client.experimental.subscription)).toEqual(["status", "login", "consent", "refresh", "test"])
   expect(Object.keys(client.experimental.job)).toEqual(["list"])
   expect(Object.keys(client.experimental.session)).toEqual([
     "stats",

@@ -14,7 +14,9 @@ import { OpenCode as PromiseOpenCode } from "../src/promise/index"
 
 // The pre-experimental paths stay until the next minor.
 const aliases = (omitEndpoints: ReadonlySet<string>) =>
-  compile(ClientApi, { groupNames, omitEndpoints, namespace: clientNamespace, aliases: true }).aliases ?? []
+  (compile(ClientApi, { groupNames, omitEndpoints, namespace: clientNamespace, aliases: true }).aliases ?? []).filter(
+    (alias) => alias.fromGroup !== "subscription",
+  )
 
 const at = (root: unknown, path: ReadonlyArray<string>) =>
   path.reduce<unknown>((parent, key) => (parent as Record<string, unknown> | undefined)?.[key], root)
@@ -30,7 +32,9 @@ const expectSameFunctions = (client: unknown, list: ReturnType<typeof aliases>) 
 }
 
 test("every Promise client alias is the same function as its client.experimental path", () => {
-  expectSameFunctions(PromiseOpenCode.make({ baseUrl: "http://localhost:3000" }), aliases(promiseOmitEndpoints))
+  const client = PromiseOpenCode.make({ baseUrl: "http://localhost:3000" })
+  expect("subscription" in client).toBe(false)
+  expectSameFunctions(client, aliases(promiseOmitEndpoints))
 })
 
 test("every Effect client alias is the same function as its client.experimental path", async () => {
@@ -41,5 +45,6 @@ test("every Effect client alias is the same function as its client.experimental 
     ),
     Effect.runPromise,
   )
+  expect("subscription" in client).toBe(false)
   expectSameFunctions(client, aliases(effectOmitEndpoints))
 })

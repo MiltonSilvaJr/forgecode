@@ -53,18 +53,27 @@ import { Workspace } from "@opencode/schema/workspace"
 import { Effect, Schema } from "effect"
 import { fileURLToPath } from "url"
 
-const promiseContract = compile(ClientApi, {
+const promiseCompiled = compile(ClientApi, {
   groupNames,
   omitEndpoints: promiseOmitEndpoints,
   namespace: clientNamespace,
   aliases: true,
 })
-const effectContract = compile(ClientApi, {
+const effectCompiled = compile(ClientApi, {
   groupNames,
   omitEndpoints: effectOmitEndpoints,
   namespace: clientNamespace,
   aliases: true,
 })
+// Subscription routes are new experimental APIs, not moved stable SDK methods.
+const promiseContract = {
+  ...promiseCompiled,
+  aliases: promiseCompiled.aliases?.filter((alias) => alias.fromGroup !== "subscription"),
+}
+const effectContract = {
+  ...effectCompiled,
+  aliases: effectCompiled.aliases?.filter((alias) => alias.fromGroup !== "subscription"),
+}
 const effectTypeReferences = [
   ...namespaceTypes("Agent", "@opencode/schema/agent", Agent),
   ...namespaceTypes("Artifact", "@opencode/schema/artifact", Artifact),

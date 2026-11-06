@@ -152,16 +152,16 @@ import type {
   IntegrationCommandCancelOutput,
   ExperimentalIntegrationWellknownAddInput,
   ExperimentalIntegrationWellknownAddOutput,
-  ExperimentalServerSubscriptionStatusInput,
-  ExperimentalServerSubscriptionStatusOutput,
-  ExperimentalServerSubscriptionLoginInput,
-  ExperimentalServerSubscriptionLoginOutput,
-  ExperimentalServerSubscriptionConsentInput,
-  ExperimentalServerSubscriptionConsentOutput,
-  ExperimentalServerSubscriptionRefreshInput,
-  ExperimentalServerSubscriptionRefreshOutput,
-  ExperimentalServerSubscriptionTestInput,
-  ExperimentalServerSubscriptionTestOutput,
+  ExperimentalSubscriptionStatusInput,
+  ExperimentalSubscriptionStatusOutput,
+  ExperimentalSubscriptionLoginInput,
+  ExperimentalSubscriptionLoginOutput,
+  ExperimentalSubscriptionConsentInput,
+  ExperimentalSubscriptionConsentOutput,
+  ExperimentalSubscriptionRefreshInput,
+  ExperimentalSubscriptionRefreshOutput,
+  ExperimentalSubscriptionTestInput,
+  ExperimentalSubscriptionTestOutput,
   McpListInput,
   McpListOutput,
   McpResourceCatalogInput,
@@ -1142,15 +1142,15 @@ const adaptGroupExperimentalIntegration = (raw: RawClient["server.integration"])
   wellknown: { add: EndpointExperimentalIntegrationWellknownAdd(raw) },
 })
 
-const EndpointExperimentalServerSubscriptionStatus =
-  (raw: RawClient["server.subscription"]) => (input?: ExperimentalServerSubscriptionStatusInput) =>
-    preserveEffect<ExperimentalServerSubscriptionStatusOutput>()(
+const EndpointExperimentalSubscriptionStatus =
+  (raw: RawClient["server.subscription"]) => (input?: ExperimentalSubscriptionStatusInput) =>
+    preserveEffect<ExperimentalSubscriptionStatusOutput>()(
       raw["subscription.status"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError)),
     )
 
-const EndpointExperimentalServerSubscriptionLogin =
-  (raw: RawClient["server.subscription"]) => (input: ExperimentalServerSubscriptionLoginInput) =>
-    preserveEffect<ExperimentalServerSubscriptionLoginOutput>()(
+const EndpointExperimentalSubscriptionLogin =
+  (raw: RawClient["server.subscription"]) => (input: ExperimentalSubscriptionLoginInput) =>
+    preserveEffect<ExperimentalSubscriptionLoginOutput>()(
       raw["subscription.login"]({
         params: { integrationID: input["integrationID"] },
         query: { location: input["location"] },
@@ -1158,9 +1158,9 @@ const EndpointExperimentalServerSubscriptionLogin =
       }).pipe(Effect.mapError(mapClientError)),
     )
 
-const EndpointExperimentalServerSubscriptionConsent =
-  (raw: RawClient["server.subscription"]) => (input: ExperimentalServerSubscriptionConsentInput) =>
-    preserveEffect<ExperimentalServerSubscriptionConsentOutput>()(
+const EndpointExperimentalSubscriptionConsent =
+  (raw: RawClient["server.subscription"]) => (input: ExperimentalSubscriptionConsentInput) =>
+    preserveEffect<ExperimentalSubscriptionConsentOutput>()(
       raw["subscription.consent"]({
         params: { integrationID: input["integrationID"] },
         query: { location: input["location"] },
@@ -1168,18 +1168,18 @@ const EndpointExperimentalServerSubscriptionConsent =
       }).pipe(Effect.mapError(mapClientError)),
     )
 
-const EndpointExperimentalServerSubscriptionRefresh =
-  (raw: RawClient["server.subscription"]) => (input: ExperimentalServerSubscriptionRefreshInput) =>
-    preserveEffect<ExperimentalServerSubscriptionRefreshOutput>()(
+const EndpointExperimentalSubscriptionRefresh =
+  (raw: RawClient["server.subscription"]) => (input: ExperimentalSubscriptionRefreshInput) =>
+    preserveEffect<ExperimentalSubscriptionRefreshOutput>()(
       raw["subscription.refresh"]({
         params: { integrationID: input["integrationID"] },
         query: { location: input["location"] },
       }).pipe(Effect.mapError(mapClientError)),
     )
 
-const EndpointExperimentalServerSubscriptionTest =
-  (raw: RawClient["server.subscription"]) => (input: ExperimentalServerSubscriptionTestInput) =>
-    preserveEffect<ExperimentalServerSubscriptionTestOutput>()(
+const EndpointExperimentalSubscriptionTest =
+  (raw: RawClient["server.subscription"]) => (input: ExperimentalSubscriptionTestInput) =>
+    preserveEffect<ExperimentalSubscriptionTestOutput>()(
       raw["subscription.test"]({
         params: { integrationID: input["integrationID"] },
         query: { location: input["location"] },
@@ -1187,12 +1187,12 @@ const EndpointExperimentalServerSubscriptionTest =
       }).pipe(Effect.mapError(mapClientError)),
     )
 
-const adaptGroupExperimentalServerSubscription = (raw: RawClient["server.subscription"]) => ({
-  status: EndpointExperimentalServerSubscriptionStatus(raw),
-  login: EndpointExperimentalServerSubscriptionLogin(raw),
-  consent: EndpointExperimentalServerSubscriptionConsent(raw),
-  refresh: EndpointExperimentalServerSubscriptionRefresh(raw),
-  test: EndpointExperimentalServerSubscriptionTest(raw),
+const adaptGroupExperimentalSubscription = (raw: RawClient["server.subscription"]) => ({
+  status: EndpointExperimentalSubscriptionStatus(raw),
+  login: EndpointExperimentalSubscriptionLogin(raw),
+  consent: EndpointExperimentalSubscriptionConsent(raw),
+  refresh: EndpointExperimentalSubscriptionRefresh(raw),
+  test: EndpointExperimentalSubscriptionTest(raw),
 })
 
 const EndpointMcpList = (raw: RawClient["server.mcp"]) => (input?: McpListInput) =>
@@ -2037,7 +2037,7 @@ const adaptClient = (raw: RawClient) => {
       generate: adaptGroupExperimentalGenerate(raw["server.generate"]),
       voice: adaptGroupExperimentalVoice(raw["server.voice"]),
       integration: adaptGroupExperimentalIntegration(raw["server.integration"]),
-      "server.subscription": adaptGroupExperimentalServerSubscription(raw["server.subscription"]),
+      subscription: adaptGroupExperimentalSubscription(raw["server.subscription"]),
       mcp: adaptGroupExperimentalMcp(raw["server.mcp"]),
       file: adaptGroupExperimentalFile(raw["server.fs"]),
       migration: adaptGroupExperimentalMigration(raw["server.migration"]),
@@ -2119,19 +2119,6 @@ const adaptClient = (raw: RawClient) => {
         /** @deprecated Use `client.experimental.integration.wellknown.add`. Removed in the next minor. */
         add: client.experimental.integration.wellknown.add,
       },
-    },
-    /** @deprecated Use `client.experimental.server.subscription`. Removed in the next minor. */
-    "server.subscription": {
-      /** @deprecated Use `client.experimental.server.subscription.status`. Removed in the next minor. */
-      status: client.experimental["server.subscription"].status,
-      /** @deprecated Use `client.experimental.server.subscription.login`. Removed in the next minor. */
-      login: client.experimental["server.subscription"].login,
-      /** @deprecated Use `client.experimental.server.subscription.consent`. Removed in the next minor. */
-      consent: client.experimental["server.subscription"].consent,
-      /** @deprecated Use `client.experimental.server.subscription.refresh`. Removed in the next minor. */
-      refresh: client.experimental["server.subscription"].refresh,
-      /** @deprecated Use `client.experimental.server.subscription.test`. Removed in the next minor. */
-      test: client.experimental["server.subscription"].test,
     },
     mcp: {
       ...client.mcp,
