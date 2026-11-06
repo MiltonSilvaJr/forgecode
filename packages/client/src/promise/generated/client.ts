@@ -197,6 +197,8 @@ import type {
   ExperimentalSquadDispatchCreateInput,
   ExperimentalSquadDispatchCreateOutput,
   ExperimentalSquadDispatchListOutput,
+  ExperimentalSquadReleaseInput,
+  ExperimentalSquadReleaseOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1555,6 +1557,18 @@ export function make(options: ClientOptions) {
               requestOptions,
             ).then((value) => value.data),
         },
+        release: (input: ExperimentalSquadReleaseInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadReleaseOutput }>(
+            {
+              method: "POST",
+              path: `/api/experimental/squad/release`,
+              body: { from: input["from"], to: input["to"], reason: input["reason"], actor: input["actor"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
       },
       file: {
         write: (input: ExperimentalFileWriteInput, requestOptions?: RequestOptions) =>

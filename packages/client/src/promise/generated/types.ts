@@ -318,6 +318,8 @@ export type SquadSessionState = "creating" | "starting" | "verified" | "closed" 
 
 export type SquadCheckItem = { check: string; verdict: "ok" | "warn" | "fail"; reason?: string }
 
+export type SquadReleaseReceipt = { released: string; to: string; trees: number; checkpointSha256: string }
+
 export type PermissionID = string
 
 export type PermissionSource = { type: "tool"; messageID: string; id: string }
@@ -4569,6 +4571,15 @@ export type ExperimentalSquadDispatchCreateInput = {
 export type ExperimentalSquadDispatchCreateOutput = { data: SquadDispatch }["data"]
 
 export type ExperimentalSquadDispatchListOutput = { data: Array<SquadDispatch> }["data"]
+
+export type ExperimentalSquadReleaseInput = {
+  readonly from: string
+  readonly to: string
+  readonly reason: string
+  readonly actor?: string | undefined
+}
+
+export type ExperimentalSquadReleaseOutput = { data: SquadReleaseReceipt }["data"]
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 

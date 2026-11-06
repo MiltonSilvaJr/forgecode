@@ -671,6 +671,16 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             }),
           ],
         }),
+        Spec.make("release", {
+          description: "Hand the trees owned by one squad session to another (requires the owner's checkpoint)",
+          globalFlags: ServerFlags,
+          params: {
+            from: Flag.String("from").pipe(Flag.withDescription("Current owner session name"), Flag.optional),
+            to: Flag.String("to").pipe(Flag.withDescription("New owner session name in the active generation"), Flag.optional),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Reason for the handover"), Flag.optional),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
       ],
     }),
     Spec.make("queue", {

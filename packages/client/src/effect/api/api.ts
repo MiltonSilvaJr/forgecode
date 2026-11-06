@@ -2056,6 +2056,22 @@ export type ExperimentalSquadDispatchListOperation<E = never> = () => Effect.Eff
   E
 >
 
+export type ExperimentalSquadReleaseInput = {
+  readonly from: string
+  readonly to: string
+  readonly reason: string
+  readonly actor?: string | undefined
+}
+export type ExperimentalSquadReleaseOutput = {
+  readonly released: string
+  readonly to: string
+  readonly trees: number
+  readonly checkpointSha256: string
+}
+export type ExperimentalSquadReleaseOperation<E = never> = (
+  input: ExperimentalSquadReleaseInput,
+) => Effect.Effect<ExperimentalSquadReleaseOutput, E>
+
 export interface ExperimentalSquadApi<E = never> {
   readonly generation: { readonly create: ExperimentalSquadGenerationCreateOperation<E> }
   readonly session: {
@@ -2070,6 +2086,7 @@ export interface ExperimentalSquadApi<E = never> {
     readonly create: ExperimentalSquadDispatchCreateOperation<E>
     readonly list: ExperimentalSquadDispatchListOperation<E>
   }
+  readonly release: ExperimentalSquadReleaseOperation<E>
 }
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }

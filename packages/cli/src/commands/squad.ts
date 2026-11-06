@@ -87,3 +87,7 @@ export function formatDispatch(dispatch: {
     ...(dispatch.warnings ?? []).map((warning) => `  warning: ${warning}`),
   ].join(EOL)
 }
+
+export function formatRelease(receipt: { released: string; to: string; trees: number; checkpointSha256: string }) {
+  return `Released ${receipt.trees} tree(s) from ${receipt.released} to ${receipt.to} (checkpoint sha256 ${receipt.checkpointSha256})`
+}

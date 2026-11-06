@@ -203,6 +203,8 @@ import type {
   ExperimentalSquadDispatchCreateInput,
   ExperimentalSquadDispatchCreateOutput,
   ExperimentalSquadDispatchListOutput,
+  ExperimentalSquadReleaseInput,
+  ExperimentalSquadReleaseOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1454,6 +1456,16 @@ const EndpointExperimentalSquadDispatchList = (raw: RawClient["server.squad"]) =
     ),
   )
 
+const EndpointExperimentalSquadRelease = (raw: RawClient["server.squad"]) => (input: ExperimentalSquadReleaseInput) =>
+  preserveEffect<ExperimentalSquadReleaseOutput>()(
+    raw["squad.release"]({
+      payload: { from: input["from"], to: input["to"], reason: input["reason"], actor: input["actor"] },
+    }).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
 const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
   generation: { create: EndpointExperimentalSquadGenerationCreate(raw) },
   session: { list: EndpointExperimentalSquadSessionList(raw), send: EndpointExperimentalSquadSessionSend(raw) },
@@ -1462,6 +1474,7 @@ const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
   broadcast: EndpointExperimentalSquadBroadcast(raw),
   audit: EndpointExperimentalSquadAudit(raw),
   dispatch: { create: EndpointExperimentalSquadDispatchCreate(raw), list: EndpointExperimentalSquadDispatchList(raw) },
+  release: EndpointExperimentalSquadRelease(raw),
 })
 
 const EndpointFormList = (raw: RawClient["server.form"]) => (input?: FormListInput) =>

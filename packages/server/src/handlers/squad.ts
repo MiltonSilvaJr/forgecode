@@ -6,6 +6,7 @@ import { SquadAudit } from "@opencode/core/squad/audit"
 import { SquadBroadcast } from "@opencode/core/squad/broadcast"
 import { SquadCheck } from "@opencode/core/squad/check"
 import { SquadDispatch } from "@opencode/core/squad/dispatch"
+import { SquadOwnership } from "@opencode/core/squad/ownership"
 import { SquadPlan } from "@opencode/core/squad/plan"
 import { SquadRegistry } from "@opencode/core/squad/registry"
 import { SquadSend } from "@opencode/core/squad/send"
@@ -154,6 +155,14 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
       )
       .handle("squad.dispatch.list", () =>
         SquadDispatch.list().pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(squadError),
+          Effect.map((data) => ({ data })),
+        ),
+      )
+      .handle("squad.release", (ctx) =>
+        SquadOwnership.release({ from: ctx.payload.from, to: ctx.payload.to, reason: ctx.payload.reason, actor: ctx.payload.actor }).pipe(
           Effect.provide(services),
           catchMissingGlobal,
           Effect.mapError(squadError),

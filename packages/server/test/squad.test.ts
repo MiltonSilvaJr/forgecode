@@ -50,6 +50,9 @@ it.live("forbids squad routes when the flag is off", () =>
       await expect(api.experimental.squad.broadcast({ text: "go" })).rejects.toMatchObject({ _tag: "ForbiddenError" })
       await expect(api.experimental.squad.dispatch.create({})).rejects.toMatchObject({ _tag: "ForbiddenError" })
       await expect(api.experimental.squad.dispatch.list()).rejects.toMatchObject({ _tag: "ForbiddenError" })
+      await expect(api.experimental.squad.release({ from: "A", to: "B", reason: "r" })).rejects.toMatchObject({
+        _tag: "ForbiddenError",
+      })
     })
   }),
 )
@@ -71,6 +74,9 @@ it.live("creates and lists a generation when the flag is on", () =>
         _tag: "InvalidRequestError",
       })
       expect(await api.experimental.squad.dispatch.list()).toEqual([])
+      await expect(api.experimental.squad.release({ from: "ATLAS", to: "ATLAS", reason: "r" })).rejects.toMatchObject({
+        _tag: "ConflictError",
+      })
       const report = await api.experimental.squad.broadcast({ text: "go", from: "ATLAS" })
       expect(report.results).toEqual([])
       const trail = await api.experimental.squad.audit()

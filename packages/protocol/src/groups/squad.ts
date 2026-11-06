@@ -62,6 +62,20 @@ const DispatchCreateInput = Schema.Struct({
   from: Schema.String.pipe(optional),
 }).annotate({ identifier: "Squad.DispatchCreateInput" })
 
+const ReleaseInput = Schema.Struct({
+  from: Schema.String,
+  to: Schema.String,
+  reason: Schema.String,
+  actor: Schema.String.pipe(optional),
+}).annotate({ identifier: "Squad.ReleaseInput" })
+
+const ReleaseReceipt = Schema.Struct({
+  released: Schema.String,
+  to: Schema.String,
+  trees: Schema.Int,
+  checkpointSha256: Schema.String,
+}).annotate({ identifier: "Squad.ReleaseReceipt" })
+
 export const SquadGroup = HttpApiGroup.make("server.squad")
   .add(
     HttpApiEndpoint.post("squad.generation.create", "/api/experimental/squad/generation", {
@@ -184,6 +198,20 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
         identifier: "experimental.squad.dispatch.list",
         summary: "List squad dispatches",
         description: "List the dispatches of the active generation. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.release", "/api/experimental/squad/release", {
+      payload: ReleaseInput,
+      success: Schema.Struct({ data: ReleaseReceipt }),
+      error: [InvalidRequestError, ForbiddenError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.release",
+        summary: "Release a tree to another squad session",
+        description:
+          "Hand the trees owned by one session to another. Requires the current owner's persisted checkpoint to match its hash, and records the hash in the audit trail. Experimental: may change without compatibility guarantees.",
       }),
     ),
   )

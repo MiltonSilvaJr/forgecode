@@ -6,7 +6,7 @@ import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
 import { it } from "../../core/test/lib/effect"
-import { formatDispatch, formatEnqueue, readDispatchFile, readMessageFile } from "../src/commands/squad"
+import { formatDispatch, formatEnqueue, formatRelease, readDispatchFile, readMessageFile } from "../src/commands/squad"
 
 const cliDir = path.join(import.meta.dir, "..")
 
@@ -200,5 +200,20 @@ describe("squad command", () => {
     expect(output).toContain("ORQ-gen-1-001")
     expect(output).toContain("base unknown head unknown")
     expect(output).toContain("warning: head missing")
+  })
+
+  test("squad release --help shows the release flags and requires them before reaching the server", async () => {
+    const help = await cli(["squad", "release", "--help"])
+    expect(help.exitCode).toBe(0)
+    for (const flag of ["--from", "--to", "--reason", "--json"]) expect(help.stdout).toContain(flag)
+    const missing = await cli(["squad", "release", "--from", "ATLAS"])
+    expect(missing.exitCode).toBe(2)
+    expect(missing.stderr).toContain("--reason")
+  })
+
+  test("the release output names both owners and the checkpoint hash", () => {
+    const output = formatRelease({ released: "ATLAS", to: "NOVA", trees: 1, checkpointSha256: "abc" })
+    expect(output).toContain("from ATLAS to NOVA")
+    expect(output).toContain("abc")
   })
 })
