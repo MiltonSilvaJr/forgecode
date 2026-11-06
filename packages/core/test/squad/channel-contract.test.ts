@@ -39,7 +39,7 @@ const locations = makeGlobalNode({
     Effect.gen(function* () {
       const bus = yield* Bus.Service
       return yield* LayerMap.make(
-        () =>
+        (_ref: Location.Ref) =>
           // oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
           Layer.mergeAll(
             Config.testLayer([]),
