@@ -8,6 +8,7 @@ import { Database } from "../database/database.js"
 import { Git } from "../git.js"
 import { AbsolutePath } from "../schema.js"
 import { SquadAudit } from "./audit.js"
+import { SquadSend } from "./send.js"
 import { requireEnabled } from "./guard.js"
 import { InvalidInputError } from "./invalid.js"
 import { ConflictError } from "./registry.js"
@@ -112,6 +113,11 @@ export const create = Effect.fn("SquadDispatch.create")(function* (input: Create
   const ownerSession = yield* store.sessionByName(db, generation.id, owner)
   if (!ownerSession)
     return yield* new ConflictError({ message: `owner ${owner} is not a session of generation ${generation.id}`, pendencies: [] })
+  if (input.send && (ownerSession.state !== "verified" || ownerSession.session_id === null))
+    return yield* new ConflictError({
+      message: `owner ${owner} is ${ownerSession.state}, not verified; run squad launch first`,
+      pendencies: [],
+    })
   if (!headSyntax.test(head))
     return yield* new InvalidInputError({ message: `head ${head} is not a valid branch name`, missing: [] })
   if (base.startsWith("-"))
@@ -178,8 +184,41 @@ export const create = Effect.fn("SquadDispatch.create")(function* (input: Create
     actor: input.actor ?? "operator",
     detail: `${row.orq_id} base=${baseOid ?? "unknown"} head=${headOid ?? "unknown"} validation=${validation}`,
   })
-  return toDispatch(row, warnings)
+  const created = toDispatch(row, warnings)
+  if (!input.send) return created
+  const proof = yield* SquadSend.send({
+    to: owner,
+    text: message(created),
+    from: input.actor,
+    dispatch: row.orq_id,
+  }).pipe(
+    Effect.mapError(
+      (error) =>
+        new ConflictError({
+          message: `dispatch ${row.orq_id} was created but not delivered: ${(error as { message?: string }).message ?? "send failed"}; resend with squad send --dispatch ${row.orq_id}`,
+          pendencies: [],
+        }),
+    ),
+  )
+  return Squad.Dispatch.make({ ...created, sent: { messageID: proof.messageID, at: proof.at } })
 })
+
+/** The text a dispatch is delivered as: every field the owner needs to act without asking back. */
+export const message = (dispatch: Squad.Dispatch) =>
+  [
+    `DISPATCH ${dispatch.orqID}`,
+    `Scope: ${dispatch.scope}`,
+    `Owner: ${dispatch.owner}`,
+    `Base: ${dispatch.base}${dispatch.baseOid ? ` (${dispatch.baseOid})` : ""}`,
+    `Head: ${dispatch.head}${dispatch.headOid ? ` (${dispatch.headOid})` : ""}`,
+    `DoR: ${dispatch.dor}`,
+    `DoD: ${dispatch.dod}`,
+    `Proof: ${dispatch.proof}`,
+    `Exclusions:`,
+    ...dispatch.exclusions.map((entry) => `- ${entry}`),
+    `Milestone: ${dispatch.milestone}`,
+    `Required stages: ${dispatch.exigidos.join(", ")}`,
+  ].join("\n")
 
 export const list = Effect.fn("SquadDispatch.list")(function* () {
   yield* requireEnabled()

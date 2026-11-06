@@ -6,6 +6,7 @@ import { Config } from "@opencode/core/config"
 import { Database } from "@opencode/core/database/database"
 import { Git } from "@opencode/core/git"
 import { SquadAudit } from "@opencode/core/squad/audit"
+import { SquadChannel } from "@opencode/core/squad/channel"
 import { SquadDispatch } from "@opencode/core/squad/dispatch"
 import { SquadRegistry } from "@opencode/core/squad/registry"
 import { SquadDispatchTable } from "@opencode/core/squad/sql"
@@ -56,10 +57,17 @@ const layer = (directory: string) =>
     SquadRegistry.layer,
     SquadStore.layer,
     SquadAudit.layer,
+    unusedChannel,
     git,
     Database.layer({ path: path.join(directory, "opencode.db") }).pipe(Layer.provide(globalFor(directory))),
     Config.testLayer(enabled),
   )
+
+// These tests never ask for delivery.
+const unusedChannel = Layer.succeed(
+  SquadChannel.Service,
+  SquadChannel.Service.of({ enqueue: () => Effect.die("unexpected enqueue"), pending: () => Effect.succeed([]) }),
+)
 
 const it = testEffect(Layer.empty)
 
