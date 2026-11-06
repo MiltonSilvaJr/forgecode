@@ -604,6 +604,20 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
           },
         }),
+        Spec.make("audit", {
+          description: "Inspect the append-only squad audit trail",
+          commands: [
+            Spec.make("export", {
+              description: "Write the audit lines to a file and print the chain digest",
+              globalFlags: ServerFlags,
+              params: {
+                since: Flag.String("since").pipe(Flag.withDescription("ISO instant to start from"), Flag.optional),
+                out: Flag.String("out").pipe(Flag.withDescription("File to write the lines to (JSON lines)"), Flag.optional),
+                json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+              },
+            }),
+          ],
+        }),
         Spec.make("send", {
           description: "Enqueue a message in a squad session's inbox (proof of enqueue, never of reading)",
           globalFlags: ServerFlags,

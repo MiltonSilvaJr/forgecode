@@ -2327,6 +2327,12 @@ export type ConnectionInfo = ConnectionCredentialInfo | ConnectionEnvInfo
 
 export type SubscriptionAuthStatus = { enabled: boolean; providers: Array<SubscriptionAuthStatusProvider> }
 
+export type SquadAuditChain = {
+  entries: Array<SquadAuditEntry>
+  digest: string
+  integrity: "integrity_ok" | "integrity_broken"
+}
+
 export type SquadBroadcastReport = { results: Array<SquadBroadcastResult> }
 
 export type SquadCheckReport = { sessions: Array<SquadSessionCheck> }
@@ -4516,7 +4522,7 @@ export type ExperimentalSquadBroadcastOutput = { data: SquadBroadcastReport }["d
 
 export type ExperimentalSquadAuditInput = { readonly since?: string | undefined }
 
-export type ExperimentalSquadAuditOutput = { data: Array<SquadAuditEntry> }["data"]
+export type ExperimentalSquadAuditOutput = { data: SquadAuditChain }["data"]
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 

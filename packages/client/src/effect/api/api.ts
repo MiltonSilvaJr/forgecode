@@ -2027,7 +2027,7 @@ export type ExperimentalSquadBroadcastOperation<E = never> = (
 ) => Effect.Effect<ExperimentalSquadBroadcastOutput, E>
 
 export type ExperimentalSquadAuditInput = { readonly since?: string | undefined }
-export type ExperimentalSquadAuditOutput = ReadonlyArray<Squad.AuditEntry>
+export type ExperimentalSquadAuditOutput = Squad.AuditChain
 export type ExperimentalSquadAuditOperation<E = never> = (
   input?: ExperimentalSquadAuditInput,
 ) => Effect.Effect<ExperimentalSquadAuditOutput, E>

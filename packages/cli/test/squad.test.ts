@@ -89,7 +89,7 @@ describe("squad command", () => {
     }),
   )
 
-  it.live("--json reports errors as {error:{code,message,details}}", () =>
+  it.live("--json reports errors as {error:{code,message,details}}; audit export writes its file", () =>
     Effect.gen(function* () {
       const server = yield* ServerProcess.start<never, never>(serverOptions(false))
       const url = HttpServer.formatAddress(server.address)
@@ -105,6 +105,20 @@ describe("squad command", () => {
       expect(parsed.error.code).toBe("ForbiddenError")
       expect(parsed.error.message).toContain("squad.enabled is false")
       expect(parsed.error).toHaveProperty("details")
+
+      // The audit export writes the lines to --out and prints the chain digest.
+      const enabledServer = yield* ServerProcess.start<never, never>(serverOptions(true))
+      const enabledUrl = HttpServer.formatAddress(enabledServer.address)
+      const dir = yield* Effect.promise(() => fs.mkdtemp(path.join(os.tmpdir(), "squad-audit-")))
+      const out = path.join(dir, "audit.jsonl")
+      const exported = yield* Effect.promise(() =>
+        cli(["squad", "audit", "export", "--out", out, "--json", "--server", enabledUrl], { OPENCODE_PASSWORD: "secret" }),
+      )
+      expect(exported.exitCode).toBe(0)
+      const summary = JSON.parse(exported.stdout) as { lines: number; digest: string; integrity: string }
+      expect(summary.integrity).toBe("integrity_ok")
+      expect(summary.digest).toMatch(/^[0-9a-f]{64}$/u)
+      expect(yield* Effect.promise(() => fs.readFile(out, "utf8"))).toBe("")
     }),
   )
 
@@ -126,6 +140,12 @@ describe("squad command", () => {
     const result = await cli(["squad", "broadcast", "--message-file", "/nonexistent/message.txt"])
     expect(result.exitCode).toBe(1)
     expect(result.stderr).toContain("cannot read message file")
+  })
+
+  test("squad audit export --help shows the export flags", async () => {
+    const result = await cli(["squad", "audit", "export", "--help"])
+    expect(result.exitCode).toBe(0)
+    for (const flag of ["--since", "--out", "--json"]) expect(result.stdout).toContain(flag)
   })
 
   test("send rejects an invalid delivery before any effect", async () => {

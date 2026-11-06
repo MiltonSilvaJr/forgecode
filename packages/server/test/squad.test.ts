@@ -68,7 +68,9 @@ it.live("creates and lists a generation when the flag is on", () =>
       const report = await api.experimental.squad.broadcast({ text: "go", from: "ATLAS" })
       expect(report.results).toEqual([])
       const trail = await api.experimental.squad.audit()
-      expect(trail.map((entry) => [entry.kind, entry.result, entry.target])).toEqual([["send", "failed", "GHOST"]])
+      expect(trail.entries.map((entry) => [entry.kind, entry.result, entry.target])).toEqual([["send", "failed", "GHOST"]])
+      expect(trail.integrity).toBe("integrity_ok")
+      expect(trail.digest).toMatch(/^[0-9a-f]{64}$/u)
       await expect(api.experimental.squad.audit({ since: "not-a-date" })).rejects.toMatchObject({
         _tag: "InvalidRequestError",
       })

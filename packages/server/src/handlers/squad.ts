@@ -119,17 +119,18 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
       )
       .handle("squad.audit", (ctx) =>
         Effect.gen(function* () {
-          const audit = yield* SquadAudit.Service
           const registry = yield* SquadRegistry.Service
           const since = ctx.query.since === undefined ? undefined : Date.parse(ctx.query.since)
           if (since !== undefined && Number.isNaN(since))
             return yield* new InvalidRequestError({ message: "since must be an ISO instant", field: "since" })
           // Reading the trail is gated by the same flag as every squad route.
           yield* registry.countActive().pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
-          const entries = yield* audit
-            .list(since === undefined ? undefined : { since })
-            .pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
-          return { data: entries }
+          const chain = yield* SquadAudit.chain(since === undefined ? undefined : { since }).pipe(
+            Effect.provide(services),
+            catchMissingGlobal,
+            Effect.mapError(squadError),
+          )
+          return { data: chain }
         }),
       )
       .handle("squad.session.send", (ctx) =>
