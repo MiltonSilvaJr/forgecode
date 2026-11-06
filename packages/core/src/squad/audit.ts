@@ -144,8 +144,44 @@ export const layer = Layer.succeed(
   }),
 )
 
+const entryRow = (entry: Squad.AuditEntry): Row => ({
+  id: entry.id,
+  at: DateTime.toEpochMillis(entry.at),
+  kind: entry.kind,
+  generation_id: entry.generation ?? null,
+  target: entry.target,
+  session_id: entry.sessionID ?? null,
+  message_id: entry.messageID ?? null,
+  message_sha256: entry.messageSha256 ?? null,
+  delivery: entry.delivery ?? null,
+  result: entry.result,
+  idempotency_key: entry.idempotencyKey ?? null,
+  actor: entry.actor,
+  prev_hash: entry.prevHash,
+  detail: entry.detail ?? null,
+})
+
+const verify = (entries: ReadonlyArray<Squad.AuditEntry>): Squad.AuditIntegrity => {
+  const linked = entries.every((entry, index) => {
+    const previous = entries[index - 1]
+    if (previous) return entry.prevHash === rowHash(entryRow(previous))
+    // A window that starts mid-chain cannot check its first link; only the true first line can.
+    return entry.id !== 1 || entry.prevHash === GENESIS
+  })
+  return linked ? "integrity_ok" : "integrity_broken"
+}
+
+/**
+ * The lines in order, the digest of their recomputed hashes and whether each line still names the hash of
+ * its predecessor. A third party that holds an earlier digest detects any later edit, including to the last
+ * line, which no successor vouches for.
+ */
 export const chain = Effect.fn("SquadAudit.chain")(function* (filter?: { since?: number }) {
   const audit = yield* Service
   const entries = yield* audit.list(filter)
-  return Squad.AuditChain.make({ entries, digest: "", integrity: "integrity_broken" })
+  return Squad.AuditChain.make({
+    entries,
+    digest: sha256(entries.map((entry) => rowHash(entryRow(entry))).join("\n")),
+    integrity: verify(entries),
+  })
 })
