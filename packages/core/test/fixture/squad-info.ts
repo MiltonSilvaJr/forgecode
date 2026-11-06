@@ -1,5 +1,6 @@
 import { DateTime } from "effect"
 import { Location } from "@opencode/schema/location"
+import { Money } from "@opencode/schema/money"
 import { Project } from "@opencode/schema/project"
 import { Session } from "@opencode/schema/session"
 import { AbsolutePath } from "@opencode/core/schema"
@@ -21,7 +22,7 @@ export const info = (options: InfoOptions = {}) =>
   Session.Info.make({
     id: Session.ID.make(options.id ?? "ses_info"),
     projectID: Project.ID.make("squad-project"),
-    cost: options.cost ?? 0,
+    cost: Money.USD.make(options.cost ?? 0),
     tokens: { input: options.input ?? 0, output: options.output ?? 0, reasoning: 0, cache: { read: 0, write: 0 } },
     ...(options.outcome === undefined ? {} : { outcome: options.outcome }),
     ...(options.model === undefined ? {} : { model: options.model as never }),
