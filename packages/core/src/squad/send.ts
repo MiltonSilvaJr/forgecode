@@ -3,9 +3,10 @@ export * as SquadSend from "./send.js"
 import { DateTime, Effect, Schema } from "effect"
 import { Session } from "@opencode/schema/session"
 import { Squad } from "@opencode/schema/squad"
+import { SquadAudit } from "./audit.js"
 import { SquadChannel } from "./channel.js"
 import { ConflictError, SquadRegistry } from "./registry.js"
-import { ForbiddenError } from "./index.js"
+import { DisabledError, ForbiddenError } from "./index.js"
 
 export interface SendInput {
   readonly to: string
@@ -18,8 +19,42 @@ export interface SendInput {
 
 export const send = Effect.fn("SquadSend.send")(function* (input: SendInput) {
   const registry = yield* SquadRegistry.Service
+  const audit = yield* SquadAudit.Service
+  const actor = input.from ?? "operator"
+  const failed = (generation: string | undefined) => (error: unknown) =>
+    error instanceof DisabledError
+      ? Effect.void
+      : audit.append({
+          kind: "send",
+          generation,
+          target: input.to,
+          message: input.text,
+          delivery: input.delivery ?? "queue",
+          result: "failed",
+          idempotencyKey: input.idempotencyKey,
+          actor,
+          detail: (error as { message?: string }).message ?? "send failed",
+        })
+  const target = yield* registry.resolve(input.to).pipe(Effect.tapError(failed(undefined)))
+  const proof = yield* deliver(input, target).pipe(Effect.tapError(failed(target.generationID)))
+  yield* audit.append({
+    kind: "send",
+    generation: target.generationID,
+    target: target.name,
+    sessionID: proof.sessionID,
+    messageID: proof.messageID,
+    message: input.text,
+    delivery: proof.delivery,
+    result: "accepted",
+    idempotencyKey: input.idempotencyKey,
+    actor,
+  })
+  return proof
+})
+
+const deliver = Effect.fn("SquadSend.deliver")(function* (input: SendInput, target: SquadRegistry.ResolvedSession) {
+  const registry = yield* SquadRegistry.Service
   const channel = yield* SquadChannel.Service
-  const target = yield* registry.resolve(input.to)
   const targetSessionID = yield* requireVerified(target)
   if (input.from !== undefined && !input.allowSelf) {
     const origin = Schema.is(Session.ID)(input.from) ? input.from : (yield* registry.resolve(input.from)).sessionID
