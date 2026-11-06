@@ -34,6 +34,7 @@ const handler = Effect.fn("cli.squad.send")(function* (
         from: process.env.OPENCODE_SESSION_ID,
         allowSelf: input.allowSelf,
         idempotencyKey: Option.getOrUndefined(input.idempotencyKey),
+        dispatch: Option.getOrUndefined(input.dispatch),
       }),
     catch: (cause) => cause,
   })

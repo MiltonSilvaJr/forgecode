@@ -691,6 +691,60 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
               Flag.withDescription("Allow sending to the calling session"),
               Flag.withDefault(false),
             ),
+            dispatch: Flag.String("dispatch").pipe(
+              Flag.withDescription("Dispatch id (ORQ-...): the target must own the dispatch's tree"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("dispatch", {
+          description: "Create and list squad dispatches (ORQ-id, owner, base/head, DoR/DoD)",
+          commands: [
+            Spec.make("create", {
+              description: "Validate and record a dispatch for the active generation",
+              globalFlags: ServerFlags,
+              params: {
+                file: Flag.String("file").pipe(
+                  Flag.withDescription("JSON file with scope, base, head, dor, dod, proof, exclusions, milestone"),
+                  Flag.optional,
+                ),
+                to: Flag.String("to").pipe(Flag.withDescription("Owner session name in the active generation"), Flag.optional),
+                send: Flag.Boolean("send").pipe(
+                  Flag.withDescription("Also deliver the dispatch to its owner through the channel"),
+                  Flag.withDefault(false),
+                ),
+                exigidos: Flag.String("exigidos").pipe(
+                  Flag.withDescription("Required stages, comma separated: jira,ci,merge,deploy,acceptance (default ci,merge,acceptance)"),
+                  Flag.optional,
+                ),
+                json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+              },
+            }),
+            Spec.make("list", {
+              description: "List the dispatches of the active generation",
+              globalFlags: ServerFlags,
+              params: {
+                json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+              },
+            }),
+            Spec.make("accept", {
+              description: "Accept an open dispatch of the active generation",
+              globalFlags: ServerFlags,
+              params: {
+                orq: Flag.String("orq").pipe(Flag.withDescription("Dispatch id (ORQ-<generation>-<NNN>)"), Flag.optional),
+                json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+              },
+            }),
+          ],
+        }),
+        Spec.make("release", {
+          description: "Hand the trees owned by one squad session to another (requires the owner's checkpoint)",
+          globalFlags: ServerFlags,
+          params: {
+            from: Flag.String("from").pipe(Flag.withDescription("Current owner session name"), Flag.optional),
+            to: Flag.String("to").pipe(Flag.withDescription("New owner session name in the active generation"), Flag.optional),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Reason for the handover"), Flag.optional),
             json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
           },
         }),

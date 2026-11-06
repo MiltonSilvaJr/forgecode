@@ -7,11 +7,14 @@ import { SquadBroadcast } from "@opencode/core/squad/broadcast"
 import { SquadCheckpoint } from "@opencode/core/squad/checkpoint"
 import { SquadTransition } from "@opencode/core/squad/transition"
 import { SquadCheck } from "@opencode/core/squad/check"
+import { SquadDispatch } from "@opencode/core/squad/dispatch"
+import { SquadOwnership } from "@opencode/core/squad/ownership"
 import { SquadPlan } from "@opencode/core/squad/plan"
 import { SquadRegistry } from "@opencode/core/squad/registry"
 import { SquadSend } from "@opencode/core/squad/send"
 import {
   ConflictError,
+  DispatchNotFoundError,
   ForbiddenError,
   InvalidRequestError,
   ServiceUnavailableError,
@@ -31,9 +34,18 @@ const squadError = (error: unknown) => {
       return new ConflictError({ message: tagged.message ?? "conflict" })
     case "ForbiddenError":
       return new ForbiddenError({ message: tagged.message ?? "forbidden" })
+    case "InvalidInputError":
+      return new InvalidRequestError({ message: tagged.message ?? "invalid input" })
     default:
       return new ServiceUnavailableError({ message: tagged.message ?? "squad operation failed" })
   }
+}
+
+const acceptError = (orqID: string) => (error: unknown) => {
+  const tagged = error as { _tag?: string; message?: string }
+  if (tagged._tag === "DispatchNotFoundError")
+    return new DispatchNotFoundError({ orqID, message: tagged.message ?? `dispatch ${orqID} not found` })
+  return squadError(error)
 }
 
 const sendError = (ref: string) => (error: unknown) => {
@@ -193,6 +205,38 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           Effect.provide(services),
           catchMissingGlobal,
           Effect.mapError(sendError(ctx.params.sessionRef)),
+          Effect.map((data) => ({ data })),
+        ),
+      )
+      .handle("squad.dispatch.create", (ctx) =>
+        SquadDispatch.create({ ...ctx.payload, actor: ctx.payload.from }).pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(squadError),
+          Effect.map((data) => ({ data })),
+        ),
+      )
+      .handle("squad.dispatch.list", () =>
+        SquadDispatch.list().pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(squadError),
+          Effect.map((data) => ({ data })),
+        ),
+      )
+      .handle("squad.release", (ctx) =>
+        SquadOwnership.release({ from: ctx.payload.from, to: ctx.payload.to, reason: ctx.payload.reason, actor: ctx.payload.actor }).pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(squadError),
+          Effect.map((data) => ({ data })),
+        ),
+      )
+      .handle("squad.dispatch.accept", (ctx) =>
+        SquadDispatch.accept({ orq: ctx.params.orqId }).pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(acceptError(ctx.params.orqId)),
           Effect.map((data) => ({ data })),
         ),
       )

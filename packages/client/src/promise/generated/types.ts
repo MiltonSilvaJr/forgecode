@@ -318,6 +318,8 @@ export type SquadSessionState = "creating" | "starting" | "verified" | "closed" 
 
 export type SquadCheckItem = { check: string; verdict: "ok" | "warn" | "fail"; reason?: string }
 
+export type SquadReleaseReceipt = { released: string; to: string; trees: number; checkpointSha256: string }
+
 export type PermissionID = string
 
 export type PermissionSource = { type: "tool"; messageID: string; id: string }
@@ -915,6 +917,35 @@ export type SquadCheckpoint = {
   body: string
   bytes: number
   createdAt: number
+}
+
+export type SquadDispatch = {
+  id: string
+  generationID: SquadGenerationID
+  orqID: string
+  seq: number
+  scope: string
+  owner: SquadSessionName
+  base: string
+  head: string
+  dor: string
+  dod: string
+  proof: string
+  exclusions: [string, ...Array<string>]
+  exigidos: [
+    "jira" | "ci" | "merge" | "deploy" | "acceptance",
+    ...Array<"jira" | "ci" | "merge" | "deploy" | "acceptance">,
+  ]
+  milestone: string
+  baseOid?: string
+  headOid?: string
+  validation: "verified" | "unknown" | "failed"
+  state: "open" | "accepted" | "done" | "blocked"
+  acceptedAt?: number
+  acceptedBy?: SquadSessionName
+  createdAt: number
+  warnings?: Array<string>
+  sent?: { messageID: SessionMessageID; at: number }
 }
 
 export type SquadSessionCheck = {
@@ -3414,6 +3445,14 @@ export type ProjectNotFoundError = {
 export const isProjectNotFoundError = (value: unknown): value is ProjectNotFoundError =>
   typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "ProjectNotFoundError"
 
+export type DispatchNotFoundError = {
+  readonly _tag: "DispatchNotFoundError"
+  readonly orqID: string
+  readonly message: string
+}
+export const isDispatchNotFoundError = (value: unknown): value is DispatchNotFoundError =>
+  typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "DispatchNotFoundError"
+
 export type PermissionSavedNotFoundError = {
   readonly _tag: "PermissionSavedNotFoundError"
   readonly id: string
@@ -4528,6 +4567,7 @@ export type ExperimentalSquadSessionSendInput = {
   readonly from?: string | undefined
   readonly allowSelf?: boolean | undefined
   readonly idempotencyKey?: string | undefined
+  readonly dispatch?: string | undefined
 }
 
 export type ExperimentalSquadSessionSendOutput = { data: SquadEnqueueProof }["data"]
@@ -4568,6 +4608,38 @@ export type ExperimentalSquadGenerationCloseOutput = { data: SquadTransitionRece
 export type ExperimentalSquadTransitionInput = { readonly from: string; readonly idempotencyKey?: string | undefined }
 
 export type ExperimentalSquadTransitionOutput = { data: SquadTransitionReceipt }["data"]
+
+export type ExperimentalSquadDispatchCreateInput = {
+  readonly scope?: string | undefined
+  readonly owner?: string | undefined
+  readonly base?: string | undefined
+  readonly head?: string | undefined
+  readonly dor?: string | undefined
+  readonly dod?: string | undefined
+  readonly proof?: string | undefined
+  readonly exclusions?: ReadonlyArray<string> | undefined
+  readonly exigidos?: ReadonlyArray<"jira" | "ci" | "merge" | "deploy" | "acceptance"> | undefined
+  readonly milestone?: string | undefined
+  readonly from?: string | undefined
+  readonly send?: boolean | undefined
+}
+
+export type ExperimentalSquadDispatchCreateOutput = { data: SquadDispatch }["data"]
+
+export type ExperimentalSquadDispatchListOutput = { data: Array<SquadDispatch> }["data"]
+
+export type ExperimentalSquadReleaseInput = {
+  readonly from: string
+  readonly to: string
+  readonly reason: string
+  readonly actor?: string | undefined
+}
+
+export type ExperimentalSquadReleaseOutput = { data: SquadReleaseReceipt }["data"]
+
+export type ExperimentalSquadDispatchAcceptInput = { readonly orqId: string }
+
+export type ExperimentalSquadDispatchAcceptOutput = { data: SquadDispatch }["data"]
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 

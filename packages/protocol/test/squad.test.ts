@@ -24,6 +24,10 @@ test("squad routes carry the canonical experimental.squad identifiers", () => {
     ["experimental.squad.checkpoint", "POST", "/api/experimental/squad/checkpoint"],
     ["experimental.squad.generation.close", "POST", "/api/experimental/squad/generation/{generationID}/close"],
     ["experimental.squad.transition", "POST", "/api/experimental/squad/transition"],
+    ["experimental.squad.dispatch.create", "POST", "/api/experimental/squad/dispatch"],
+    ["experimental.squad.dispatch.list", "GET", "/api/experimental/squad/dispatch"],
+    ["experimental.squad.release", "POST", "/api/experimental/squad/release"],
+    ["experimental.squad.dispatch.accept", "POST", "/api/experimental/squad/dispatch/{orqId}/accept"],
   ] as const
   const offenders = required
     .filter(

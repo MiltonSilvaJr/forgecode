@@ -104,6 +104,12 @@ const Handlers = Runtime.handlers(Commands, {
     audit: {
       export: () => import("./commands/handlers/squad/audit-export"),
     },
+    release: () => import("./commands/handlers/squad/release"),
+    dispatch: {
+      create: () => import("./commands/handlers/squad/dispatch-create"),
+      list: () => import("./commands/handlers/squad/dispatch-list"),
+      accept: () => import("./commands/handlers/squad/dispatch-accept"),
+    },
   },
   sessions: () => import("./commands/handlers/sessions"),
   service: {

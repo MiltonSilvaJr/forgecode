@@ -7,6 +7,7 @@ import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "effect/http-api"
 import { SessionInbox } from "@opencode/schema/session-inbox"
 import {
   ConflictError,
+  DispatchNotFoundError,
   ForbiddenError,
   InvalidRequestError,
   ServiceUnavailableError,
@@ -38,6 +39,7 @@ const SendInput = Schema.Struct({
   from: Schema.String.pipe(optional),
   allowSelf: Schema.Boolean.pipe(optional),
   idempotencyKey: Schema.String.pipe(optional),
+  dispatch: Schema.String.pipe(optional),
 }).annotate({ identifier: "Squad.SendInput" })
 
 const BroadcastInput = Schema.Struct({
@@ -66,6 +68,35 @@ const TransitionInput = Schema.Struct({
   from: Squad.GenerationID,
   idempotencyKey: Schema.String.pipe(optional),
 }).annotate({ identifier: "Squad.TransitionInput" })
+// Every field is optional on the wire so the core can answer with all the missing ones at once.
+const DispatchCreateInput = Schema.Struct({
+  scope: Schema.String.pipe(optional),
+  owner: Schema.String.pipe(optional),
+  base: Schema.String.pipe(optional),
+  head: Schema.String.pipe(optional),
+  dor: Schema.String.pipe(optional),
+  dod: Schema.String.pipe(optional),
+  proof: Schema.String.pipe(optional),
+  exclusions: Schema.Array(Schema.String).pipe(optional),
+  exigidos: Schema.Array(Squad.Exigidos).pipe(optional),
+  milestone: Schema.String.pipe(optional),
+  from: Schema.String.pipe(optional),
+  send: Schema.Boolean.pipe(optional),
+}).annotate({ identifier: "Squad.DispatchCreateInput" })
+
+const ReleaseInput = Schema.Struct({
+  from: Schema.String,
+  to: Schema.String,
+  reason: Schema.String,
+  actor: Schema.String.pipe(optional),
+}).annotate({ identifier: "Squad.ReleaseInput" })
+
+const ReleaseReceipt = Schema.Struct({
+  released: Schema.String,
+  to: Schema.String,
+  trees: Schema.Int,
+  checkpointSha256: Schema.String,
+}).annotate({ identifier: "Squad.ReleaseReceipt" })
 
 export const SquadGroup = HttpApiGroup.make("server.squad")
   .add(
@@ -206,6 +237,60 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
         summary: "Bind a closed generation to the active one",
         description:
           "Prove that the closed generation's receipt, session set and registry digest still match and bind it to the active generation. Repeating with the same target is a no-op; a different target is a conflict. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.dispatch.create", "/api/experimental/squad/dispatch", {
+      payload: DispatchCreateInput,
+      success: Schema.Struct({ data: Squad.Dispatch }),
+      error: [InvalidRequestError, ForbiddenError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.dispatch.create",
+        summary: "Create a squad dispatch",
+        description:
+          "Validate and record a dispatch for the active generation, allocating its ORQ id and measuring base and head. Reports every missing field in one answer. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.get("squad.dispatch.list", "/api/experimental/squad/dispatch", {
+      success: Schema.Struct({ data: Schema.Array(Squad.Dispatch) }),
+      error: [ForbiddenError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.dispatch.list",
+        summary: "List squad dispatches",
+        description: "List the dispatches of the active generation. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.release", "/api/experimental/squad/release", {
+      payload: ReleaseInput,
+      success: Schema.Struct({ data: ReleaseReceipt }),
+      error: [InvalidRequestError, ForbiddenError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.release",
+        summary: "Release a tree to another squad session",
+        description:
+          "Hand the trees owned by one session to another. Requires the current owner's persisted checkpoint to match its hash, and records the hash in the audit trail. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.dispatch.accept", "/api/experimental/squad/dispatch/:orqId/accept", {
+      params: { orqId: Schema.String },
+      success: Schema.Struct({ data: Squad.Dispatch }),
+      error: [InvalidRequestError, ForbiddenError, DispatchNotFoundError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.dispatch.accept",
+        summary: "Accept a squad dispatch",
+        description:
+          "Mark an open dispatch of the active generation as accepted by its owner. Repeating it is a no-op. Experimental: may change without compatibility guarantees.",
       }),
     ),
   )

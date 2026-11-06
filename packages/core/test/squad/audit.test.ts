@@ -5,6 +5,7 @@ import { Effect, Layer } from "effect"
 import { eq } from "drizzle-orm"
 import { Config } from "@opencode/core/config"
 import { Database } from "@opencode/core/database/database"
+import { Git } from "@opencode/core/git"
 import { SquadAudit } from "@opencode/core/squad/audit"
 import { ChannelError, SquadChannel } from "@opencode/core/squad/channel"
 import { SquadRegistry } from "@opencode/core/squad/registry"
@@ -56,6 +57,7 @@ const layer = (directory: string, options: { fail?: string; enabled?: boolean } 
     SquadStore.layer,
     SquadAudit.layer,
     channel(options),
+    Layer.succeed(Git.Service, {} as unknown as Git.Interface),
     Database.layer({ path: path.join(directory, "opencode.db") }).pipe(Layer.provide(globalFor(directory))),
     Config.testLayer(config(options.enabled ?? true)),
   )

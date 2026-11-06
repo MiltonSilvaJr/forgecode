@@ -206,6 +206,13 @@ import type {
   ExperimentalSquadGenerationCloseOutput,
   ExperimentalSquadTransitionInput,
   ExperimentalSquadTransitionOutput,
+  ExperimentalSquadDispatchCreateInput,
+  ExperimentalSquadDispatchCreateOutput,
+  ExperimentalSquadDispatchListOutput,
+  ExperimentalSquadReleaseInput,
+  ExperimentalSquadReleaseOutput,
+  ExperimentalSquadDispatchAcceptInput,
+  ExperimentalSquadDispatchAcceptOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1395,6 +1402,7 @@ const EndpointExperimentalSquadSessionSend =
           from: input["from"],
           allowSelf: input["allowSelf"],
           idempotencyKey: input["idempotencyKey"],
+          dispatch: input["dispatch"],
         },
       }).pipe(
         Effect.mapError(mapClientError),
@@ -1469,6 +1477,57 @@ const EndpointExperimentalSquadTransition =
       ),
     )
 
+const EndpointExperimentalSquadDispatchCreate =
+  (raw: RawClient["server.squad"]) => (input?: ExperimentalSquadDispatchCreateInput) =>
+    preserveEffect<ExperimentalSquadDispatchCreateOutput>()(
+      raw["squad.dispatch.create"]({
+        payload: {
+          scope: input?.["scope"],
+          owner: input?.["owner"],
+          base: input?.["base"],
+          head: input?.["head"],
+          dor: input?.["dor"],
+          dod: input?.["dod"],
+          proof: input?.["proof"],
+          exclusions: input?.["exclusions"],
+          exigidos: input?.["exigidos"],
+          milestone: input?.["milestone"],
+          from: input?.["from"],
+          send: input?.["send"],
+        },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
+const EndpointExperimentalSquadDispatchList = (raw: RawClient["server.squad"]) => () =>
+  preserveEffect<ExperimentalSquadDispatchListOutput>()(
+    raw["squad.dispatch.list"]({}).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
+const EndpointExperimentalSquadRelease = (raw: RawClient["server.squad"]) => (input: ExperimentalSquadReleaseInput) =>
+  preserveEffect<ExperimentalSquadReleaseOutput>()(
+    raw["squad.release"]({
+      payload: { from: input["from"], to: input["to"], reason: input["reason"], actor: input["actor"] },
+    }).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
+const EndpointExperimentalSquadDispatchAccept =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadDispatchAcceptInput) =>
+    preserveEffect<ExperimentalSquadDispatchAcceptOutput>()(
+      raw["squad.dispatch.accept"]({ params: { orqId: input["orqId"] } }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
 const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
   generation: {
     create: EndpointExperimentalSquadGenerationCreate(raw),
@@ -1481,6 +1540,12 @@ const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
   audit: EndpointExperimentalSquadAudit(raw),
   checkpoint: EndpointExperimentalSquadCheckpoint(raw),
   transition: EndpointExperimentalSquadTransition(raw),
+  dispatch: {
+    create: EndpointExperimentalSquadDispatchCreate(raw),
+    list: EndpointExperimentalSquadDispatchList(raw),
+    accept: EndpointExperimentalSquadDispatchAccept(raw),
+  },
+  release: EndpointExperimentalSquadRelease(raw),
 })
 
 const EndpointFormList = (raw: RawClient["server.form"]) => (input?: FormListInput) =>

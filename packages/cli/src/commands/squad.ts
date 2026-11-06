@@ -87,3 +87,49 @@ export function formatReceipt(receipt: {
     `source registry digest ${receipt.sourceRegistryDigest}`,
   ].join(EOL)
 }
+const dispatchFields = ["scope", "base", "head", "dor", "dod", "proof", "milestone"] as const
+
+/** Read a dispatch from a JSON file; only the known fields are kept, the server validates them. */
+export async function readDispatchFile(file: string) {
+  const text = await Bun.file(file)
+    .text()
+    .catch(() => undefined)
+  if (text === undefined) return { ok: false as const, error: `cannot read dispatch file ${file}` }
+  const parsed: unknown = (() => {
+    try {
+      return JSON.parse(text)
+    } catch {
+      return undefined
+    }
+  })()
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
+    return { ok: false as const, error: `dispatch file ${file} must contain a JSON object` }
+  const record = parsed as Record<string, unknown>
+  const fields = Object.fromEntries(dispatchFields.flatMap((key) => (typeof record[key] === "string" ? [[key, record[key]]] : [])))
+  const exclusions = Array.isArray(record.exclusions)
+    ? record.exclusions.filter((entry): entry is string => typeof entry === "string")
+    : undefined
+  return { ok: true as const, fields: { ...fields, ...(exclusions === undefined ? {} : { exclusions }) } }
+}
+
+export function formatDispatch(dispatch: {
+  orqID: string
+  owner: string
+  validation: string
+  baseOid?: string
+  headOid?: string
+  state: string
+  warnings?: readonly string[]
+  sent?: { messageID: string }
+}) {
+  return [
+    `Dispatch ${dispatch.orqID} for ${dispatch.owner} (${dispatch.state}, validation ${dispatch.validation})`,
+    `  base ${dispatch.baseOid ?? "unknown"} head ${dispatch.headOid ?? "unknown"}`,
+    ...(dispatch.warnings ?? []).map((warning) => `  warning: ${warning}`),
+    ...(dispatch.sent ? [`  queued message ${dispatch.sent.messageID} for ${dispatch.owner}`] : []),
+  ].join(EOL)
+}
+
+export function formatRelease(receipt: { released: string; to: string; trees: number; checkpointSha256: string }) {
+  return `Released ${receipt.trees} tree(s) from ${receipt.released} to ${receipt.to} (checkpoint sha256 ${receipt.checkpointSha256})`
+}

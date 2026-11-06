@@ -55,6 +55,14 @@ it.live("forbids squad routes when the flag is off", () =>
         _tag: "ForbiddenError",
       })
       await expect(api.experimental.squad.transition({ from: "gen-1" })).rejects.toMatchObject({ _tag: "ForbiddenError" })
+      await expect(api.experimental.squad.dispatch.create({})).rejects.toMatchObject({ _tag: "ForbiddenError" })
+      await expect(api.experimental.squad.dispatch.list()).rejects.toMatchObject({ _tag: "ForbiddenError" })
+      await expect(api.experimental.squad.release({ from: "A", to: "B", reason: "r" })).rejects.toMatchObject({
+        _tag: "ForbiddenError",
+      })
+      await expect(api.experimental.squad.dispatch.accept({ orqId: "ORQ-gen-1-001" })).rejects.toMatchObject({
+        _tag: "ForbiddenError",
+      })
     })
   }),
 )
@@ -71,6 +79,16 @@ it.live("creates and lists a generation when the flag is on", () =>
     yield* Effect.promise(async () => {
       await expect(api.experimental.squad.session.send({ sessionRef: "GHOST", text: "go" })).rejects.toMatchObject({
         _tag: "SessionNotFoundError",
+      })
+      await expect(api.experimental.squad.dispatch.create({ owner: "ATLAS" })).rejects.toMatchObject({
+        _tag: "InvalidRequestError",
+      })
+      expect(await api.experimental.squad.dispatch.list()).toEqual([])
+      await expect(api.experimental.squad.dispatch.accept({ orqId: "ORQ-gen-1-001" })).rejects.toMatchObject({
+        _tag: "DispatchNotFoundError",
+      })
+      await expect(api.experimental.squad.release({ from: "ATLAS", to: "ATLAS", reason: "r" })).rejects.toMatchObject({
+        _tag: "ConflictError",
       })
       const report = await api.experimental.squad.broadcast({ text: "go", from: "ATLAS" })
       expect(report.results).toEqual([])
