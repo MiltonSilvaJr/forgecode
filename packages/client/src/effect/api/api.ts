@@ -32,6 +32,7 @@ import type { Integration } from "@opencode/schema/integration"
 import type { Mcp } from "@opencode/schema/mcp"
 import type { PtyTicket } from "@opencode/schema/pty-ticket"
 import type { Credential } from "@opencode/schema/credential"
+import type { Squad } from "@opencode/schema/squad"
 import type { PermissionSaved } from "@opencode/schema/permission-saved"
 import type { FileSystem } from "@opencode/schema/filesystem"
 import type { Command } from "@opencode/schema/command"
@@ -1965,6 +1966,41 @@ export interface ProjectApi<E = never> {
   readonly update: ProjectUpdateOperation<E>
 }
 
+export type ExperimentalSquadGenerationCreateInput = {
+  readonly generation: Squad.GenerationID
+  readonly sessions: ReadonlyArray<{
+    readonly name: Squad.SessionName
+    readonly role: Squad.Role
+    readonly provider: string
+    readonly model: string
+    readonly variant?: string | undefined
+    readonly location: { readonly directory: AbsolutePath; readonly workspaceID?: Workspace.ID | undefined }
+    readonly branch?: string | undefined
+    readonly sessionID?: Session.ID | undefined
+  }>
+  readonly replace?: boolean | undefined
+  readonly reason?: string | undefined
+  readonly idempotencyKey?: string | undefined
+}
+export type ExperimentalSquadGenerationCreateOutput = Squad.Generation
+export type ExperimentalSquadGenerationCreateOperation<E = never> = (
+  input: ExperimentalSquadGenerationCreateInput,
+) => Effect.Effect<ExperimentalSquadGenerationCreateOutput, E>
+
+export type ExperimentalSquadSessionListOutput = {
+  readonly generation: Squad.GenerationID
+  readonly sessions: ReadonlyArray<Squad.SessionEntry>
+}
+export type ExperimentalSquadSessionListOperation<E = never> = () => Effect.Effect<
+  ExperimentalSquadSessionListOutput,
+  E
+>
+
+export interface ExperimentalSquadApi<E = never> {
+  readonly generation: { readonly create: ExperimentalSquadGenerationCreateOperation<E> }
+  readonly session: { readonly list: ExperimentalSquadSessionListOperation<E> }
+}
+
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 export type FormListOutput = { readonly location: Location.PublicRef; readonly data: ReadonlyArray<Form.Info> }
 export type FormListOperation<E = never> = (input?: FormListInput) => Effect.Effect<FormListOutput, E>
@@ -3125,6 +3161,7 @@ export interface AppApi<E = never> {
     readonly integration: ExperimentalIntegrationApi<E>
     readonly subscription: ExperimentalSubscriptionApi<E>
     readonly mcp: ExperimentalMcpApi<E>
+    readonly squad: ExperimentalSquadApi<E>
     readonly file: ExperimentalFileApi<E>
     readonly migration: ExperimentalMigrationApi<E>
     readonly usage: ExperimentalUsageApi<E>

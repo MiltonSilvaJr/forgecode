@@ -4,7 +4,18 @@ import { Duration, Effect, Schema } from "effect"
 import { optional } from "../schema.js"
 
 const PositiveDuration = Schema.DurationFromString.pipe(
-  Schema.refine((value): value is Duration.Duration => Duration.toMillis(value) > 0),
+  Schema.check(
+    Schema.makeFilter(
+      (value) => (Duration.toMillis(value) > 0 ? undefined : "Expected a positive duration"),
+      {
+        expected: "a positive duration",
+        representation: { id: "squad/positive-duration", payload: null },
+        toJsonSchema: () => ({ type: "string" }),
+        toCode: () => ({ runtime: "Schema.DurationFromString" }),
+        arbitraryConstraint: {},
+      },
+    ),
+  ),
 )
 
 const Liveness = Schema.Struct({

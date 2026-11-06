@@ -189,6 +189,9 @@ import type {
   ProjectListOutput,
   ProjectUpdateInput,
   ProjectUpdateOutput,
+  ExperimentalSquadGenerationCreateInput,
+  ExperimentalSquadGenerationCreateOutput,
+  ExperimentalSquadSessionListOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1326,6 +1329,36 @@ const adaptGroupProject = (raw: RawClient["server.project"]) => ({
   update: EndpointProjectUpdate(raw),
 })
 
+const EndpointExperimentalSquadGenerationCreate =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadGenerationCreateInput) =>
+    preserveEffect<ExperimentalSquadGenerationCreateOutput>()(
+      raw["squad.generation.create"]({
+        payload: {
+          generation: input["generation"],
+          sessions: input["sessions"],
+          replace: input["replace"],
+          reason: input["reason"],
+          idempotencyKey: input["idempotencyKey"],
+        },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
+const EndpointExperimentalSquadSessionList = (raw: RawClient["server.squad"]) => () =>
+  preserveEffect<ExperimentalSquadSessionListOutput>()(
+    raw["squad.session.list"]({}).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
+const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
+  generation: { create: EndpointExperimentalSquadGenerationCreate(raw) },
+  session: { list: EndpointExperimentalSquadSessionList(raw) },
+})
+
 const EndpointFormList = (raw: RawClient["server.form"]) => (input?: FormListInput) =>
   preserveEffect<FormListOutput>()(
     raw["form.list"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError)),
@@ -2039,6 +2072,7 @@ const adaptClient = (raw: RawClient) => {
       integration: adaptGroupExperimentalIntegration(raw["server.integration"]),
       subscription: adaptGroupExperimentalSubscription(raw["server.subscription"]),
       mcp: adaptGroupExperimentalMcp(raw["server.mcp"]),
+      squad: adaptGroupExperimentalSquad(raw["server.squad"]),
       file: adaptGroupExperimentalFile(raw["server.fs"]),
       migration: adaptGroupExperimentalMigration(raw["server.migration"]),
       usage: adaptGroupExperimentalUsage(raw["server.usage"]),

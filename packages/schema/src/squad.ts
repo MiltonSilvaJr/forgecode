@@ -7,15 +7,13 @@ import { Session } from "./session.js"
 import { SessionMessage } from "./session-message.js"
 import { SessionInbox } from "./session-inbox.js"
 
-export const GenerationID = Schema.String.pipe(
-  Schema.refine((value): value is string => /^[a-z0-9][a-z0-9-]*$/.test(value)),
+export const GenerationID = Schema.String.check(Schema.isPattern(/^[a-z0-9][a-z0-9-]*$/u)).pipe(
   Schema.brand("Squad.GenerationID"),
   Schema.annotate({ identifier: "Squad.GenerationID" }),
 )
 export type GenerationID = typeof GenerationID.Type
 
-export const SessionName = Schema.String.pipe(
-  Schema.refine((value): value is string => value.length > 0 && !/\s/.test(value)),
+export const SessionName = Schema.String.check(Schema.isPattern(/^\S+$/u)).pipe(
   Schema.brand("Squad.SessionName"),
   Schema.annotate({ identifier: "Squad.SessionName" }),
 )
@@ -85,8 +83,8 @@ export const DispatchInput = Schema.Struct({
   dor: Schema.String,
   dod: Schema.String,
   proof: Schema.String,
-  exclusions: Schema.Array(Schema.String).pipe(Schema.refine((value): value is readonly string[] => value.length > 0)),
-  exigidos: Schema.Array(Exigidos).pipe(Schema.refine((value): value is readonly Exigidos[] => value.length > 0)),
+  exclusions: Schema.NonEmptyArray(Schema.String),
+  exigidos: Schema.NonEmptyArray(Exigidos),
   milestone: Schema.String,
 }).annotate({ identifier: "Squad.DispatchInput" })
 

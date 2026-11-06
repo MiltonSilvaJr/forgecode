@@ -50,6 +50,7 @@ export const groupNames = {
   "server.websearch": "websearch",
   "server.usage": "usage",
   "server.credential": "credential",
+  "server.squad": "squad",
   "server.form": "form",
   "server.permission": "permission",
   "server.fs": "file",

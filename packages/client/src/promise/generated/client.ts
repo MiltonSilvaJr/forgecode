@@ -183,6 +183,9 @@ import type {
   ProjectListOutput,
   ProjectUpdateInput,
   ProjectUpdateOutput,
+  ExperimentalSquadGenerationCreateInput,
+  ExperimentalSquadGenerationCreateOutput,
+  ExperimentalSquadSessionListOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1399,6 +1402,41 @@ export function make(options: ClientOptions) {
               },
               requestOptions,
             ),
+        },
+      },
+      squad: {
+        generation: {
+          create: (input: ExperimentalSquadGenerationCreateInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadGenerationCreateOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/squad/generation`,
+                body: {
+                  generation: input["generation"],
+                  sessions: input["sessions"],
+                  replace: input["replace"],
+                  reason: input["reason"],
+                  idempotencyKey: input["idempotencyKey"],
+                },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+        },
+        session: {
+          list: (requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadSessionListOutput }>(
+              {
+                method: "GET",
+                path: `/api/experimental/squad/session`,
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
         },
       },
       file: {

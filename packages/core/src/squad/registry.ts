@@ -1,9 +1,13 @@
 export * as SquadRegistry from "./registry.js"
 
 import { createHash, randomUUID } from "node:crypto"
-import { Context, Effect, Layer, Schema } from "effect"
+import { Context, DateTime, Effect, Layer, Schema } from "effect"
 import type { SqlError } from "effect/sql/SqlError"
+import { Location } from "@opencode/schema/location"
 import { Session } from "@opencode/schema/session"
+import { Squad } from "@opencode/schema/squad"
+import { WorkspaceID } from "@opencode/schema/workspace-id"
+import { AbsolutePath } from "../schema.js"
 import { Config } from "../config.js"
 import { Database } from "../database/database.js"
 import { DisabledError } from "./index.js"
@@ -74,12 +78,15 @@ export interface Interface {
   ) => Effect.Effect<GenerationResult, DisabledError | ConflictError | SqlError, Database.Service | SquadStore.Service | Config.Service>
   readonly get: (
     id: string,
-  ) => Effect.Effect<GenerationResult | undefined, never, Database.Service | SquadStore.Service>
-  readonly active: () => Effect.Effect<GenerationResult | undefined, never, Database.Service | SquadStore.Service>
-  readonly countActive: () => Effect.Effect<number, never, Database.Service | SquadStore.Service>
+  ) => Effect.Effect<GenerationResult | undefined, DisabledError, Database.Service | SquadStore.Service | Config.Service>
+  readonly generation: (
+    id: string,
+  ) => Effect.Effect<Squad.Generation | undefined, DisabledError, Database.Service | SquadStore.Service | Config.Service>
+  readonly active: () => Effect.Effect<GenerationResult | undefined, DisabledError, Database.Service | SquadStore.Service | Config.Service>
+  readonly countActive: () => Effect.Effect<number, DisabledError, Database.Service | SquadStore.Service | Config.Service>
   readonly resolve: (
     ref: string,
-  ) => Effect.Effect<ResolvedSession, SessionNotFoundError, Database.Service | SquadStore.Service>
+  ) => Effect.Effect<ResolvedSession, SessionNotFoundError | DisabledError, Database.Service | SquadStore.Service | Config.Service>
 }
 
 export class Service extends Context.Service<Service, Interface>()("@opencode/Squad/Registry") {}
@@ -101,6 +108,44 @@ const resolved = (session: SquadStore.SessionRow): ResolvedSession => ({
   sessionID: session.session_id,
   state: session.state,
 })
+
+const toSessionEntry = (row: SquadStore.SessionRow): Squad.SessionEntry =>
+  Squad.SessionEntry.make({
+    generationID: Squad.GenerationID.make(row.generation_id),
+    name: Squad.SessionName.make(row.name),
+    role: row.role,
+    provider: row.provider,
+    model: row.model,
+    variant: row.variant ?? undefined,
+    location: Location.Ref.make({
+      directory: AbsolutePath.make(row.location.directory),
+      ...(row.location.workspaceID ? { workspaceID: WorkspaceID.make(row.location.workspaceID) } : {}),
+    }),
+    branch: row.branch ?? undefined,
+    sessionID: row.session_id ? Session.ID.make(row.session_id) : undefined,
+    adoptedAt: row.adopted_at === null ? undefined : DateTime.makeUnsafe(row.adopted_at),
+    state: row.state,
+    marker: row.marker ?? undefined,
+    promptSha256: row.prompt_sha256 ?? undefined,
+    checkpointSha256: row.checkpoint_sha256 ?? undefined,
+    productive: row.productive,
+    lastError: row.last_error ?? undefined,
+    createdAt: DateTime.makeUnsafe(row.created_at),
+    updatedAt: DateTime.makeUnsafe(row.updated_at),
+  })
+
+const toGeneration = (row: SquadStore.GenerationRow, sessions: readonly SquadStore.SessionRow[]): Squad.Generation =>
+  Squad.Generation.make({
+    id: Squad.GenerationID.make(row.id),
+    runID: row.run_id,
+    state: row.state,
+    configDigest: row.config_digest ?? undefined,
+    createdAt: DateTime.makeUnsafe(row.created_at),
+    closedAt: row.closed_at === null ? undefined : DateTime.makeUnsafe(row.closed_at),
+    closedBy: row.closed_by ?? undefined,
+    sourceGenerationID: row.source_generation_id ? Squad.GenerationID.make(row.source_generation_id) : undefined,
+    sessions: sessions.map(toSessionEntry),
+  })
 
 export const registryDigest = (generation: string, sessions: readonly DigestSession[]): string => {
   const sorted = [...sessions].sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
@@ -203,14 +248,25 @@ export const layer = Layer.succeed(
     }),
     get: (id) =>
       Effect.gen(function* () {
+        yield* requireEnabled()
         const db = (yield* Database.Service).db
         const store = yield* SquadStore.Service
         const generation = yield* store.generation(db, id)
         if (!generation) return undefined
         return read(generation, yield* store.sessions(db, id))
       }),
+    generation: (id) =>
+      Effect.gen(function* () {
+        yield* requireEnabled()
+        const db = (yield* Database.Service).db
+        const store = yield* SquadStore.Service
+        const generation = yield* store.generation(db, id)
+        if (!generation) return undefined
+        return toGeneration(generation, yield* store.sessions(db, id))
+      }),
     active: () =>
       Effect.gen(function* () {
+        yield* requireEnabled()
         const db = (yield* Database.Service).db
         const store = yield* SquadStore.Service
         const generation = yield* store.activeGeneration(db)
@@ -219,12 +275,14 @@ export const layer = Layer.succeed(
       }),
     countActive: () =>
       Effect.gen(function* () {
+        yield* requireEnabled()
         const db = (yield* Database.Service).db
         const store = yield* SquadStore.Service
         return yield* store.countActive(db)
       }),
     resolve: (ref) =>
       Effect.gen(function* () {
+        yield* requireEnabled()
         const db = (yield* Database.Service).db
         const store = yield* SquadStore.Service
         if (Schema.is(Session.ID)(ref)) {

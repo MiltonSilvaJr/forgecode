@@ -308,6 +308,14 @@ export type ProjectCommands = { start?: string }
 
 export type ProjectTime = { created: number; updated: number; active: number; archived?: number }
 
+export type SquadGenerationID = string
+
+export type SquadSessionName = string
+
+export type SquadRole = "orchestrator" | "worker"
+
+export type SquadSessionState = "creating" | "starting" | "verified" | "closed" | "failed"
+
 export type PermissionID = string
 
 export type PermissionSource = { type: "tool"; messageID: string; id: string }
@@ -399,6 +407,16 @@ export type ConfigWorktree = { directory: string }
 export type ConfigModelReasoning =
   | { supported: false }
   | { supported: true; toggle?: boolean; effort?: Array<string>; budget?: { min?: number; max?: number } }
+
+export type ConfigSquadLiveness = { stale_after: string; dead_after: string }
+
+export type ConfigSquadLaunch = { verify_timeout: string }
+
+export type ConfigSquadCheckpoint = { max_bytes: number | "Infinity" | "-Infinity" | "NaN" }
+
+export type ConfigSquadCredential = { expiry_warn: string }
+
+export type ConfigSquadPanel = { jira_command?: string; ci_command?: string; ci_evidence?: string }
 
 export type ConfigSubscriptionAuthSourceKind = "env" | "store" | "native" | "keychain" | "api_key"
 
@@ -1688,6 +1706,27 @@ export type SessionUsageRecorded = {
   data: { sessionID: SessionID; source: "title" | "compaction"; cost: MoneyUSD; tokens: TokenUsageInfo }
 }
 
+export type SquadSessionEntry = {
+  generationID: SquadGenerationID
+  name: SquadSessionName
+  role: SquadRole
+  provider: string
+  model: string
+  variant?: string
+  location: LocationRef
+  branch?: string
+  sessionID?: SessionID
+  adoptedAt?: number
+  state: SquadSessionState
+  marker?: string
+  promptSha256?: string
+  checkpointSha256?: string
+  productive: boolean
+  lastError?: string
+  createdAt: number
+  updatedAt: number
+}
+
 export type LocationShutdown = {
   id: EventID
   created: number
@@ -2622,6 +2661,16 @@ export type ConfigEntry =
           }>
           forgequeue?: { enabled?: boolean }
         }
+        squad?: {
+          enabled?: boolean | null
+          state_dir?: string
+          liveness?: ConfigSquadLiveness
+          writer_scope?: "worktree" | "repository"
+          launch?: ConfigSquadLaunch
+          checkpoint?: ConfigSquadCheckpoint
+          credential?: ConfigSquadCredential
+          panel?: ConfigSquadPanel
+        }
         subscription_auth?: {
           enabled?: boolean
           sources?: { [x: string]: Array<ConfigSubscriptionAuthSourceKind> }
@@ -2669,6 +2718,18 @@ export type SessionInboxItem =
   | { type: "synthetic"; payload: SessionInboxSyntheticPayload1; delivery: SessionInboxDelivery }
   | { type: "compaction"; payload: SessionInboxCompactionPayload; delivery: SessionInboxDelivery }
   | { type: "move"; payload: SessionInboxMovePayload1; delivery: SessionInboxDelivery }
+
+export type SquadGeneration = {
+  id: SquadGenerationID
+  runID: string
+  state: "active" | "closed"
+  configDigest?: string
+  createdAt: number
+  closedAt?: number
+  closedBy?: string
+  sourceGenerationID?: SquadGenerationID
+  sessions: Array<SquadSessionEntry>
+}
 
 export type SessionMessageAssistantTool1 = {
   type: "tool"
@@ -4332,6 +4393,29 @@ export type ProjectUpdateInput = {
 }
 
 export type ProjectUpdateOutput = Project
+
+export type ExperimentalSquadGenerationCreateInput = {
+  readonly generation: string
+  readonly sessions: ReadonlyArray<{
+    readonly name: string
+    readonly role: "orchestrator" | "worker"
+    readonly provider: string
+    readonly model: string
+    readonly variant?: string
+    readonly location: { readonly directory: string; readonly workspaceID?: string }
+    readonly branch?: string
+    readonly sessionID?: string
+  }>
+  readonly replace?: boolean | undefined
+  readonly reason?: string | undefined
+  readonly idempotencyKey?: string | undefined
+}
+
+export type ExperimentalSquadGenerationCreateOutput = { data: SquadGeneration }["data"]
+
+export type ExperimentalSquadSessionListOutput = {
+  data: { generation: SquadGenerationID; sessions: Array<SquadSessionEntry> }
+}["data"]
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 
