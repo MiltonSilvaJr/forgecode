@@ -108,7 +108,11 @@ describe("real-shell compound syntax", () => {
       .skipIf(!executable)
       .each([
         ...bodies.map((body) => `probe() ${body}; probe`),
-        ...bodies.map((body) => `printf '%s' "$(probe() ${body}; probe)"`),
+        // Bash 3.2 needs balanced case-pattern parentheses inside $(...). Keep
+        // the unparenthesized form above and in the scanner-only fixtures.
+        ...bodies.map((body) =>
+          `printf '%s' "$(probe() ${body.replace("in value)", "in (value)").replace(";; *)", ";; (*)")}; probe)"`,
+        ),
         ...(shell === "zsh" ? loops.map((fixture) => fixture.source) : []),
       ])(`${shell}: %s`, (source) => {
       if (!executable) throw new Error(`${shell} is unavailable`)

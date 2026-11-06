@@ -36,7 +36,9 @@ export function make(runner: CommandRunner = realRunner): Adapter {
         SubscriptionSource.make({
           kind: "native",
           report: () => SubscriptionNativeSession.kimiSession(env),
-          acquire: () => Effect.succeed(undefined),
+          acquire: () => SubscriptionNativeSession.kimiAccessToken(env).pipe(
+            Effect.map((token) => token ? Credential.Key.make({ type: "key", key: token }) : undefined),
+          ),
         }),
         SubscriptionSource.make({
           kind: "api_key",
