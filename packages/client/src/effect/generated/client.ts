@@ -200,6 +200,7 @@ import type {
   ExperimentalSquadSessionLaunchOutput,
   ExperimentalSquadBroadcastInput,
   ExperimentalSquadBroadcastOutput,
+  ExperimentalSquadLivenessOutput,
   ExperimentalSquadAuditInput,
   ExperimentalSquadAuditOutput,
   FormListInput,
@@ -1426,6 +1427,14 @@ const EndpointExperimentalSquadBroadcast =
       ),
     )
 
+const EndpointExperimentalSquadLiveness = (raw: RawClient["server.squad"]) => () =>
+  preserveEffect<ExperimentalSquadLivenessOutput>()(
+    raw["squad.liveness"]({}).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
 const EndpointExperimentalSquadAudit = (raw: RawClient["server.squad"]) => (input?: ExperimentalSquadAuditInput) =>
   preserveEffect<ExperimentalSquadAuditOutput>()(
     raw["squad.audit"]({ query: { since: input?.["since"] } }).pipe(
@@ -1444,6 +1453,7 @@ const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
   check: EndpointExperimentalSquadCheck(raw),
   plan: EndpointExperimentalSquadPlan(raw),
   broadcast: EndpointExperimentalSquadBroadcast(raw),
+  liveness: EndpointExperimentalSquadLiveness(raw),
   audit: EndpointExperimentalSquadAudit(raw),
 })
 

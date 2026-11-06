@@ -896,6 +896,20 @@ export type SquadBroadcastResult = {
   reason?: string
 }
 
+export type SquadPreviousSession = { name: SquadSessionName; sessionID?: SessionID; state: "closed" }
+
+export type SquadLiveness = {
+  verdict: "working" | "idle" | "stalled" | "presumed_dead" | "unknown"
+  measuredAt: number
+  lastActivity?: number
+  sentAt?: number
+  source?: "execution" | "inbox"
+  sessionState?: SquadSessionState
+  workingStale: boolean
+  presumedDead: boolean
+  cause?: string
+}
+
 export type SquadSessionCheck = {
   name: SquadSessionName
   checks: Array<SquadCheckItem>
@@ -2335,6 +2349,27 @@ export type SquadAuditChain = {
 
 export type SquadBroadcastReport = { results: Array<SquadBroadcastResult> }
 
+export type SquadPreviousGeneration = {
+  id: SquadGenerationID
+  closedAt?: number
+  closedBy?: string
+  sessions: Array<SquadPreviousSession>
+}
+
+export type SquadSessionStatus = {
+  name: SquadSessionName
+  role: SquadRole
+  provider: string
+  model: string
+  variant?: string
+  location: LocationRef
+  branch?: string
+  sessionID?: SessionID
+  state: SquadSessionState
+  liveness: SquadLiveness
+  inboxPending: number
+}
+
 export type SquadCheckReport = { sessions: Array<SquadSessionCheck> }
 
 export type PtyCreated = {
@@ -2837,6 +2872,13 @@ export type CredentialEntry = {
   label: string
   active: boolean
   value: CredentialValue
+}
+
+export type SquadLivenessReport = {
+  generation: SquadGenerationID | null
+  sessions: Array<SquadSessionStatus>
+  inboxPending: number
+  previous: SquadPreviousGeneration | null
 }
 
 export type FormFields1 = [FormField1, ...Array<FormField1>]
@@ -4529,6 +4571,8 @@ export type ExperimentalSquadBroadcastInput = {
 }
 
 export type ExperimentalSquadBroadcastOutput = { data: SquadBroadcastReport }["data"]
+
+export type ExperimentalSquadLivenessOutput = { data: SquadLivenessReport }["data"]
 
 export type ExperimentalSquadAuditInput = { readonly since?: string | undefined }
 

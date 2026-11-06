@@ -9,6 +9,7 @@ import { SquadLaunch } from "@opencode/core/squad/launch"
 import { SquadPlan } from "@opencode/core/squad/plan"
 import { SquadRegistry } from "@opencode/core/squad/registry"
 import { SquadSend } from "@opencode/core/squad/send"
+import { SquadStatus } from "@opencode/core/squad/status"
 import {
   ConflictError,
   ForbiddenError,
@@ -133,6 +134,14 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           )
           return { data: chain }
         }),
+      )
+      .handle("squad.liveness", () =>
+        SquadStatus.status().pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(squadError),
+          Effect.map((data) => ({ data })),
+        ),
       )
       .handle("squad.session.launch", (ctx) =>
         Effect.gen(function* () {

@@ -148,6 +148,12 @@ describe("squad command", () => {
     for (const flag of ["--since", "--out", "--json"]) expect(result.stdout).toContain(flag)
   })
 
+  test("squad status --help shows the status flags", async () => {
+    const result = await cli(["squad", "status", "--help"])
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toContain("--json")
+  })
+
   test("squad launch --help shows the launch flags", async () => {
     const result = await cli(["squad", "launch", "--help"])
     expect(result.exitCode).toBe(0)

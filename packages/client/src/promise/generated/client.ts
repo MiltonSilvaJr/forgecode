@@ -194,6 +194,7 @@ import type {
   ExperimentalSquadSessionLaunchOutput,
   ExperimentalSquadBroadcastInput,
   ExperimentalSquadBroadcastOutput,
+  ExperimentalSquadLivenessOutput,
   ExperimentalSquadAuditInput,
   ExperimentalSquadAuditOutput,
   FormListInput,
@@ -1516,6 +1517,17 @@ export function make(options: ClientOptions) {
                 includeSelf: input["includeSelf"],
                 idempotencyKey: input["idempotencyKey"],
               },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        liveness: (requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadLivenessOutput }>(
+            {
+              method: "GET",
+              path: `/api/experimental/squad/liveness`,
               successStatus: 200,
               declaredStatuses: [400, 401, 403, 409, 503],
               empty: false,

@@ -51,6 +51,7 @@ it.live("forbids squad routes when the flag is off", () =>
       await expect(api.experimental.squad.session.launch({ sessionRef: "GHOST" })).rejects.toMatchObject({
         _tag: "ForbiddenError",
       })
+      await expect(api.experimental.squad.liveness()).rejects.toMatchObject({ _tag: "ForbiddenError" })
     })
   }),
 )
@@ -71,6 +72,10 @@ it.live("creates and lists a generation when the flag is on", () =>
       await expect(api.experimental.squad.session.launch({ sessionRef: "GHOST" })).rejects.toMatchObject({
         _tag: "SessionNotFoundError",
       })
+      const liveness = await api.experimental.squad.liveness()
+      expect(liveness.generation).toBe("gen-1")
+      expect(liveness.previous).toBeNull()
+      expect(liveness.sessions.map((row) => row.name)).toEqual(["ATLAS"])
       const report = await api.experimental.squad.broadcast({ text: "go", from: "ATLAS" })
       expect(report.results).toEqual([])
       const trail = await api.experimental.squad.audit()

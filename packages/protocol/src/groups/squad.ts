@@ -155,6 +155,19 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
     ),
   )
   .add(
+    HttpApiEndpoint.get("squad.liveness", "/api/experimental/squad/liveness", {
+      success: Schema.Struct({ data: Squad.LivenessReport }),
+      error: [ConflictError, ForbiddenError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.liveness",
+        summary: "Report squad status and liveness",
+        description:
+          "Read-only report of the active and previous generation: per session its registry state, measured activity (instant and source) and liveness verdict, and the pending inbox count. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
     HttpApiEndpoint.get("squad.audit", "/api/experimental/squad/audit", {
       query: { since: Schema.String.pipe(optional) },
       success: Schema.Struct({ data: Squad.AuditChain }),
