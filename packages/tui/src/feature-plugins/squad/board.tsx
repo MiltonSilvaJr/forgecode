@@ -4,6 +4,7 @@ import type { SquadPanelCard } from "@opencode/client"
 import type { Plugin } from "@opencode/plugin/tui"
 import { boardKeys } from "./board-keys"
 import { boardModel, stalled, type BoardColumn } from "./board-model"
+import { CardDetail } from "./card-detail"
 import { freshnessLabel } from "./render-fields"
 import type { SquadBoardHandle } from "./use-squad-board"
 
@@ -115,11 +116,11 @@ export function Board(props: { context: Plugin.Context; board: SquadBoardHandle;
         </box>
       </Show>
       <Show when={view() === "detail"}>
-        <box flexGrow={1} flexDirection="column" paddingLeft={1}>
-          <text fg={theme.text.base}>detalhe</text>
-          <text fg={theme.text.base}>{focusedCard()?.titulo}</text>
-          <text fg={theme.text.muted}>{focusedCard()?.agente}</text>
-          <text fg={theme.text.muted}>esc para voltar ao board</text>
+        <box flexGrow={1} flexDirection="column">
+          <Show when={focusedCard() !== undefined}>
+            <CardDetail card={focusedCard()!} liveness={ready()?.liveness ?? null} theme={theme} />
+          </Show>
+          <text fg={theme.text.muted} paddingLeft={1}>esc para voltar ao board</text>
         </box>
       </Show>
       <Show when={view() === "board"}>

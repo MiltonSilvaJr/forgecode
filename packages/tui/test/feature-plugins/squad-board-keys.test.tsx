@@ -137,7 +137,7 @@ test("enter opens the focused card detail and esc returns to the board", async (
     await app.renderOnce()
     const detail = app.captureCharFrame()
     expect(detail).toContain("Segundo")
-    expect(detail).toContain("detalhe")
+    expect(detail).toContain("sem evidência")
     app.mockInput.pressEscape()
     await app.renderOnce()
     const board = app.captureCharFrame()
