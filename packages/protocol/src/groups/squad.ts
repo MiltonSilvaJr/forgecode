@@ -68,4 +68,17 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
       }),
     ),
   )
+  .add(
+    HttpApiEndpoint.get("squad.plan", "/api/experimental/squad/plan", {
+      success: Schema.Struct({ data: Squad.PlanDocument }),
+      error: [ConflictError, ForbiddenError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.plan",
+        summary: "Plan the active generation's launch",
+        description:
+          "Simulate the launch of the active squad generation without side effects: per session, whether it would be created or adopted and the SHA-256 of the bootstrap prompt. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
   .annotateMerge(OpenApi.annotations({ title: "squad" }))

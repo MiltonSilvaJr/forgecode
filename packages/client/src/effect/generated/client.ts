@@ -193,6 +193,7 @@ import type {
   ExperimentalSquadGenerationCreateOutput,
   ExperimentalSquadSessionListOutput,
   ExperimentalSquadCheckOutput,
+  ExperimentalSquadPlanOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1363,10 +1364,19 @@ const EndpointExperimentalSquadCheck = (raw: RawClient["server.squad"]) => () =>
     ),
   )
 
+const EndpointExperimentalSquadPlan = (raw: RawClient["server.squad"]) => () =>
+  preserveEffect<ExperimentalSquadPlanOutput>()(
+    raw["squad.plan"]({}).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
 const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
   generation: { create: EndpointExperimentalSquadGenerationCreate(raw) },
   session: { list: EndpointExperimentalSquadSessionList(raw) },
   check: EndpointExperimentalSquadCheck(raw),
+  plan: EndpointExperimentalSquadPlan(raw),
 })
 
 const EndpointFormList = (raw: RawClient["server.form"]) => (input?: FormListInput) =>

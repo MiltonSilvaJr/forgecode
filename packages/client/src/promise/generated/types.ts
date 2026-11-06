@@ -1735,6 +1735,18 @@ export type SquadSessionEntry = {
   updatedAt: number
 }
 
+export type SquadPlanEntry = {
+  name: SquadSessionName
+  provider: string
+  model: string
+  variant?: string
+  location: LocationRef
+  branch?: string
+  sessionID?: SessionID
+  action: "adopt" | "create"
+  promptSha256: string
+}
+
 export type LocationShutdown = {
   id: EventID
   created: number
@@ -2740,6 +2752,8 @@ export type SquadGeneration = {
   sourceGenerationID?: SquadGenerationID
   sessions: Array<SquadSessionEntry>
 }
+
+export type SquadPlanDocument = { generationID: SquadGenerationID; sessions: Array<SquadPlanEntry> }
 
 export type SessionMessageAssistantTool1 = {
   type: "tool"
@@ -4428,6 +4442,8 @@ export type ExperimentalSquadSessionListOutput = {
 }["data"]
 
 export type ExperimentalSquadCheckOutput = { data: SquadCheckReport }["data"]
+
+export type ExperimentalSquadPlanOutput = { data: SquadPlanDocument }["data"]
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 

@@ -1999,10 +1999,14 @@ export type ExperimentalSquadSessionListOperation<E = never> = () => Effect.Effe
 export type ExperimentalSquadCheckOutput = Squad.CheckReport
 export type ExperimentalSquadCheckOperation<E = never> = () => Effect.Effect<ExperimentalSquadCheckOutput, E>
 
+export type ExperimentalSquadPlanOutput = Squad.PlanDocument
+export type ExperimentalSquadPlanOperation<E = never> = () => Effect.Effect<ExperimentalSquadPlanOutput, E>
+
 export interface ExperimentalSquadApi<E = never> {
   readonly generation: { readonly create: ExperimentalSquadGenerationCreateOperation<E> }
   readonly session: { readonly list: ExperimentalSquadSessionListOperation<E> }
   readonly check: ExperimentalSquadCheckOperation<E>
+  readonly plan: ExperimentalSquadPlanOperation<E>
 }
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }

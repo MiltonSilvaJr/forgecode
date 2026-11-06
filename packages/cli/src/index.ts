@@ -95,6 +95,7 @@ const Handlers = Runtime.handlers(Commands, {
   squad: {
     init: () => import("./commands/handlers/squad"),
     check: () => import("./commands/handlers/squad/check"),
+    plan: () => import("./commands/handlers/squad/plan"),
   },
   sessions: () => import("./commands/handlers/sessions"),
   service: {

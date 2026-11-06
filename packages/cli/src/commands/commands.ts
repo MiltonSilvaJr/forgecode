@@ -578,6 +578,13 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
           },
         }),
+        Spec.make("plan", {
+          description: "Simulate the launch of the active generation with no effect (sem efeito)",
+          globalFlags: ServerFlags,
+          params: {
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
       ],
     }),
     Spec.make("queue", {
