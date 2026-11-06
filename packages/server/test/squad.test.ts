@@ -68,6 +68,7 @@ it.live("forbids squad routes when the flag is off", () =>
         _tag: "ForbiddenError",
       })
       await expect(api.experimental.squad.liveness()).rejects.toMatchObject({ _tag: "ForbiddenError" })
+      await expect(api.experimental.squad.panel()).rejects.toMatchObject({ _tag: "ForbiddenError" })
       await expect(api.experimental.squad.session.replace({ sessionRef: "GHOST", provider: "openai" })).rejects.toMatchObject({
         _tag: "ForbiddenError",
       })
@@ -95,6 +96,7 @@ it.live("creates and lists a generation when the flag is on", () =>
         _tag: "InvalidRequestError",
       })
       expect(await api.experimental.squad.dispatch.list()).toEqual([])
+      expect((await api.experimental.squad.panel()).cards).toEqual({})
       await expect(api.experimental.squad.dispatch.accept({ orqId: "ORQ-gen-1-001" })).rejects.toMatchObject({
         _tag: "DispatchNotFoundError",
       })

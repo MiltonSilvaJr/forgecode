@@ -391,4 +391,17 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
       }),
     ),
   )
+  .add(
+    HttpApiEndpoint.get("squad.panel", "/api/experimental/squad/panel", {
+      success: Schema.Struct({ data: Squad.PanelDocument }),
+      error: [ForbiddenError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.panel",
+        summary: "Build the squad kanban panel document",
+        description:
+          "Build the kanban document from the active generation's dispatches, with per-stage evidence and explicit unknown. Read-only. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
   .annotateMerge(OpenApi.annotations({ title: "squad" }))

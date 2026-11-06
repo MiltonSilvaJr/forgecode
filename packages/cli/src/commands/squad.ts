@@ -2,6 +2,7 @@ import { Effect } from "effect"
 import { EOL } from "node:os"
 import fs from "node:fs/promises"
 import path from "node:path"
+import type { SquadKanban } from "@opencode/schema/squad-kanban"
 import { errorMessage } from "../util/error"
 
 export type SquadError = { code: string; message: string; details: Record<string, unknown> }
@@ -132,4 +133,16 @@ export function formatDispatch(dispatch: {
 
 export function formatRelease(receipt: { released: string; to: string; trees: number; checkpointSha256: string }) {
   return `Released ${receipt.trees} tree(s) from ${receipt.released} to ${receipt.to} (checkpoint sha256 ${receipt.checkpointSha256})`
+}
+
+/** Per-column card counts, then the cards that cannot draw a progress bar and what is unknown about them. */
+export function formatPanel(document: SquadKanban.Kanban) {
+  const cards = Object.values(document.cards)
+  return [
+    `Panel revision ${document.revisao} (${document.atualizado_em ?? "unknown"})`,
+    ...document.colunas.map((column) => `${column}: ${cards.filter((card) => card.coluna === column).length}`),
+    ...cards
+      .filter((card) => !card.progressa)
+      .map((card) => `  ${card.id} (${card.coluna}) progressa: false${card.desconhecido.length > 0 ? `, desconhecido: ${card.desconhecido.join(", ")}` : ""}`),
+  ].join(EOL)
 }

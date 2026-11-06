@@ -802,6 +802,26 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             }),
           ],
         }),
+        Spec.make("panel", {
+          description: "Build and show the squad kanban panel with per-stage evidence (read-only)",
+          commands: [
+            Spec.make("build", {
+              description: "Build the kanban document; prints it, or writes it to --out and prints the path",
+              globalFlags: ServerFlags,
+              params: {
+                out: Flag.String("out").pipe(Flag.withDescription("Write the document to this file"), Flag.optional),
+                json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+              },
+            }),
+            Spec.make("show", {
+              description: "Summarize the panel by column, naming cards that cannot show progress",
+              globalFlags: ServerFlags,
+              params: {
+                json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+              },
+            }),
+          ],
+        }),
         Spec.make("release", {
           description: "Hand the trees owned by one squad session to another (requires the owner's checkpoint)",
           globalFlags: ServerFlags,
