@@ -1,7 +1,7 @@
 import { Effect, Layer } from "effect"
 import { ChannelError, SquadChannel } from "@opencode/core/squad/channel"
 import { Session as SessionSchema } from "@opencode/schema/session"
-import { info } from "./squad-info"
+import { info, type InfoOptions } from "./squad-info"
 
 export type Script = "full" | "no-execution" | "no-delivery" | "none"
 
@@ -14,6 +14,8 @@ export interface WorldOptions {
   readonly failEnqueues?: number
 }
 
+type Pending = { id: string; delivery: "queue" | "steer"; createdAt: number }
+
 type Stored = { info: ReturnType<typeof info>; events: Array<Record<string, unknown>> }
 
 /**
@@ -24,23 +26,29 @@ export const fakeWorld = (options: WorldOptions = {}) => {
   const creates: string[] = []
   const enqueues: SquadChannel.EnqueueInput[] = []
   const stored = new Map<string, Stored>()
+  const pending = new Map<string, Pending[]>()
   let failures = options.failEnqueues ?? 0
 
-  const append = (sessionID: string, type: string, data: Record<string, unknown> = {}) => {
+  const append = (sessionID: string, type: string, data: Record<string, unknown> = {}, created = Date.now()) => {
     const entry = stored.get(sessionID)
     if (!entry) return
     entry.events.push({
       id: `evt_${entry.events.length + 1}`,
       type,
-      created: Date.now(),
+      created,
       durable: { aggregateID: sessionID, seq: entry.events.length + 1, version: 1 },
       data: { sessionID, ...data },
     })
   }
 
-  const seed = (sessionID: string, model: { providerID: string; id: string; variant?: string }, events: Array<[string, Record<string, unknown>?]> = []) => {
-    stored.set(sessionID, { info: info({ id: sessionID, model }), events: [] })
-    for (const [type, data] of events) append(sessionID, type, data)
+  const seed = (
+    sessionID: string,
+    model: { providerID: string; id: string; variant?: string },
+    events: Array<[string, Record<string, unknown>?, number?]> = [],
+    clock: InfoOptions = {},
+  ) => {
+    stored.set(sessionID, { info: info({ ...clock, id: sessionID, model }), events: [] })
+    for (const [type, data, created] of events) append(sessionID, type, data, created)
   }
 
   const sessionLayer = Layer.succeed(
@@ -89,9 +97,9 @@ export const fakeWorld = (options: WorldOptions = {}) => {
           }
           return Effect.succeed({ messageID })
         }),
-      pending: () => Effect.succeed([]),
+      pending: (sessionID) => Effect.succeed((pending.get(sessionID) ?? []) as never),
     }),
   )
 
-  return { creates, enqueues, stored, seed, append, sessionLayer, channelLayer }
+  return { creates, enqueues, stored, pending, seed, append, sessionLayer, channelLayer }
 }
