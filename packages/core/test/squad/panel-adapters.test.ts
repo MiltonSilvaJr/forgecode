@@ -165,8 +165,20 @@ describe("SquadPanel with adapters", () => {
   const git = Layer.succeed(
     Git.Service,
     {
-      repo: { discover: () => Effect.succeed(undefined) },
-      history: { resolve: (_repository: unknown, ref: string) => Effect.succeed(ref === "dev" ? "a".repeat(40) : head) },
+      repo: {
+        discover: () =>
+          Effect.succeed(
+            Git.Repository.make({
+              worktree: "/squad/ATLAS" as never,
+              gitDirectory: "/squad/ATLAS/.git" as never,
+              commonDirectory: "/squad/ATLAS/.git" as never,
+            }),
+          ),
+      },
+      history: {
+        resolve: (_repository: unknown, ref: string) => Effect.succeed(ref === "dev" ? "a".repeat(40) : head),
+        isAncestor: () => Effect.succeed(undefined),
+      },
     } as unknown as Git.Interface,
   )
   const layer = (directory: string, panel: ConfigSquad.Info["panel"]) =>

@@ -2,12 +2,16 @@ export * as SquadPanel from "./panel.js"
 
 import { createHash } from "node:crypto"
 import { DateTime, Effect } from "effect"
+import { Config } from "../config.js"
 import { Database } from "../database/database.js"
 import { Git } from "../git.js"
 import { AbsolutePath } from "../schema.js"
+import { ConfigSquad } from "@opencode/schema/config/squad"
 import { Squad } from "@opencode/schema/squad"
 import { SquadDispatch } from "./dispatch.js"
 import { requireEnabled } from "./guard.js"
+import { PanelCi } from "./panel/ci.js"
+import { PanelJira } from "./panel/jira.js"
 import { SquadStore } from "./store.js"
 
 const stageNames = ["jira", "ci", "merge", "deploy", "acceptance"] as const
@@ -26,7 +30,9 @@ const unknown = (source: string) => Squad.Stage.make({ status: "unknown", eviden
 export const build = Effect.fn("SquadPanel.build")(function* () {
   yield* requireEnabled()
   const dispatches = yield* SquadDispatch.list()
-  const cards = yield* Effect.forEach(dispatches, card, { concurrency: 4 })
+  const config = yield* Config.Service
+  const panel = Config.latest(yield* config.entries(), "squad")?.panel
+  const cards = yield* Effect.forEach(dispatches, (dispatch) => card(dispatch, panel), { concurrency: 4 })
   const now = DateTime.makeUnsafe(Date.now())
   const byID = Object.fromEntries(cards.map((entry) => [entry.id, entry]))
   return Squad.PanelDocument.make({
@@ -35,14 +41,30 @@ export const build = Effect.fn("SquadPanel.build")(function* () {
     atualizadoEm: now,
     colunas: columns,
     cards: byID,
-    fonte: { dispatch: "squad_dispatch ledger", merge: "git merge-base --is-ancestor", acceptance: "squad dispatch accept" },
+    fonte: {
+      dispatch: "squad_dispatch ledger",
+      merge: "git merge-base --is-ancestor",
+      acceptance: "squad dispatch accept",
+      jira: panel?.jira_command === undefined ? "not configured" : "squad.panel.jira_command",
+      ci: panel?.ci_evidence !== undefined ? "squad.panel.ci_evidence" : panel?.ci_command !== undefined ? "squad.panel.ci_command" : "not configured",
+    },
   })
 })
 
-const card = Effect.fn("SquadPanel.card")(function* (dispatch: Squad.Dispatch) {
+const card = Effect.fn("SquadPanel.card")(function* (dispatch: Squad.Dispatch, panel: ConfigSquad.Info["panel"]) {
   const stages = {
-    jira: unknown("none"),
-    ci: unknown("none"),
+    jira: yield* PanelJira.read({
+      command: panel?.jira_command,
+      orq: dispatch.orqID,
+      head: dispatch.head,
+      since: DateTime.toEpochMillis(dispatch.createdAt),
+    }),
+    ci: yield* PanelCi.read({
+      command: panel?.ci_command,
+      evidence: panel?.ci_evidence,
+      name: dispatch.proof,
+      headOid: dispatch.headOid,
+    }),
     merge: yield* mergeStage(dispatch),
     deploy: unknown("none"),
     acceptance: acceptanceStage(dispatch),
