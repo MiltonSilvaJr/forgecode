@@ -344,6 +344,7 @@ export const SessionStatus = Schema.Struct({
   state: SessionState,
   liveness: Liveness,
   inboxPending: Schema.Int,
+  cost: CostSnapshot,
 }).annotate({ identifier: "Squad.SessionStatus" })
 
 export const PreviousSession = Schema.Struct({
@@ -364,5 +365,6 @@ export const LivenessReport = Schema.Struct({
   generation: Schema.NullOr(GenerationID),
   sessions: Schema.Array(SessionStatus),
   inboxPending: Schema.Int,
+  cost: CostSnapshot,
   previous: Schema.NullOr(PreviousGeneration),
 }).annotate({ identifier: "Squad.LivenessReport" })

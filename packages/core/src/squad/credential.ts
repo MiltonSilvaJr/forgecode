@@ -7,6 +7,10 @@ import { SubscriptionService } from "../subscription/service.js"
 
 export interface Status {
   readonly presence: Squad.CredentialPresence
+  /** When the credential expires, if the source knows. Informational: it never changes `presence`. */
+  readonly expiresAt?: number
+  /** True when `expiresAt` falls inside `squad.credential.expiry_warn`. */
+  readonly expiryWarn?: boolean
 }
 
 export interface Interface {

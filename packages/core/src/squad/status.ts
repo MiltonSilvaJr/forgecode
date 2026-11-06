@@ -61,6 +61,7 @@ export const status = Effect.fn("SquadStatus.status")(function* () {
     generation: active ? Squad.GenerationID.make(active.id) : null,
     sessions,
     inboxPending: sessions.reduce((total, row) => total + row.inboxPending, 0),
+    cost: Squad.CostSnapshot.make({ unknown: true }),
     previous,
   })
 })
@@ -102,5 +103,6 @@ const sessionStatus = Effect.fn("SquadStatus.sessionStatus")(function* (
     state: row.state,
     liveness: Squad.Liveness.make({ ...measured, sessionState: row.state, ...(cause === "" ? {} : { cause }) }),
     inboxPending: pending.length,
+    cost: Squad.CostSnapshot.make({ unknown: true }),
   })
 })
