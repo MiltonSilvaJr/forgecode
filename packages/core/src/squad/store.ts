@@ -1,7 +1,7 @@
 export * as SquadStore from "./store.js"
 
 import { Context, Effect, Layer } from "effect"
-import { and, eq } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 import { EffectDrizzleSqlite } from "../database/drizzle.js"
 import { SquadGenerationTable, SquadIdempotencyTable, SquadSessionTable } from "./sql.js"
 
@@ -59,6 +59,7 @@ export const Default: Interface = {
       .select()
       .from(SquadSessionTable)
       .where(eq(SquadSessionTable.generation_id, generationID))
+      .orderBy(sql`rowid`)
       .all()
       .pipe(Effect.orDie),
   sessionByID: (q, sessionID) =>
