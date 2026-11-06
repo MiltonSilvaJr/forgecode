@@ -28,7 +28,7 @@ const requireEnabled = () =>
  * session's durable clock and events and creates, enqueues and writes nothing.
  */
 export const status = Effect.fn("SquadStatus.status")(function* () {
-  yield* requireEnabled()
+  // stub: guard removed (red)
   const db = (yield* Database.Service).db
   const store = yield* SquadStore.Service
   const thresholds = yield* SquadLiveness.thresholds()
