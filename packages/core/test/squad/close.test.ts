@@ -6,6 +6,7 @@ import { Config } from "@opencode/core/config"
 import { Database } from "@opencode/core/database/database"
 import { SquadActivity } from "@opencode/core/squad/activity"
 import { SquadAudit } from "@opencode/core/squad/audit"
+import { SquadChannel } from "@opencode/core/squad/channel"
 import { SquadCheckpoint } from "@opencode/core/squad/checkpoint"
 import { ConflictError, SquadRegistry } from "@opencode/core/squad/registry"
 import { SquadCheckpointTable, SquadSessionTable } from "@opencode/core/squad/sql"
@@ -40,12 +41,21 @@ const activity = Layer.succeed(
   SquadActivity.Service.of({ isActive: (sessionID) => Effect.succeed(running.has(sessionID)) }),
 )
 
+const channel = Layer.succeed(
+  SquadChannel.Service,
+  SquadChannel.Service.of({
+    enqueue: () => Effect.die("close and transition never enqueue"),
+    pending: () => Effect.succeed([]),
+  }),
+)
+
 const layer = (directory: string) =>
   Layer.mergeAll(
     SquadRegistry.layer,
     SquadStore.layer,
     SquadAudit.layer,
     activity,
+    channel,
     Database.layer({ path: path.join(directory, "opencode.db") }).pipe(Layer.provide(globalFor(directory))),
     Config.testLayer(enabled),
   )

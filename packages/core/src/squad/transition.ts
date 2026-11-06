@@ -18,6 +18,8 @@ import { SquadStore } from "./store.js"
 export interface CloseInput {
   readonly generation: string
   readonly by?: string
+  readonly force?: boolean
+  readonly reason?: string
   readonly idempotencyKey?: string
 }
 
