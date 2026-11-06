@@ -9,6 +9,7 @@ import { Config } from "../config.js"
 import { Database } from "../database/database.js"
 import { SquadActivity } from "./activity.js"
 import { SquadAudit } from "./audit.js"
+import { SquadChannel } from "./channel.js"
 import { SquadCheckpoint } from "./checkpoint.js"
 import { DisabledError } from "./index.js"
 import { ConflictError, SessionNotFoundError, registryDigest } from "./registry.js"
@@ -93,9 +94,19 @@ const receiptOf = Effect.fn("SquadTransition.receipt")(function* (q: SquadStore.
 })
 
 /**
+ * The session that issues the close: `by` as a name or session id, else the orchestrator. It is busy by
+ * definition while the command runs, so it is left out of the execution check.
+ */
+const senderOf = (sessions: readonly SquadStore.SessionRow[], by: string | undefined) =>
+  by === undefined
+    ? sessions.find((entry) => entry.role === "orchestrator")
+    : sessions.find((entry) => entry.name === by || entry.session_id === by)
+
+/**
  * Close the active generation and write the transition receipt. Refused, with the generation left `active`,
- * while any session lacks an intact checkpoint or has an execution in flight. The orchestrator is recorded
- * as kept open and is never ended by squad.
+ * while any session lacks an intact checkpoint or has an execution in flight (the issuing session excepted)
+ * or has queued inbox items (waived only by `force` with a reason). The orchestrator is recorded as kept open
+ * and is never ended by squad.
  */
 export const close = Effect.fn("SquadTransition.close")(function* (input: CloseInput) {
   yield* requireEnabled()
@@ -103,7 +114,7 @@ export const close = Effect.fn("SquadTransition.close")(function* (input: CloseI
   const store = yield* SquadStore.Service
   const audit = yield* SquadAudit.Service
   const activity = yield* SquadActivity.Service
-  const by = input.by ?? "operator"
+  const channel = yield* SquadChannel.Service
   const key = closeKey(input.generation)
   const now = Date.now()
 
@@ -114,15 +125,22 @@ export const close = Effect.fn("SquadTransition.close")(function* (input: CloseI
         if (existing.kind !== "close" || existing.generation_id !== input.generation)
           return yield* new ConflictError({ message: "idempotency key reused for a different operation", pendencies: [] })
         const receipt = yield* receiptOf(tx, input.generation)
-        if (receipt) return { receipt, fresh: false }
+        if (receipt) return { receipt, fresh: false, by: receipt.closedBy, forced: [] as string[] }
       }
       const generation = yield* store.generation(tx, input.generation)
       if (!generation) return yield* new SessionNotFoundError({ message: `generation ${input.generation} not found` })
       if (generation.state !== "active")
         return yield* new ConflictError({ message: `generation ${generation.id} is ${generation.state}, not active`, pendencies: [] })
       const sessions = yield* store.sessions(tx, generation.id)
+      const sender = senderOf(sessions, input.by)
+      if (input.by !== undefined && !sender)
+        return yield* new ConflictError({ message: `sender ${input.by} is not a session of generation ${generation.id}`, pendencies: [] })
+      const by = sender?.name ?? "operator"
+      if (input.force && (input.reason === undefined || input.reason.trim() === ""))
+        return yield* new ConflictError({ message: "--force requires --reason", pendencies: [] })
 
       const pendencies: string[] = []
+      const inbox: string[] = []
       for (const entry of sessions) {
         const stored = entry.checkpoint_sha256
           ? yield* tx
@@ -141,9 +159,13 @@ export const close = Effect.fn("SquadTransition.close")(function* (input: CloseI
         if (!entry.checkpoint_sha256) pendencies.push(`${entry.name}: checkpoint ausente`)
         else if (!stored || SquadCheckpoint.hash(stored.body) !== entry.checkpoint_sha256)
           pendencies.push(`${entry.name}: checkpoint corrompido`)
-        if (entry.session_id !== null && (yield* activity.isActive(Session.ID.make(entry.session_id))))
-          pendencies.push(`${entry.name}: execução ativa`)
+        if (entry.session_id === null) continue
+        const sessionID = Session.ID.make(entry.session_id)
+        if (entry !== sender && (yield* activity.isActive(sessionID))) pendencies.push(`${entry.name}: execução ativa`)
+        const queued = (yield* channel.pending(sessionID)).length
+        if (queued > 0) inbox.push(`${entry.name}: inbox_pending ${queued}`)
       }
+      if (!input.force) pendencies.push(...inbox)
       if (pendencies.length > 0)
         return yield* new ConflictError({ message: "close blocked: the generation has open pendencies", pendencies })
 
@@ -182,7 +204,7 @@ export const close = Effect.fn("SquadTransition.close")(function* (input: CloseI
           .pipe(Effect.orDie)
       yield* store.insertIdempotency(tx, { key, generation_id: generation.id, kind: "close", result_ref: generation.id, created_at: now })
       const receipt = yield* receiptOf(tx, generation.id)
-      return { receipt: receipt!, fresh: true }
+      return { receipt: receipt!, fresh: true, by, forced: input.force ? inbox : [] }
     }),
   )
   if (result.fresh)
@@ -191,8 +213,12 @@ export const close = Effect.fn("SquadTransition.close")(function* (input: CloseI
       generation: input.generation,
       target: input.generation,
       result: "accepted",
-      actor: by,
-      detail: result.receipt.sourceRegistryDigest,
+      actor: result.by,
+      detail: JSON.stringify({
+        closed_by: result.by,
+        digest: result.receipt.sourceRegistryDigest,
+        ...(result.forced.length > 0 ? { forced: result.forced, forced_reason: input.reason } : {}),
+      }),
     })
   return result.receipt
 })

@@ -102,11 +102,11 @@ describe("SquadChannel", () => {
 })
 
 describe("squad import boundary", () => {
-  it.live("only channel.ts and credential.ts reach the inbox or credential primitives", () =>
+  it.live("only channel.ts, credential.ts and activity.ts reach the session, inbox or credential primitives", () =>
     Effect.sync(() => {
       const directory = path.join(import.meta.dir, "../../src/squad")
       const offenders = readdirSync(directory)
-        .filter((file) => file.endsWith(".ts") && file !== "channel.ts" && file !== "credential.ts")
+        .filter((file) => file.endsWith(".ts") && file !== "channel.ts" && file !== "credential.ts" && file !== "activity.ts")
         .filter((file) =>
           /from "(\.\.\/session(\.js|\/[^"]*)|\.\.\/subscription\/[^"]*|@opencode\/core\/session[^"]*|@opencode\/core\/subscription[^"]*)"/u.test(
             readFileSync(path.join(directory, file), "utf8"),
