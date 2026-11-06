@@ -196,6 +196,8 @@ import type {
   ExperimentalSquadPlanOutput,
   ExperimentalSquadSessionSendInput,
   ExperimentalSquadSessionSendOutput,
+  ExperimentalSquadBroadcastInput,
+  ExperimentalSquadBroadcastOutput,
   ExperimentalSquadAuditInput,
   ExperimentalSquadAuditOutput,
   FormListInput,
@@ -1394,6 +1396,22 @@ const EndpointExperimentalSquadSessionSend =
       ),
     )
 
+const EndpointExperimentalSquadBroadcast =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadBroadcastInput) =>
+    preserveEffect<ExperimentalSquadBroadcastOutput>()(
+      raw["squad.broadcast"]({
+        payload: {
+          text: input["text"],
+          from: input["from"],
+          includeSelf: input["includeSelf"],
+          idempotencyKey: input["idempotencyKey"],
+        },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
 const EndpointExperimentalSquadAudit = (raw: RawClient["server.squad"]) => (input?: ExperimentalSquadAuditInput) =>
   preserveEffect<ExperimentalSquadAuditOutput>()(
     raw["squad.audit"]({ query: { since: input?.["since"] } }).pipe(
@@ -1407,6 +1425,7 @@ const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
   session: { list: EndpointExperimentalSquadSessionList(raw), send: EndpointExperimentalSquadSessionSend(raw) },
   check: EndpointExperimentalSquadCheck(raw),
   plan: EndpointExperimentalSquadPlan(raw),
+  broadcast: EndpointExperimentalSquadBroadcast(raw),
   audit: EndpointExperimentalSquadAudit(raw),
 })
 

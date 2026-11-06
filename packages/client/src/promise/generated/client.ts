@@ -190,6 +190,8 @@ import type {
   ExperimentalSquadPlanOutput,
   ExperimentalSquadSessionSendInput,
   ExperimentalSquadSessionSendOutput,
+  ExperimentalSquadBroadcastInput,
+  ExperimentalSquadBroadcastOutput,
   ExperimentalSquadAuditInput,
   ExperimentalSquadAuditOutput,
   FormListInput,
@@ -1478,6 +1480,23 @@ export function make(options: ClientOptions) {
             {
               method: "GET",
               path: `/api/experimental/squad/plan`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        broadcast: (input: ExperimentalSquadBroadcastInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadBroadcastOutput }>(
+            {
+              method: "POST",
+              path: `/api/experimental/squad/broadcast`,
+              body: {
+                text: input["text"],
+                from: input["from"],
+                includeSelf: input["includeSelf"],
+                idempotencyKey: input["idempotencyKey"],
+              },
               successStatus: 200,
               declaredStatuses: [400, 401, 403, 409, 503],
               empty: false,

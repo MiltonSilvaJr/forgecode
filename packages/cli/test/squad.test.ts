@@ -115,6 +115,19 @@ describe("squad command", () => {
       expect(result.stdout).toContain(flag)
   })
 
+  test("squad broadcast --help shows the broadcast flags", async () => {
+    const result = await cli(["squad", "broadcast", "--help"])
+    expect(result.exitCode).toBe(0)
+    for (const flag of ["--message-file", "--include-self", "--idempotency-key", "--json"])
+      expect(result.stdout).toContain(flag)
+  })
+
+  test("broadcast fails on a missing message file before reaching the server", async () => {
+    const result = await cli(["squad", "broadcast", "--message-file", "/nonexistent/message.txt"])
+    expect(result.exitCode).toBe(1)
+    expect(result.stderr).toContain("cannot read message file")
+  })
+
   test("send rejects an invalid delivery before any effect", async () => {
     const result = await cli(["squad", "send", "--to", "ATLAS", "--message-file", "/nonexistent", "--delivery", "now"])
     expect(result.exitCode).toBe(2)

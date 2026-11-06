@@ -2015,6 +2015,17 @@ export type ExperimentalSquadSessionSendOperation<E = never> = (
   input: ExperimentalSquadSessionSendInput,
 ) => Effect.Effect<ExperimentalSquadSessionSendOutput, E>
 
+export type ExperimentalSquadBroadcastInput = {
+  readonly text: string
+  readonly from?: string | undefined
+  readonly includeSelf?: boolean | undefined
+  readonly idempotencyKey?: string | undefined
+}
+export type ExperimentalSquadBroadcastOutput = Squad.BroadcastReport
+export type ExperimentalSquadBroadcastOperation<E = never> = (
+  input: ExperimentalSquadBroadcastInput,
+) => Effect.Effect<ExperimentalSquadBroadcastOutput, E>
+
 export type ExperimentalSquadAuditInput = { readonly since?: string | undefined }
 export type ExperimentalSquadAuditOutput = ReadonlyArray<Squad.AuditEntry>
 export type ExperimentalSquadAuditOperation<E = never> = (
@@ -2029,6 +2040,7 @@ export interface ExperimentalSquadApi<E = never> {
   }
   readonly check: ExperimentalSquadCheckOperation<E>
   readonly plan: ExperimentalSquadPlanOperation<E>
+  readonly broadcast: ExperimentalSquadBroadcastOperation<E>
   readonly audit: ExperimentalSquadAuditOperation<E>
 }
 

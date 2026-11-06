@@ -888,6 +888,14 @@ export type SquadEnqueueProof = {
   at: number
 }
 
+export type SquadBroadcastResult = {
+  name: SquadSessionName
+  sessionID?: SessionID
+  status: "accepted" | "rejected" | "not_attempted"
+  messageID?: SessionMessageID
+  reason?: string
+}
+
 export type SquadSessionCheck = {
   name: SquadSessionName
   checks: Array<SquadCheckItem>
@@ -2318,6 +2326,8 @@ export type CredentialValue = CredentialOAuth | CredentialKey | CredentialExtern
 export type ConnectionInfo = ConnectionCredentialInfo | ConnectionEnvInfo
 
 export type SubscriptionAuthStatus = { enabled: boolean; providers: Array<SubscriptionAuthStatusProvider> }
+
+export type SquadBroadcastReport = { results: Array<SquadBroadcastResult> }
 
 export type SquadCheckReport = { sessions: Array<SquadSessionCheck> }
 
@@ -4494,6 +4504,15 @@ export type ExperimentalSquadSessionSendInput = {
 }
 
 export type ExperimentalSquadSessionSendOutput = { data: SquadEnqueueProof }["data"]
+
+export type ExperimentalSquadBroadcastInput = {
+  readonly text: string
+  readonly from?: string | undefined
+  readonly includeSelf?: boolean | undefined
+  readonly idempotencyKey?: string | undefined
+}
+
+export type ExperimentalSquadBroadcastOutput = { data: SquadBroadcastReport }["data"]
 
 export type ExperimentalSquadAuditInput = { readonly since?: string | undefined }
 

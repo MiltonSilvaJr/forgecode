@@ -40,6 +40,13 @@ const SendInput = Schema.Struct({
   idempotencyKey: Schema.String.pipe(optional),
 }).annotate({ identifier: "Squad.SendInput" })
 
+const BroadcastInput = Schema.Struct({
+  text: Schema.String,
+  from: Schema.String.pipe(optional),
+  includeSelf: Schema.Boolean.pipe(optional),
+  idempotencyKey: Schema.String.pipe(optional),
+}).annotate({ identifier: "Squad.BroadcastInput" })
+
 export const SquadGroup = HttpApiGroup.make("server.squad")
   .add(
     HttpApiEndpoint.post("squad.generation.create", "/api/experimental/squad/generation", {
@@ -108,6 +115,20 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
         summary: "Send a message to a squad session",
         description:
           "Enqueue a message in a verified squad session's inbox and return the enqueue proof (message id and acceptance, never a read receipt). Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.broadcast", "/api/experimental/squad/broadcast", {
+      payload: BroadcastInput,
+      success: Schema.Struct({ data: Squad.BroadcastReport }),
+      error: [InvalidRequestError, ForbiddenError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.broadcast",
+        summary: "Broadcast a message to the active generation",
+        description:
+          "Validate every recipient first, then enqueue in configuration order. Delivery is best-effort and not transactional: a failure in the middle keeps what was queued and reports the rest as not_attempted. Experimental: may change without compatibility guarantees.",
       }),
     ),
   )

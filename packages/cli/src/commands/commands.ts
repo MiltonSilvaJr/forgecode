@@ -585,6 +585,25 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
           },
         }),
+        Spec.make("broadcast", {
+          description: "Validate every recipient, then enqueue a message in each verified session of the active generation",
+          globalFlags: ServerFlags,
+          params: {
+            messageFile: Flag.String("message-file").pipe(
+              Flag.withDescription("Read the message from a UTF-8 file"),
+              Flag.optional,
+            ),
+            includeSelf: Flag.Boolean("include-self").pipe(
+              Flag.withDescription("Include the calling session among the recipients"),
+              Flag.withDefault(false),
+            ),
+            idempotencyKey: Flag.String("idempotency-key").pipe(
+              Flag.withDescription("Idempotency key (same key, same message id per recipient)"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
         Spec.make("send", {
           description: "Enqueue a message in a squad session's inbox (proof of enqueue, never of reading)",
           globalFlags: ServerFlags,
