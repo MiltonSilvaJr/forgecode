@@ -167,7 +167,47 @@ export interface AcquireInput {
   readonly via: "launch" | "dispatch"
 }
 
-/** `acquired` when this call opened the ownership row, `held` when the same session already owned the tree. */
+/**
+ * Ownership is global, not per generation: one active row per tree in the whole database. A different session,
+ * or the same name in another generation, cannot take the tree until the current row is released.
+ * Returns `acquired` when this call opened the row and `held` when the session already owned the tree.
+ */
+export const acquireIn = (tx: SquadStore.Transaction, tree: TreeKey, input: Omit<AcquireInput, "directory">) =>
+  Effect.gen(function* () {
+    const current = yield* tx
+      .select()
+      .from(SquadTreeOwnerTable)
+      .where(and(eq(SquadTreeOwnerTable.tree_key, tree.key), isNull(SquadTreeOwnerTable.released_at)))
+      .get()
+      .pipe(Effect.orDie)
+    if (current) {
+      if (current.owner_name === input.name && current.generation_id === input.generationID) return "held" as const
+      return yield* new ConflictError({
+        message: `tree ${tree.key} is owned by ${current.owner_name} (generation ${current.generation_id}); release it before ${input.name} can take it`,
+        pendencies: [],
+      })
+    }
+    yield* tx
+      .insert(SquadTreeOwnerTable)
+      .values({
+        id: randomUUID(),
+        tree_key: tree.key,
+        tree_scope: tree.scope,
+        generation_id: input.generationID,
+        owner_name: input.name,
+        acquired_via: input.via,
+        since: Date.now(),
+      })
+      .run()
+      .pipe(Effect.orDie)
+    return "acquired" as const
+  })
+
+/** Entry point `launch` calls on verification (`via: "launch"`); the first dispatch confirms with `via: "dispatch"`. */
 export const acquireTree = Effect.fn("SquadOwnership.acquireTree")(function* (input: AcquireInput) {
-  return { status: "acquired" as "acquired" | "held", key: input.directory }
+  yield* requireEnabled()
+  const db = (yield* Database.Service).db
+  const tree = yield* treeKey(input.directory)
+  const status = yield* db.transaction((tx) => acquireIn(tx, tree, input)).pipe(Effect.catchTag("SqlError", Effect.die))
+  return { status, key: tree.key, scope: tree.scope }
 })

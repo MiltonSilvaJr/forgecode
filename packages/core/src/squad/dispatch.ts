@@ -8,6 +8,7 @@ import { Database } from "../database/database.js"
 import { Git } from "../git.js"
 import { AbsolutePath } from "../schema.js"
 import { SquadAudit } from "./audit.js"
+import { SquadOwnership } from "./ownership.js"
 import { SquadSend } from "./send.js"
 import { requireEnabled } from "./guard.js"
 import { InvalidInputError } from "./invalid.js"
@@ -137,10 +138,12 @@ export const create = Effect.fn("SquadDispatch.create")(function* (input: Create
   }
   const validation = baseOid !== undefined && headOid !== undefined ? "verified" : "unknown"
 
+  const tree = yield* SquadOwnership.treeKey(ownerSession.location.directory)
   const now = Date.now()
   const row = yield* db
     .transaction((tx) =>
       Effect.gen(function* () {
+        yield* SquadOwnership.acquireIn(tx, tree, { generationID: generation.id, name: owner, via: "dispatch" })
         const last = yield* tx
           .select({ seq: sql<number>`coalesce(max(${SquadDispatchTable.seq}), 0)` })
           .from(SquadDispatchTable)
@@ -174,7 +177,7 @@ export const create = Effect.fn("SquadDispatch.create")(function* (input: Create
           .get()
       }),
     )
-    .pipe(Effect.orDie)
+    .pipe(Effect.catchTag("SqlError", Effect.die))
 
   yield* audit.append({
     kind: "dispatch",
