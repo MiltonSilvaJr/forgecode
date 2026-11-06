@@ -19,7 +19,7 @@ export default Runtime.handler(Commands.commands.auth.commands.test, (input) =>
 const test = Effect.fn("cli.auth.test")(function* (input) {
   const client = yield* createClient()
   const response = yield* request((signal) =>
-    client.experimental["server.subscription"].test(
+    client.experimental.subscription.test(
       { integrationID: input.target, model: Option.getOrUndefined(input.model), location },
       { signal },
     ),

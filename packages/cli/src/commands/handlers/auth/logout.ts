@@ -29,10 +29,7 @@ export default Runtime.handler(
   }),
 )
 
-const logout = Effect.fn("cli.auth.logout.run")(function* (input: {
-  target?: string
-  credential?: string
-}) {
+const logout = Effect.fn("cli.auth.logout.run")(function* (input: { target?: string; credential?: string }) {
   if (!input.target)
     yield* requireInteractive("Pass an integration ID or name when running without an interactive terminal")
   if (!input.credential)
@@ -59,9 +56,7 @@ const NATIVE_LOGOUT = {
 
 const subscriptionLogout = Effect.fn("cli.auth.logout.subscription")(function* (target: string) {
   const client = yield* createClient()
-  const response = yield* request((signal) =>
-    client.experimental["server.subscription"].status({ location }, { signal }),
-  )
+  const response = yield* request((signal) => client.experimental.subscription.status({ location }, { signal }))
   const provider = response.data.providers.find((item) => item.id === target)
   if (provider?.source === "native") return yield* Effect.fail(nativeSessionError(target))
   log.success(`No OpenCode-managed session for ${target}; nothing to remove`)
