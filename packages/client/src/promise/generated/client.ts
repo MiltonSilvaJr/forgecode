@@ -1716,7 +1716,7 @@ export function make(options: ClientOptions) {
               method: "GET",
               path: `/api/experimental/squad/panel`,
               successStatus: 200,
-              declaredStatuses: [400, 401, 403, 503],
+              declaredStatuses: [400, 401, 403, 409, 503],
               empty: false,
             },
             requestOptions,

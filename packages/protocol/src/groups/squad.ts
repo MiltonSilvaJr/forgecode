@@ -377,7 +377,7 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
   .add(
     HttpApiEndpoint.get("squad.panel", "/api/experimental/squad/panel", {
       success: Schema.Struct({ data: Squad.PanelDocument }),
-      error: [ForbiddenError, ServiceUnavailableError],
+      error: [ForbiddenError, ConflictError, ServiceUnavailableError],
     }).annotateMerge(
       OpenApi.annotations({
         identifier: "experimental.squad.panel",
