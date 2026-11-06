@@ -53,6 +53,21 @@ it.live("rejects a login without terms acceptance", () =>
   }),
 )
 
+it.live("rejects refresh without terms acceptance", () =>
+  Effect.gen(function* () {
+    const server = yield* startWithContent(JSON.stringify({ subscription_auth: { enabled: true } }))
+    const response = yield* Effect.promise(() =>
+      fetch(new URL("/api/experimental/subscription/kimi-code/refresh", server.base), {
+        method: "POST",
+        headers: server.headers,
+      }),
+    )
+    const body: { _tag: string; code: string } = yield* Effect.promise(() => response.json())
+    expect(response.status).toBe(400)
+    expect(body.code).toBe("consent_required")
+  }),
+)
+
 it.live("returns session_expired when refreshing an unready native session", () =>
   Effect.gen(function* () {
     const home = os.homedir()
@@ -62,6 +77,14 @@ it.live("returns session_expired when refreshing an unready native session", () 
       fs.writeFile(path.join(creds, "kimi-code.json"), JSON.stringify({ refresh_token: "refresh" })),
     )
     const server = yield* startWithContent(JSON.stringify({ subscription_auth: { enabled: true } }))
+    const consent = yield* Effect.promise(() =>
+      fetch(new URL("/api/experimental/subscription/kimi-code/consent", server.base), {
+        method: "POST",
+        headers: { ...server.headers, "content-type": "application/json" },
+        body: JSON.stringify({ accept: true }),
+      }),
+    )
+    expect(consent.status).toBe(204)
     const response = yield* Effect.promise(() =>
       fetch(new URL("/api/experimental/subscription/kimi-code/refresh", server.base), {
         method: "POST",

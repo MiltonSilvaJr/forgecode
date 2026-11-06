@@ -6,6 +6,7 @@ import { SubscriptionSource } from "../source.js"
 import { SubscriptionNativeSession } from "../native-session.js"
 import type { Env } from "../native-session.js"
 import type { Adapter, CommandRunner, LoginResult, LogoutResult } from "./adapter.js"
+import type { KeychainProbe } from "../native-session.js"
 
 export const integrationID = "claude-code"
 export const providerID = "claude-agent"
@@ -41,7 +42,7 @@ const apiKeySource = (env: Env) =>
       ),
   })
 
-export function make(runner: CommandRunner = realRunner): Adapter {
+export function make(runner: CommandRunner = realRunner, keychain: KeychainProbe = SubscriptionNativeSession.keychainProbe): Adapter {
   return {
     integrationID,
     providerID,
@@ -51,7 +52,7 @@ export function make(runner: CommandRunner = realRunner): Adapter {
         SubscriptionSource.make({
           kind: "native",
           report: () =>
-            SubscriptionNativeSession.claudePresence(env).pipe(
+            SubscriptionNativeSession.claudePresence(env, keychain).pipe(
               Effect.map((presence) => ({
                 present: presence.present,
                 state: presence.present ? ("ready" as const) : ("missing" as const),
@@ -63,7 +64,7 @@ export function make(runner: CommandRunner = realRunner): Adapter {
         apiKeySource(env),
       ]),
     report: (env) =>
-      SubscriptionNativeSession.claudePresence(env).pipe(
+      SubscriptionNativeSession.claudePresence(env, keychain).pipe(
         Effect.map((presence) => ({
           present: presence.present,
           state: presence.present ? ("ready" as const) : ("missing" as const),
@@ -78,7 +79,7 @@ export function make(runner: CommandRunner = realRunner): Adapter {
             code: "transport_unavailable",
             message: "claude-code has no managed OAuth. Run: opencode auth login claude-code --source native",
           }
-        const presence = yield* SubscriptionNativeSession.claudePresence(input.env)
+        const presence = yield* SubscriptionNativeSession.claudePresence(input.env, keychain)
         if (presence.present) return { status: "already_authenticated" }
         const version = yield* runner("claude", ["--version"], input.env)
         if (version.exitCode !== 0)
@@ -97,7 +98,7 @@ export function make(runner: CommandRunner = realRunner): Adapter {
         return { status: "authenticated" }
       }),
     logout: (env): Effect.Effect<LogoutResult> =>
-      SubscriptionNativeSession.claudePresence(env).pipe(
+      SubscriptionNativeSession.claudePresence(env, keychain).pipe(
         Effect.map((presence) =>
           presence.present
             ? {
