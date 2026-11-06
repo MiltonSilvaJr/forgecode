@@ -87,6 +87,7 @@ it.live("creates and lists a generation when the flag is on", () =>
       const liveness = await api.experimental.squad.liveness()
       expect(liveness.generation).toBe("gen-1")
       expect(liveness.previous).toBeNull()
+      expect(liveness.sessions[0]?.cost.unknown).toBe(true)
       expect(liveness.sessions.map((row) => row.name)).toEqual(["ATLAS"])
       const report = await api.experimental.squad.broadcast({ text: "go", from: "ATLAS" })
       expect(report.results).toEqual([])

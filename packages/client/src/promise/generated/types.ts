@@ -318,6 +318,8 @@ export type SquadSessionState = "creating" | "starting" | "verified" | "closed" 
 
 export type SquadCheckItem = { check: string; verdict: "ok" | "warn" | "fail"; reason?: string }
 
+export type SquadCostSnapshot = { cost?: number; tokens?: { input?: number; output?: number }; unknown: boolean }
+
 export type PermissionID = string
 
 export type PermissionSource = { type: "tool"; messageID: string; id: string }
@@ -2376,6 +2378,7 @@ export type SquadSessionStatus = {
   state: SquadSessionState
   liveness: SquadLiveness
   inboxPending: number
+  cost: SquadCostSnapshot
 }
 
 export type SquadCheckReport = { sessions: Array<SquadSessionCheck> }
@@ -2886,6 +2889,7 @@ export type SquadLivenessReport = {
   generation: SquadGenerationID | null
   sessions: Array<SquadSessionStatus>
   inboxPending: number
+  cost: SquadCostSnapshot
   previous: SquadPreviousGeneration | null
 }
 

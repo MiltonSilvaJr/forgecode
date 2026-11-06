@@ -23,9 +23,16 @@ export default Runtime.handler(Commands.commands.squad.commands.status, (input) 
   handler(input).pipe(Effect.catch((cause) => writeSquadError(cause, input.json))),
 )
 
+interface CostSnapshot {
+  cost?: number
+  tokens?: { input?: number; output?: number }
+  unknown: boolean
+}
+
 interface Report {
   generation: string | null
   inboxPending: number
+  cost: CostSnapshot
   sessions: readonly {
     name: string
     state: string
@@ -34,13 +41,18 @@ interface Report {
     model: string
     variant?: string
     inboxPending: number
+    cost: CostSnapshot
     liveness: { verdict: string; lastActivity?: number; source?: string; workingStale: boolean; presumedDead: boolean; cause?: string }
   }[]
   previous: { id: string; sessions: readonly { name: string; sessionID?: string }[] } | null
 }
 
 function formatStatus(report: Report): string {
-  const lines = [report.generation === null ? "No active generation" : `Generation ${report.generation} (inbox pending: ${report.inboxPending})`]
+  const lines = [
+    report.generation === null
+      ? "No active generation"
+      : `Generation ${report.generation} (inbox pending: ${report.inboxPending}, cost: ${formatCost(report.cost)})`,
+  ]
   for (const row of report.sessions) {
     const activity =
       row.liveness.lastActivity === undefined
@@ -53,7 +65,7 @@ function formatStatus(report: Report): string {
     ].filter((flag) => flag !== undefined)
     const cause = row.liveness.cause === undefined ? "" : ` — ${row.liveness.cause}`
     lines.push(
-      `  ${row.name} [${row.state}] ${row.liveness.verdict}${flags.length === 0 ? "" : ` {${flags.join(", ")}}`} ${row.sessionID ?? "-"} ${row.provider}/${row.model}${row.variant ? `#${row.variant}` : ""} — ${activity}${cause}`,
+      `  ${row.name} [${row.state}] ${row.liveness.verdict}${flags.length === 0 ? "" : ` {${flags.join(", ")}}`} ${row.sessionID ?? "-"} ${row.provider}/${row.model}${row.variant ? `#${row.variant}` : ""} cost ${formatCost(row.cost)} — ${activity}${cause}`,
     )
   }
   if (report.previous !== null) {
@@ -61,4 +73,9 @@ function formatStatus(report: Report): string {
     for (const row of report.previous.sessions) lines.push(`  ${row.name} [closed] ${row.sessionID ?? "-"}`)
   }
   return lines.join(EOL)
+}
+
+function formatCost(cost: CostSnapshot): string {
+  if (cost.cost === undefined) return "unknown"
+  return `$${cost.cost.toFixed(4)} (${cost.tokens?.input ?? 0} in / ${cost.tokens?.output ?? 0} out tokens${cost.unknown ? ", partial" : ""})`
 }
