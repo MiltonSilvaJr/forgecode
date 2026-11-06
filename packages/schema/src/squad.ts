@@ -265,6 +265,22 @@ export const EnqueueProof = Schema.Struct({
   at: DateTimeUtcFromMillis,
 }).annotate({ identifier: "Squad.EnqueueProof" })
 
+export const BroadcastStatus = Schema.Literals(["accepted", "rejected", "not_attempted"])
+export type BroadcastStatus = typeof BroadcastStatus.Type
+
+export const BroadcastResult = Schema.Struct({
+  name: SessionName,
+  sessionID: Session.ID.pipe(optional),
+  status: BroadcastStatus,
+  messageID: SessionMessage.ID.pipe(optional),
+  reason: Schema.String.pipe(optional),
+}).annotate({ identifier: "Squad.BroadcastResult" })
+
+export interface BroadcastReport extends Schema.Schema.Type<typeof BroadcastReport> {}
+export const BroadcastReport = Schema.Struct({
+  results: Schema.Array(BroadcastResult),
+}).annotate({ identifier: "Squad.BroadcastReport" })
+
 export const CheckVerdict = Schema.Literals(["ok", "warn", "fail"])
 export type CheckVerdict = typeof CheckVerdict.Type
 
