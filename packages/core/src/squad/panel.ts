@@ -1,13 +1,14 @@
 export * as SquadPanel from "./panel.js"
 
 import { createHash } from "node:crypto"
-import { DateTime, Effect } from "effect"
+import { DateTime, Effect, Schema } from "effect"
 import { Config } from "../config.js"
 import { Database } from "../database/database.js"
 import { Git } from "../git.js"
 import { AbsolutePath } from "../schema.js"
 import { ConfigSquad } from "@opencode/schema/config/squad"
 import { Squad } from "@opencode/schema/squad"
+import { SquadKanban } from "@opencode/schema/squad-kanban"
 import { SquadDispatch } from "./dispatch.js"
 import { requireEnabled } from "./guard.js"
 import { PanelCi } from "./panel/ci.js"
@@ -138,43 +139,4 @@ const acceptanceStage = (dispatch: Squad.Dispatch) => {
 }
 
 /** The document in the shape `priorizacao/build_kanban.py` reads: snake_case keys, ISO instants. */
-export const toKanban = (document: Squad.PanelDocument) => ({
-  versao_schema: document.versaoSchema,
-  revisao: document.revisao,
-  atualizado_em: DateTime.formatIso(document.atualizadoEm),
-  colunas: document.colunas,
-  cards: Object.fromEntries(
-    Object.entries(document.cards).map(([id, entry]) => [
-      id,
-      {
-        id: entry.id,
-        titulo: entry.titulo,
-        coluna: entry.coluna,
-        agente: entry.agente,
-        prioridade: entry.prioridade ?? null,
-        prs: [] as string[],
-        refs: entry.refs,
-        evidencias: entry.evidencias,
-        bloqueio: entry.bloqueio ?? null,
-        atualizado_em: entry.atualizadoEm ? DateTime.formatIso(entry.atualizadoEm) : null,
-        estagios: Object.fromEntries(
-          stageNames.map((name) => {
-            const stage = entry.estagios[name]
-            return [
-              name,
-              {
-                status: stage.status,
-                evidence: stage.evidence ? { type: stage.evidence.type, reference: stage.evidence.reference, at: stage.evidence.at ? DateTime.formatIso(stage.evidence.at) : null } : null,
-                source: stage.source,
-              },
-            ]
-          }),
-        ),
-        exigidos: entry.exigidos,
-        desconhecido: entry.desconhecido,
-        progressa: entry.progressa,
-      },
-    ]),
-  ),
-  fonte: document.fonte,
-})
+export const toKanban = (document: Squad.PanelDocument) => SquadKanban.fromPanel(Schema.encodeSync(Squad.PanelDocument)(document))

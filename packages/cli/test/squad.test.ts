@@ -374,8 +374,8 @@ describe("squad command", () => {
   )
 
   test("the panel summary counts cards per column and names the ones that cannot show progress", () => {
-    const stage = { status: "unknown", evidence: null, source: "none" }
-    const card = (id: string, coluna: string, progressa: boolean, desconhecido: string[]) => ({
+    const stage = { status: "unknown" as const, evidence: null, source: "none" }
+    const card = (id: string, coluna: "backlog" | "done", progressa: boolean, desconhecido: "ci"[]) => ({
       id,
       titulo: id,
       coluna,
@@ -387,7 +387,7 @@ describe("squad command", () => {
       bloqueio: null,
       atualizado_em: null,
       estagios: { jira: stage, ci: stage, merge: stage, deploy: stage, acceptance: stage },
-      exigidos: ["ci"],
+      exigidos: ["ci" as const],
       desconhecido,
       progressa,
     })
