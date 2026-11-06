@@ -99,10 +99,13 @@ test("mounts at most viewport + 4 card renderables with 200 cards", async () => 
   try {
     expect(squadCards(app).length).toBeLessThanOrEqual(28)
     const mounted = () => squadCards(app).map((node) => node.id)
-    expect(mounted()).not.toContain("squad-card-card-150")
-    for (let index = 0; index < 150; index += 1) app.mockInput.pressKey("j")
+    expect(mounted()).not.toContain("squad-card-card-200")
+    // Clamp at the last card keeps the target deterministic regardless of dispatch pacing.
+    for (let index = 0; index < 210; index += 1) app.mockInput.pressKey("j")
     await app.renderOnce()
-    expect(mounted()).toContain("squad-card-card-150")
+    expect(mounted().length).toBeLessThanOrEqual(28)
+    expect(mounted()).toContain("squad-card-card-200")
+    expect(mounted()).not.toContain("squad-card-card-1")
   } finally {
     app.renderer.destroy()
   }

@@ -6,7 +6,7 @@ import type { Plugin } from "@opencode/plugin/tui"
 import { boardKeys } from "./board-keys"
 import { boardModel, stalled, type BoardColumn } from "./board-model"
 import { CardDetail } from "./card-detail"
-import { mode } from "./layout"
+import { mode, windowStart } from "./layout"
 import { freshnessLabel } from "./render-fields"
 import type { SquadBoardHandle } from "./use-squad-board"
 
@@ -35,6 +35,28 @@ function BoardCard(props: { card: SquadPanelCard; selected: boolean; theme: Plug
   )
 }
 
+function ColumnView(props: {
+  column: BoardColumn | undefined
+  selectedRow: number
+  selectedCardID: string | undefined
+  size: number
+  theme: Plugin.Context["theme"]
+}) {
+  const start = () => windowStart(props.column?.cards.length ?? 0, props.selectedRow, props.size)
+  return (
+    <Show when={props.column !== undefined}>
+      <box flexGrow={1} flexShrink={1} flexDirection="column" overflow="hidden">
+        <text fg={props.theme.text.base} wrapMode="none">
+          {props.column!.id} · {props.column!.cards.length}
+        </text>
+        <For each={props.column!.cards.slice(start(), start() + props.size)}>
+          {(card) => <BoardCard card={card} selected={card.id === props.selectedCardID} theme={props.theme} />}
+        </For>
+      </box>
+    </Show>
+  )
+}
+
 export function Board(props: { context: Plugin.Context; board: SquadBoardHandle; now: () => number }) {
   const theme = props.context.theme
   const dimensions = useTerminalDimensions()
@@ -59,11 +81,14 @@ export function Board(props: { context: Plugin.Context; board: SquadBoardHandle;
   })
 
   const columns = createMemo(() => model()?.columns ?? [])
-  const layout = createMemo(() => mode(dimensions().width))
   const currentColumn = createMemo<BoardColumn | undefined>(() => columns()[columnIndex()])
   const focusedCard = createMemo<SquadPanelCard | undefined>(
     () => currentColumn()?.cards[Math.min(rowIndex(), Math.max(0, (currentColumn()?.cards.length ?? 1) - 1))],
   )
+
+  const layout = createMemo(() => mode(dimensions().width))
+  // NFR-01: at most viewport + 4 card renderables per column.
+  const windowSize = createMemo(() => Math.max(4, dimensions().height + 4))
 
   const clampRow = (column: BoardColumn | undefined, row: number) =>
     Math.max(0, Math.min(row, Math.max(0, (column?.cards.length ?? 1) - 1)))
@@ -163,36 +188,31 @@ export function Board(props: { context: Plugin.Context; board: SquadBoardHandle;
           <box flexGrow={1} flexDirection="row" overflow="hidden">
             <For each={model()!.columns}>
               {(column) => (
-                <box flexGrow={1} flexShrink={1} flexDirection="column" overflow="hidden">
-                  <text fg={theme.text.base} wrapMode="none">
-                    {column.id} · {column.cards.length}
-                  </text>
-                  <For each={column.cards}>
-                    {(card, index) => (
-                      <BoardCard
-                        card={card}
-                        selected={model()!.columns.indexOf(column) === columnIndex() && index() === rowIndex()}
-                        theme={theme}
-                      />
-                    )}
-                  </For>
-                </box>
+                <ColumnView
+                  column={column}
+                  selectedRow={column === currentColumn() ? rowIndex() : 0}
+                  selectedCardID={column === currentColumn() ? focusedCard()?.id : undefined}
+                  size={windowSize()}
+                  theme={theme}
+                />
               )}
             </For>
           </box>
         </Show>
         <Show when={layout() !== "columns"}>
           <box flexGrow={1} flexDirection="column" overflow="hidden">
-            <Show when={currentColumn() !== undefined}>
-              <text fg={theme.text.base} wrapMode="none">
-                {currentColumn()!.id} · {currentColumn()!.cards.length}
+            <Show when={layout() === "minimal"}>
+              <text fg={theme.text.muted} paddingLeft={1}>
+                largura mínima 80 para o board completo
               </text>
-              <For each={currentColumn()!.cards}>
-                {(card, index) => (
-                  <BoardCard card={card} selected={index() === rowIndex()} theme={theme} />
-                )}
-              </For>
             </Show>
+            <ColumnView
+              column={currentColumn()}
+              selectedRow={rowIndex()}
+              selectedCardID={focusedCard()?.id}
+              size={windowSize()}
+              theme={theme}
+            />
           </box>
         </Show>
       </Show>
