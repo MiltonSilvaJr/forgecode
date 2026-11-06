@@ -42,7 +42,7 @@ export function sessionRows(report: SquadLivenessReport): SessionRow[] {
     variant: session.variant ?? null,
     branch: session.branch ?? null,
     sessionID: session.sessionID ?? null,
-    verdict: "idle",
+    verdict: session.liveness.verdict,
     measuredAt: session.liveness.measuredAt,
     lastActivity: session.liveness.lastActivity ?? null,
     source: session.liveness.source ?? null,
