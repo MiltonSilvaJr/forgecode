@@ -4,7 +4,7 @@ const body = JSON.stringify({
   applinks: {
     details: [
       {
-        appIDs: ["5NZ4Q7NXJ4.ai.opencode.mobilecode"],
+        appIDs: ["5NZ4Q7NXJ4.ai.forgecode.mobilecode"],
         components: [{ "/": "/pair", comment: "pairing links, payload in the fragment" }, { "/": "/pair/*" }],
       },
     ],

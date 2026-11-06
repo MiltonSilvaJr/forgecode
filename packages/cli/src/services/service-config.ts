@@ -1,4 +1,5 @@
 import { Global } from "@opencode/util/global"
+import { APP } from "@opencode/util/identity"
 import { OPENCODE_CHANNEL, OPENCODE_VERSION } from "../version"
 import { Hash } from "@opencode/util/hash"
 import { Service } from "@opencode/client/effect/service"
@@ -10,7 +11,7 @@ import { RemoteTunnel } from "./remote-tunnel"
 
 // The CLI's service configuration file, plus the Service.EnsureOptions binding that
 // points the client package's service operations at this CLI: which
-// registration file (by channel), which version, and how to spawn opencode.
+// registration file (by channel), which version, and how to spawn forgecode.
 
 export const Info = Schema.Struct({
   disabled: Schema.optional(Schema.Boolean),
@@ -56,7 +57,9 @@ export function defaultPort(channel = OPENCODE_CHANNEL, platform = process.platf
 function channelPort(channel: string) {
   if (channel === "latest" || channel === "dev" || channel === "beta" || channel === "next") return 0xc0de
   if (channel === "local") return 0xc0df
-  return 10_000 + (Number.parseInt(Hash.fast(channel).slice(0, 8), 16) % 50_000)
+  // Namespace custom channels by app identity so a forged channel does not collide with the
+  // pre-rebrand service still listening on the old hash of the same channel name.
+  return 10_000 + (Number.parseInt(Hash.fast(`${APP}:${channel}`).slice(0, 8), 16) % 50_000)
 }
 
 export function legacyFilename(channel = OPENCODE_CHANNEL) {
@@ -71,6 +74,10 @@ export function versionBelongsToChannel(
 ) {
   if (version === undefined) return false
   if (version === installedVersion) return true
+  // ForgeCode prereleases carry the channel as the first prerelease identifier: `0.1.0-dev.42`.
+  const escaped = channel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  if (new RegExp(`^\\d+\\.\\d+\\.\\d+-${escaped}\\.\\d+(?:\\.\\d+)?$`).test(version)) return true
+  // Registrations written before the rebrand used an `0.0.0-<channel>-<build>` placeholder.
   const prefix = `0.0.0-${channel}-`
   if (!version.startsWith(prefix)) return false
   return /^\d+(?:\.\d+)?$/.test(version.slice(prefix.length))
@@ -218,7 +225,7 @@ export const get = Effect.fn("cli.service-config.get")(function* (key?: string, 
     return JSON.stringify(safe.remote === undefined ? safe : { ...safe, remote: {} }, null, 2)
   }
   const selected = configKey(key)
-  if (selected !== "env" && name !== undefined) throw new Error(`Usage: opencode service get ${selected}`)
+  if (selected !== "env" && name !== undefined) throw new Error(`Usage: forgecode service get ${selected}`)
   switch (selected) {
     case "disabled": {
       return String((yield* read()).disabled ?? false)
@@ -250,7 +257,7 @@ export const get = Effect.fn("cli.service-config.get")(function* (key?: string, 
 export const set = Effect.fn("cli.service-config.set")(function* (key: string, value: string, nestedValue?: string) {
   const selected = configKey(key)
   if (selected !== "env" && nestedValue !== undefined)
-    throw new Error(`Usage: opencode service set ${selected} <value>`)
+    throw new Error(`Usage: forgecode service set ${selected} <value>`)
   switch (selected) {
     case "disabled": {
       if (value !== "true" && value !== "false") throw new Error("Disabled must be true or false")
@@ -288,7 +295,7 @@ export const set = Effect.fn("cli.service-config.set")(function* (key: string, v
       return
     }
     case "env": {
-      if (nestedValue === undefined) throw new Error("Usage: opencode service set env <key> <value>")
+      if (nestedValue === undefined) throw new Error("Usage: forgecode service set env <key> <value>")
       yield* Service.stop(yield* options())
       const existing = yield* read()
       yield* write({ ...existing, env: { ...existing.env, [value]: nestedValue } })
@@ -312,7 +319,7 @@ export const set = Effect.fn("cli.service-config.set")(function* (key: string, v
 
 export const unset = Effect.fn("cli.service-config.unset")(function* (key: string, name?: string) {
   const selected = configKey(key)
-  if (selected !== "env" && name !== undefined) throw new Error(`Usage: opencode service unset ${selected}`)
+  if (selected !== "env" && name !== undefined) throw new Error(`Usage: forgecode service unset ${selected}`)
   switch (selected) {
     case "disabled": {
       const { disabled: _disabled, ...next } = yield* read()
@@ -343,7 +350,7 @@ export const unset = Effect.fn("cli.service-config.unset")(function* (key: strin
       return
     }
     case "env": {
-      if (name === undefined) throw new Error("Usage: opencode service unset env <key>")
+      if (name === undefined) throw new Error("Usage: forgecode service unset env <key>")
       yield* Service.stop(yield* options())
       const existing = yield* read()
       const { [name]: _removed, ...env } = existing.env ?? {}

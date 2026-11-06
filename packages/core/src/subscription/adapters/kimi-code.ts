@@ -61,7 +61,7 @@ export function make(runner: CommandRunner = realRunner): Adapter {
           return {
             status: "error",
             code: "transport_unavailable",
-            message: "kimi-code has no managed OAuth. Run: opencode auth login kimi-code --source native",
+            message: "kimi-code has no managed OAuth. Run: forgecode auth login kimi-code --source native",
           }
         const session = yield* SubscriptionNativeSession.kimiSession(input.env)
         if (session.present && session.state === "ready") return { status: "already_authenticated" }

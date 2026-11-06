@@ -13,9 +13,9 @@ import { CLI_BINARIES, nodePtyPackage } from "./script/utils"
 const { FileMatcher } = createRequire(import.meta.resolve("electron-builder"))("app-builder-lib/out/fileMatcher")
 
 const channels = [
-  { channel: "dev", appId: "ai.opencode.desktop.dev", feed: "dev" },
-  { channel: "beta", appId: "ai.opencode.desktop.beta", feed: "beta" },
-  { channel: "prod", appId: "ai.opencode.desktop", feed: "latest" },
+  { channel: "dev", appId: "ai.forgecode.desktop.dev", feed: "dev" },
+  { channel: "beta", appId: "ai.forgecode.desktop.beta", feed: "beta" },
+  { channel: "prod", appId: "ai.forgecode.desktop", feed: "latest" },
 ] as const
 
 function load(channel: string, target?: string): Configuration {
@@ -82,9 +82,9 @@ test.each(channels)("channel identity for $channel", ({ channel, appId, feed }) 
 
 test("legacy Linux launcher stays hidden", async () => {
   const desktop = await Bun.file(path.join(import.meta.dirname, "resources/linux/opencode-desktop.desktop")).text()
-  expect(desktop).toContain("Exec=/opt/OpenCode/ai.opencode %U")
-  expect(desktop).toContain("Icon=ai.opencode")
-  expect(desktop).toContain("StartupWMClass=ai.opencode.desktop")
+  expect(desktop).toContain("Exec=/opt/OpenCode/ai.forgecode %U")
+  expect(desktop).toContain("Icon=ai.forgecode")
+  expect(desktop).toContain("StartupWMClass=ai.forgecode.desktop")
   expect(desktop).toContain("NoDisplay=true")
 })
 

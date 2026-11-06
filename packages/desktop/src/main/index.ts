@@ -8,6 +8,13 @@ import { createEarlyWindow, earlyWindowClosed } from "./windows/early"
 import { rendererAssetsServed } from "./windows/protocol"
 import { registerRendererScheme } from "./windows/scheme"
 
+// The desktop app has no dependency on @opencode/util, so it projects the native
+// FORGECODE_* variables onto the legacy OPENCODE_* names the main process reads.
+for (const [key, value] of Object.entries(process.env)) {
+  if (value === undefined || !key.startsWith("FORGECODE_")) continue
+  process.env[`OPENCODE_${key.slice("FORGECODE_".length)}`] = value
+}
+
 // This module stays small on purpose. Electron holds the ready event until the entry module has
 // finished, and the first window should be on screen before the rest of the main process — a few
 // hundred milliseconds of module evaluation and layers — loads. Configuration and the scheme must

@@ -87,7 +87,7 @@ export class OpenCodeDO {
   private readonly opencode: Promise<OpenCodeWorkerd.Interface>
 
   constructor(state: DurableObjectState) {
-    this.opencode = state.blockConcurrencyWhile(() =>
+    this.forgecode = state.blockConcurrencyWhile(() =>
       OpenCodeWorkerd.create({
         storage: state.storage,
         config: { default_agent: "build" },
@@ -97,7 +97,7 @@ export class OpenCodeDO {
   }
 
   async fetch() {
-    const opencode = await this.opencode
+    const opencode = await this.forgecode
     return Response.json(await opencode.server.info())
   }
 }

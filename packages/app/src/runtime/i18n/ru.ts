@@ -315,7 +315,7 @@ export const dict = {
   "error.chain.responseBody": "Тело ответа:\n{{body}}",
   "error.chain.didYouMean": "Возможно, вы имели в виду: {{suggestions}}",
   "error.chain.modelNotFound": "Модель не найдена: {{provider}}/{{model}}",
-  "error.chain.checkConfig": "Проверьте названия провайдера и модели в конфигурации (opencode.json)",
+  "error.chain.checkConfig": "Проверьте названия провайдера и модели в конфигурации (forgecode.json)",
   "error.chain.mcpFailed":
     'MCP-сервер "{{name}}" завершился с ошибкой. Обратите внимание: OpenCode пока не поддерживает MCP-авторизацию.',
   "error.chain.providerAuthFailed": "Ошибка аутентификации провайдера ({{provider}}): {{message}}",
@@ -631,7 +631,7 @@ export const dict = {
   "settings.extensions.tab.mcps": "МКП",
   "settings.extensions.tab.skills": "Навыки",
   "settings.extensions.availableAll": "Доступно для всех проектов",
-  "settings.extensions.manageConfig": "Управление в opencode.json",
+  "settings.extensions.manageConfig": "Управление в forgecode.json",
   "settings.extensions.addSkills": "Как добавить навыки",
   "project.settings.extensions.description": "Посмотреть расширения, доступные для этого проекта",
   "project.settings.extensions.tab.lsps": "ЛСП",

@@ -39,6 +39,10 @@ export default Runtime.handler(
 
 export async function resolveConfigPath(directory: string) {
   const candidates = [
+    path.join(directory, "forgecode.json"),
+    path.join(directory, "forgecode.jsonc"),
+    path.join(directory, ".forgecode", "forgecode.json"),
+    path.join(directory, ".forgecode", "forgecode.jsonc"),
     path.join(directory, "opencode.json"),
     path.join(directory, "opencode.jsonc"),
     path.join(directory, ".opencode", "opencode.json"),

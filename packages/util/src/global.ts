@@ -6,15 +6,15 @@ import { Context, Effect, Layer } from "effect"
 // The variants resolve through the `workerd` bundle condition, like the
 // native-module stubs, so no runtime sniffing happens here.
 import { roots } from "#global-roots"
+import { APP, env } from "./identity.js"
 import { Flock } from "./flock.js"
 import { makeGlobalNode } from "./effect/app-node.js"
 
-const app = "opencode"
-const { data, cache, config, state, tmp } = roots(app)
+const { data, cache, config, state, tmp } = roots(APP)
 
 const paths = {
   get home() {
-    return process.env.OPENCODE_TEST_HOME ?? os.homedir()
+    return env("TEST_HOME") ?? os.homedir()
   },
   data,
   bin: path.join(cache, "bin"),
@@ -76,7 +76,7 @@ const acquire = (input: Partial<Interface>) =>
 
 const layer = Layer.effect(
   Service,
-  Effect.suspend(() => acquire({ config: process.env.OPENCODE_CONFIG_DIR ?? Path.config })),
+  Effect.suspend(() => acquire({ config: env("CONFIG_DIR") ?? Path.config })),
 )
 
 export const node = makeGlobalNode({ service: Service, layer: layer, deps: [] })

@@ -301,7 +301,7 @@ export const dict = {
   "error.chain.responseBody": "Тело одговора:\n{{body}}",
   "error.chain.didYouMean": "Да ли сте мислили: {{suggestions}}",
   "error.chain.modelNotFound": "Модел није пронађен: {{provider}}/{{model}}",
-  "error.chain.checkConfig": "Проверите имена добављача/модела конфигурације (opencode.json).",
+  "error.chain.checkConfig": "Проверите имена добављача/модела конфигурације (forgecode.json).",
   "error.chain.mcpFailed":
     "MCP сервер „{{name}}“ није успео. Напомена, OpenCode још увек не подржава MCP аутентификацију.",
   "error.chain.providerAuthFailed": "аутентификација добављача није успела ({{provider}}): {{message}}",
@@ -738,8 +738,8 @@ export const dict = {
   "server.connect.address.invalid": "Унесите важећу HTTP или HTTPS адресу сервера.",
   "server.connect.failed": "Није могуће повезати се. Проверите адресу сервера и лозинку, па покушајте поново.",
   "server.connect.scan": "Скенирај QR код",
-  "server.connect.scan.description": "Усмерите камеру на QR код који приказује opencode pair.",
-  "server.connect.scan.invalid": "Ово није OpenCode код за повезивање. Скенирајте код који приказује opencode pair.",
+  "server.connect.scan.description": "Усмерите камеру на QR код који приказује forgecode pair.",
+  "server.connect.scan.invalid": "Ово није OpenCode код за повезивање. Скенирајте код који приказује forgecode pair.",
   "server.connect.camera": "Камера за упаривање",
   "server.connect.camera.starting": "Отварање камере…",
   "server.connect.mixedContent":

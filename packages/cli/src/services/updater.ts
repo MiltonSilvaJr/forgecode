@@ -1,4 +1,5 @@
 import { Global } from "@opencode/util/global"
+import { env } from "@opencode/util/identity"
 import { AppProcess } from "@opencode/util/process"
 import { EffectFlock } from "@opencode/util/effect-flock"
 import { OPENCODE_ARTIFACT, OPENCODE_CHANNEL, OPENCODE_LOCAL, OPENCODE_VERSION } from "../version"
@@ -162,13 +163,16 @@ const make = Effect.gen(function* () {
   const installedWinget = /[\\/]winget[\\/]packages[\\/]anomaly\.opencode_/i.test(executable)
 
   const readPolicy = Effect.fnUntraced(function* () {
-    const values = yield* Effect.forEach(["config.json", "opencode.json", "opencode.jsonc"], (name) =>
-      fs.readFileString(path.join(global.config, name)).pipe(
-        Effect.map(decodePolicy),
-        Effect.orElseSucceed(() => undefined),
-      ),
+    const values = yield* Effect.forEach(
+      ["config.json", "opencode.json", "opencode.jsonc", "forgecode.json", "forgecode.jsonc"],
+      (name) =>
+        fs.readFileString(path.join(global.config, name)).pipe(
+          Effect.map(decodePolicy),
+          Effect.orElseSucceed(() => undefined),
+        ),
     )
-    return values.findLast((value) => value !== undefined) ?? "notify"
+    // ForgeCode is a fork: never offer to replace it with an upstream OpenCode release unless the user opts in.
+    return values.findLast((value) => value !== undefined) ?? "disable"
   })
 
   const exec = Effect.fnUntraced(function* (command: string[], timeout: Duration.Input = "30 seconds") {
@@ -189,16 +193,17 @@ const make = Effect.gen(function* () {
 
   const curlPath = path.resolve(
     global.home,
-    ".opencode",
+    ".forgecode",
     "bin",
-    process.platform === "win32" ? "opencode.exe" : "opencode",
+    process.platform === "win32" ? "forgecode.exe" : "forgecode",
   )
   const curlBinary = yield* fs.realPath(curlPath).pipe(Effect.orElseSucceed(() => curlPath))
 
   // On Windows a bare `bash` may be the WSL launcher, which cannot run the installer against Windows paths.
   const installerBash = Effect.fnUntraced(function* () {
     if (process.platform !== "win32") return "bash"
-    if (process.env.OPENCODE_GIT_BASH_PATH) return process.env.OPENCODE_GIT_BASH_PATH
+    const configured = env("GIT_BASH_PATH")
+    if (configured) return configured
     const git = yield* exec(["git", "--exec-path"]).pipe(Effect.orElseSucceed(() => undefined))
     const bash = git?.code === 0 ? path.resolve(git.stdout.trim(), "..", "..", "..", "bin", "bash.exe") : undefined
     if (bash && (yield* fs.exists(bash).pipe(Effect.orElseSucceed(() => false)))) return bash
@@ -206,7 +211,7 @@ const make = Effect.gen(function* () {
       new UpgradeError({
         title: "Git Bash is required to update OpenCode",
         detail: "The OpenCode installer runs with Git Bash on Windows, and it was not found.",
-        retry: "Install Git for Windows or set OPENCODE_GIT_BASH_PATH, then run opencode upgrade again.",
+        retry: "Install Git for Windows or set FORGECODE_GIT_BASH_PATH, then run forgecode upgrade again.",
       }),
     )
   })
@@ -291,7 +296,7 @@ const make = Effect.gen(function* () {
           {
             title: "Could not check for OpenCode updates",
             detail: errorDetail(cause),
-            retry: "Check your network, then run opencode upgrade again.",
+            retry: "Check your network, then run forgecode upgrade again.",
           },
           { cause },
         ),
@@ -338,7 +343,7 @@ const make = Effect.gen(function* () {
           title: "Could not check for OpenCode updates",
           detail,
           command: ["winget", "search", ...wingetArgs].join(" "),
-          retry: "Fix the issue above, then run opencode upgrade again.",
+          retry: "Fix the issue above, then run forgecode upgrade again.",
         },
         cause === undefined ? undefined : { cause },
       )
@@ -401,7 +406,7 @@ const make = Effect.gen(function* () {
           title: input.title ?? `${installNames[input.method]} could not install OpenCode`,
           detail,
           command: (input.displayCommand ?? input.command).join(" "),
-          retry: input.retry ?? "Fix the issue above, then run opencode upgrade again.",
+          retry: input.retry ?? "Fix the issue above, then run forgecode upgrade again.",
         },
         cause === undefined ? undefined : { cause },
       )
@@ -483,14 +488,14 @@ const make = Effect.gen(function* () {
             command: ["curl", "-fsSL", "-o", installer, "https://opencode.ai/v2/install"],
             displayCommand: ["curl", "-fsSL", "https://opencode.ai/v2/install"],
             title: "Could not download the OpenCode installer",
-            retry: "Check your network, then run opencode upgrade again.",
+            retry: "Check your network, then run forgecode upgrade again.",
           })
           return yield* retaining(
             method,
             runUpgrade({
               method,
               command: [bash, installer, "--version", version, "--no-modify-path"],
-              displayCommand: ["opencode", "upgrade", version, "--method", "curl"],
+              displayCommand: ["forgecode", "upgrade", version, "--method", "curl"],
               title: "The OpenCode installer failed",
             }),
           )
@@ -522,7 +527,7 @@ const make = Effect.gen(function* () {
               {
                 title: "Could not prepare the OpenCode upgrade",
                 detail: errorDetail(cause),
-                retry: "Fix the issue above, then run opencode upgrade again.",
+                retry: "Fix the issue above, then run forgecode upgrade again.",
               },
               { cause },
             ),

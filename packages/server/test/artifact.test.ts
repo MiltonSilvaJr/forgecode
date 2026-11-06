@@ -67,14 +67,14 @@ export default {
 `,
       )
       await fs.writeFile(
-        path.join(enabled, "opencode.json"),
+        path.join(enabled, "forgecode.json"),
         JSON.stringify({
           plugins: [{ package: pluginDir }],
           experimental: { artifacts: true },
         }),
       )
       await fs.writeFile(
-        path.join(enabledOther, "opencode.json"),
+        path.join(enabledOther, "forgecode.json"),
         JSON.stringify({
           experimental: { artifacts: true },
         }),

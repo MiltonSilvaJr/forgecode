@@ -18,12 +18,12 @@ if (!semver.satisfies(process.versions.bun, expectedBunVersionRange)) {
 }
 
 const env = {
-  OPENCODE_CHANNEL: process.env["OPENCODE_CHANNEL"],
-  OPENCODE_VERSION: process.env["OPENCODE_VERSION"],
+  OPENCODE_CHANNEL: process.env["FORGECODE_CHANNEL"] ?? process.env["OPENCODE_CHANNEL"],
+  OPENCODE_VERSION: process.env["FORGECODE_VERSION"] ?? process.env["OPENCODE_VERSION"],
 }
 const CHANNEL = await (async () => {
   if (env.OPENCODE_CHANNEL) return env.OPENCODE_CHANNEL
-  if (env.OPENCODE_VERSION && !env.OPENCODE_VERSION.startsWith("0.0.0-")) return "latest"
+  if (env.OPENCODE_VERSION && !env.OPENCODE_VERSION.includes("-")) return "latest"
   const branch = await $`git branch --show-current`.text().then((x) => x.trim())
   if (!branch) return "detached"
   const channel = branch.replace(/[^a-zA-Z0-9._-]/g, "-")
@@ -33,10 +33,12 @@ const CHANNEL = await (async () => {
 const IS_PREVIEW = CHANNEL !== "latest"
 
 // The release workflow's plan job owns release versions; builds only read them.
+// ForgeCode owns its 0.1.x line: preview builds are prereleases of the package version, so
+// `forgecode --version` is always valid SemVer (`0.1.0-forgecode.2`), never a fake `0.0.0` base.
 const VERSION = (() => {
   if (env.OPENCODE_VERSION) return env.OPENCODE_VERSION
-  if (!IS_PREVIEW) throw new Error("OPENCODE_VERSION is required for latest-channel builds")
-  return `0.0.0-${CHANNEL}-${previewBuildNumber()}`
+  if (!IS_PREVIEW) throw new Error("FORGECODE_VERSION is required for latest-channel builds")
+  return `${rootPkg.version}-${CHANNEL}.${previewBuildNumber()}`
 })()
 
 function previewBuildNumber() {

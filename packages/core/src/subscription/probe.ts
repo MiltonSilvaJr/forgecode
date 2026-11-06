@@ -26,7 +26,7 @@ export const http = Effect.fn("subscription.auth.probe")(function* (input: {
     Effect.timeout("15 seconds"),
     Effect.mapError((): SubscriptionAuth.Error => ({
       code: "transport_unavailable",
-      message: "Subscription probe could not reach the provider. Retry opencode auth test.",
+      message: "Subscription probe could not reach the provider. Retry forgecode auth test.",
     })),
   )
   if (response.status < 200 || response.status >= 300) {
@@ -36,10 +36,10 @@ export const http = Effect.fn("subscription.auth.probe")(function* (input: {
     return yield* Effect.fail<SubscriptionAuth.Error>({
       code,
       message: code === "session_expired"
-        ? "The provider rejected the credential. Run opencode auth login."
+        ? "The provider rejected the credential. Run forgecode auth login."
         : code === "rate_limited"
-          ? "The provider rate limit was reached. Retry opencode auth test later."
-          : "The provider rejected the probe. Check the model with opencode auth test --model.",
+          ? "The provider rate limit was reached. Retry forgecode auth test later."
+          : "The provider rejected the probe. Check the model with forgecode auth test --model.",
     })
   }
   return { ok: true, latencyMs: Math.max(0, (yield* Clock.currentTimeMillis) - started), model: input.model }

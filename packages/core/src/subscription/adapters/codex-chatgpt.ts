@@ -63,7 +63,7 @@ export function make(runner: CommandRunner = realRunner): Adapter {
             return {
               status: "error",
               code: "transport_unavailable",
-              message: "codex-chatgpt managed login is unavailable. Run: opencode auth login openai",
+              message: "codex-chatgpt managed login is unavailable. Run: forgecode auth login openai",
             }
           const attempt = yield* integration.oauth
             .connect({ integrationID: managedIntegrationID, methodID: managedMethodID })

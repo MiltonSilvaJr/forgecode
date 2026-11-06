@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-APP=opencode
+APP=forgecode
 SOURCE_APP=opencode
 
 MUTED='\033[0;2m'
@@ -10,19 +10,19 @@ NC='\033[0m' # No Color
 
 usage() {
     cat <<EOF
-OpenCode Installer
+ForgeCode Installer
 
 Usage: install.sh [options]
 
 Options:
     -h, --help              Display this help message
-    -v, --version <version> Install a specific version (e.g., 0.0.0-beta-17236)
+    -v, --version <version> Install a specific version (e.g., 0.1.0-beta.17236)
     -b, --binary <path>     Install from a local binary instead of downloading
         --no-modify-path    Don't modify shell config files (.zshrc, .bashrc, etc.)
 
 Examples:
     curl -fsSL https://opencode.ai/v2/install | bash
-    curl -fsSL https://opencode.ai/v2/install | bash -s -- --version 0.0.0-beta-17236
+    curl -fsSL https://opencode.ai/v2/install | bash -s -- --version 0.1.0-beta.17236
     ./install --binary /path/to/opencode
 EOF
 }
@@ -66,7 +66,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-INSTALL_DIR=$HOME/.opencode/bin
+INSTALL_DIR=$HOME/.forgecode/bin
 mkdir -p "$INSTALL_DIR"
 
 # If --binary is provided, skip all download/detection logic
@@ -353,14 +353,14 @@ install_legacy_shim() {
     if [[ "$shim_os" == "windows" ]]; then
         cat > "$INSTALL_DIR/opencode2.cmd" <<'EOF'
 @echo off
-"%~dp0opencode.exe" %*
+"%~dp0forgecode.exe" %*
 exit /b %errorlevel%
 EOF
         return
     fi
     cat > "$INSTALL_DIR/opencode2" <<'EOF'
 #!/bin/sh
-exec "$(dirname "$0")/opencode" "$@"
+exec "$(dirname "$0")/forgecode" "$@"
 EOF
     chmod 755 "$INSTALL_DIR/opencode2"
 }
@@ -382,10 +382,10 @@ add_to_path() {
     if grep -Fxq "$command" "$config_file"; then
         print_message info "Command already exists in $config_file, skipping write."
     elif [[ -w $config_file ]]; then
-        echo -e "\n# opencode" >> "$config_file"
+        echo -e "\n# forgecode" >> "$config_file"
         echo "$command" >> "$config_file"
         path_added=true
-        print_message info "${MUTED}Successfully added ${NC}opencode ${MUTED}to \$PATH in ${NC}$config_file"
+        print_message info "${MUTED}Successfully added ${NC}forgecode ${MUTED}to \$PATH in ${NC}$config_file"
     else
         print_message warning "Manually add the directory to $config_file (or similar):"
         print_message info "  $command"

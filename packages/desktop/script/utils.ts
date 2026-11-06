@@ -10,7 +10,7 @@ const Manifest = Schema.fromJsonString(Schema.Struct({ version: Schema.NonEmptyS
 export type Channel = "dev" | "beta" | "prod"
 
 export function resolveChannel(): Channel {
-  const raw = process.env.OPENCODE_CHANNEL
+  const raw = process.env.FORGECODE_CHANNEL ?? process.env.OPENCODE_CHANNEL
 
   if (raw === "dev" || raw === "beta" || raw === "prod") return raw
 

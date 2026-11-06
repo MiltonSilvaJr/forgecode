@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test"
 import { globalConfigDirectory, serviceConfigFile } from "./config-file"
 
-const global = "/home/kit/.config/opencode/opencode.jsonc"
+const global = "/home/kit/.config/forgecode/forgecode.jsonc"
 
-const project = "/work/acme/.opencode/opencode.jsonc"
+const project = "/work/acme/.forgecode/forgecode.jsonc"
 
 test("a project file that sets a service without entries does not hide the global file's entries", () => {
   const entries = [
@@ -20,7 +20,7 @@ test("a project file that sets a service without entries does not hide the globa
       path: project,
       info: { mcp: {}, plugins: [] },
     },
-    { type: "document" as const, path: "/work/acme/.opencode/agents/review.md", info: {} },
+    { type: "document" as const, path: "/work/acme/.forgecode/agents/review.md", info: {} },
   ]
 
   expect(serviceConfigFile(entries, "mcp")).toBe(global)
@@ -41,18 +41,18 @@ test("a file that only sets a service still wins over one that never mentions it
 
 test("setup sessions run in the global configuration's directory, never an ancestor project's", () => {
   // In the server's order: global files and root, an ancestor's config outside the worktree, then the project's.
-  const ancestor = "/work/opencode.json"
-  const projectRoot = { type: "directory" as const, path: "/work/acme/.opencode" }
+  const ancestor = "/work/forgecode.json"
+  const projectRoot = { type: "directory" as const, path: "/work/acme/.forgecode" }
 
   const entries = [
     { type: "document" as const, path: global, info: {} },
-    { type: "directory" as const, path: "/home/kit/.config/opencode" },
+    { type: "directory" as const, path: "/home/kit/.config/forgecode" },
     { type: "document" as const, path: ancestor, info: {} },
     { type: "document" as const, path: project, info: {} },
     projectRoot,
   ]
 
-  expect(globalConfigDirectory(entries, "/work/acme")).toBe("/home/kit/.config/opencode")
+  expect(globalConfigDirectory(entries, "/work/acme")).toBe("/home/kit/.config/forgecode")
   // With global configuration off, the ancestor's directory is still not taken for the global one.
   expect(
     globalConfigDirectory(

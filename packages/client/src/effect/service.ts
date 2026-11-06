@@ -11,7 +11,7 @@ export { headers }
 /** Contents of the local service registration file. */
 export type Info = typeof Info.Type
 
-// Find, start, and stop the local opencode background service.
+// Find, start, and stop the local forgecode background service.
 //
 // The service daemon advertises itself through a registration file in the
 // user's state directory: url, pid, version, and the private password, with
@@ -58,6 +58,8 @@ export const ensure = Effect.fn("service.ensure")(function* (options: EnsureOpti
       options.onStart?.(reason, previousVersion)
     })
   const spawnContender = Effect.gen(function* () {
+    // The CLI always passes the explicit command that started it; this fallback keeps the
+    // library usable on a host that still has the upstream binary in PATH.
     const [command, ...args] = options.command ?? ["opencode", "serve", "--service"]
     if (command === undefined) return yield* Effect.fail(new Error("Missing service command"))
     const env = yield* Effect.tryPromise(() => PtyHandoff.environment(options.file ?? fallback(), options.env))

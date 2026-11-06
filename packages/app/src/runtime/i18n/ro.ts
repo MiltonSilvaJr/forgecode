@@ -287,7 +287,7 @@ export const dict = {
   "error.chain.responseBody": "Răspuns:\n{{body}}",
   "error.chain.didYouMean": "Ai vrut să scrii: {{suggestions}}",
   "error.chain.modelNotFound": "Modelul nu a fost găsit: {{provider}}/{{model}}",
-  "error.chain.checkConfig": "Verifică numele provider/model în config (opencode.json)",
+  "error.chain.checkConfig": "Verifică numele provider/model în config (forgecode.json)",
   "error.chain.mcpFailed": 'Serverul MCP "{{name}}" a eșuat. Atenție, OpenCode nu suportă încă autentificarea MCP.',
   "error.chain.providerAuthFailed": "Autentificarea providerului a eșuat ({{provider}}): {{message}}",
   "error.chain.providerInitFailed":
@@ -597,7 +597,7 @@ export const dict = {
   "settings.extensions.tab.mcps": "MCP-uri",
   "settings.extensions.tab.skills": "Abilități",
   "settings.extensions.availableAll": "Disponibil pentru toate proiectele",
-  "settings.extensions.manageConfig": "Gestionează în opencode.json",
+  "settings.extensions.manageConfig": "Gestionează în forgecode.json",
   "settings.extensions.addSkills": "Cum se adaugă abilități",
   "project.settings.extensions.description": "Vezi extensiile disponibile pentru acest proiect",
   "project.settings.extensions.tab.lsps": "LSP-uri",
@@ -725,8 +725,8 @@ export const dict = {
   "server.connect.address.invalid": "Introduceți o adresă validă de server HTTP sau HTTPS.",
   "server.connect.failed": "Nu s-a putut conecta. Verificați adresa serverului și parola, apoi încercați din nou.",
   "server.connect.scan": "Scanează codul QR",
-  "server.connect.scan.description": "Îndreptați camera către codul QR afișat de opencode pair.",
-  "server.connect.scan.invalid": "Acesta nu este un cod de asociere OpenCode. Scanați codul afișat de opencode pair.",
+  "server.connect.scan.description": "Îndreptați camera către codul QR afișat de forgecode pair.",
+  "server.connect.scan.invalid": "Acesta nu este un cod de asociere OpenCode. Scanați codul afișat de forgecode pair.",
   "server.connect.camera": "Împerecherea camerei",
   "server.connect.camera.starting": "Deschiderea camerei…",
   "server.connect.mixedContent":

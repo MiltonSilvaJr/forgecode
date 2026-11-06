@@ -72,7 +72,7 @@ export default Runtime.handler(
 export const remoteWarning = [
   "This will expose your OpenCode server to the internet.",
   "Traffic is end-to-end encrypted, and access requires your server password.",
-  "To pair locally instead, run `opencode pair` without the --remote flag.",
+  "To pair locally instead, run `forgecode pair` without the --remote flag.",
 ].join(EOL)
 
 export interface RemoteConsentPrompt {
@@ -102,12 +102,12 @@ export const remoteConsent = Effect.fn("cli.pair.remote-consent")(function* (
   if (!input.yes) {
     const accepted = yield* Effect.promise(terminal.confirm)
     if (isCancel(accepted)) {
-      cancel("Remote access was not enabled. To pair locally, run `opencode pair`.")
+      cancel("Remote access was not enabled. To pair locally, run `forgecode pair`.")
       process.exitCode = 130
       return false
     }
     if (accepted !== true) {
-      log.info("Remote access was not enabled. To pair locally, run `opencode pair`.")
+      log.info("Remote access was not enabled. To pair locally, run `forgecode pair`.")
       return false
     }
   }
@@ -142,7 +142,7 @@ const remoteURL = Effect.fnUntraced(function* (client: ReturnType<typeof OpenCod
         Effect.fail(
           new Error(
             [
-              "Timed out waiting for the remote tunnel; run `opencode pair --remote` again to retry.",
+              "Timed out waiting for the remote tunnel; run `forgecode pair --remote` again to retry.",
               // The service may not inherit the shell's environment, and Bun ignores the Windows system (WinINET) proxy.
               "Behind an HTTP proxy, give the background service its address with `opencode service set env HTTPS_PROXY <url>` (and `NO_PROXY` for hosts to reach directly).",
             ].join(EOL),

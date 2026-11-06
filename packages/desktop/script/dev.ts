@@ -11,7 +11,8 @@ type DevOptions = { server: ServerSource; electron: string[] }
 
 async function main() {
   process.env.OPENCODE_CHANNEL = "local"
-  process.env.OPENCODE_VERSION ??= `2.0.0-local-${Date.now()}`
+  process.env.FORGECODE_VERSION ??= `0.1.0-local.${Date.now()}`
+  process.env.OPENCODE_VERSION ??= process.env.FORGECODE_VERSION
   process.env.OPENCODE_DISABLE_CHANNEL_DB = "0"
   const options = selectOptions()
 

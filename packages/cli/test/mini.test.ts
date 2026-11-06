@@ -35,7 +35,7 @@ describe("mini command", () => {
           version: OPENCODE_VERSION,
           pid: process.pid,
           urls: [],
-          paths: { tmp: "/tmp/opencode" },
+          paths: { tmp: "/tmp/forgecode" },
         })
       },
     })
@@ -47,7 +47,7 @@ describe("mini command", () => {
           version: OPENCODE_VERSION,
           pid: process.pid,
           urls: [],
-          paths: { tmp: "/tmp/opencode" },
+          paths: { tmp: "/tmp/forgecode" },
         })
       },
     })
@@ -162,7 +162,7 @@ describe("mini command", () => {
             version: OPENCODE_VERSION,
             pid: process.pid,
             urls: [],
-            paths: { tmp: "/tmp/opencode" },
+            paths: { tmp: "/tmp/forgecode" },
           })
         if (url.pathname === "/api/location")
           return Response.json({ directory: process.cwd(), project: { id: "global", directory: process.cwd() } })
@@ -209,7 +209,7 @@ describe("mini command", () => {
           version: "incompatible",
           pid: process.pid,
           urls: [],
-          paths: { tmp: "/tmp/opencode" },
+          paths: { tmp: "/tmp/forgecode" },
         })
       },
     })

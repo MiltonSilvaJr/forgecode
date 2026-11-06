@@ -300,7 +300,7 @@ export const dict = {
   "error.chain.responseBody": "Svarhluti:\n{{body}}",
   "error.chain.didYouMean": "Áttirðu við: {{suggestions}}",
   "error.chain.modelNotFound": "Gerð fannst ekki: {{provider}}/{{model}}",
-  "error.chain.checkConfig": "Athugaðu stillingar (opencode.json) þjónustuveitu/módelheiti",
+  "error.chain.checkConfig": "Athugaðu stillingar (forgecode.json) þjónustuveitu/módelheiti",
   "error.chain.mcpFailed": "MCP þjónn „{{name}}“ mistókst. Athugið, OpenCode styður ekki MCP auðkenningu ennþá.",
   "error.chain.providerAuthFailed": "Auðkenning veitu mistókst ({{provider}}): {{message}}",
   "error.chain.providerInitFailed":
@@ -602,7 +602,7 @@ export const dict = {
   "settings.extensions.tab.mcps": "MCP",
   "settings.extensions.tab.skills": "Færni",
   "settings.extensions.availableAll": "Tiltækt fyrir öll verkefni",
-  "settings.extensions.manageConfig": "Stjórna í opencode.json",
+  "settings.extensions.manageConfig": "Stjórna í forgecode.json",
   "settings.extensions.addSkills": "Hvernig bæta á við færni",
   "project.settings.extensions.description": "Skoðaðu viðbætur sem eru tiltækar fyrir þetta verkefni",
   "project.settings.extensions.tab.lsps": "LSP",
@@ -717,8 +717,8 @@ export const dict = {
   "server.connect.address.invalid": "Sláðu inn gilt HTTP eða HTTPS netfang netþjóns.",
   "server.connect.failed": "Ekki tókst að tengjast. Athugaðu netfang netþjóns og lykilorð, reyndu svo aftur.",
   "server.connect.scan": "Skanna QR kóða",
-  "server.connect.scan.description": "Beindu myndavélinni þinni að QR kóðanum sem opencode pair sýnir.",
-  "server.connect.scan.invalid": "Þetta er ekki OpenCode pörunarkóði. Skannaðu kóðann sem opencode pair sýnir.",
+  "server.connect.scan.description": "Beindu myndavélinni þinni að QR kóðanum sem forgecode pair sýnir.",
+  "server.connect.scan.invalid": "Þetta er ekki OpenCode pörunarkóði. Skannaðu kóðann sem forgecode pair sýnir.",
   "server.connect.camera": "Pörun myndavél",
   "server.connect.camera.starting": "Opnar myndavél...",
   "server.connect.mixedContent":

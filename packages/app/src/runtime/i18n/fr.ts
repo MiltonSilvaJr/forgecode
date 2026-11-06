@@ -24,9 +24,9 @@ export const dict = {
   "server.connect.failed":
     "Impossible de se connecter. Vérifiez l'adresse et le mot de passe du serveur, puis réessayez.",
   "server.connect.scan": "Scanner le code QR",
-  "server.connect.scan.description": "Pointez votre appareil photo vers le code QR affiché par opencode pair.",
+  "server.connect.scan.description": "Pointez votre appareil photo vers le code QR affiché par forgecode pair.",
   "server.connect.scan.invalid":
-    "Il ne s'agit pas d'un code d'appairage OpenCode. Scannez le code affiché par opencode pair.",
+    "Il ne s'agit pas d'un code d'appairage OpenCode. Scannez le code affiché par forgecode pair.",
   "server.connect.camera": "Caméra de couplage",
   "server.connect.camera.starting": "Ouverture de la caméra…",
   "server.connect.mixedContent":
@@ -504,7 +504,7 @@ export const dict = {
   "error.chain.responseBody": "Corps de la réponse :\n{{body}}",
   "error.chain.didYouMean": "Vouliez-vous dire : {{suggestions}}",
   "error.chain.modelNotFound": "Modèle introuvable : {{provider}}/{{model}}",
-  "error.chain.checkConfig": "Vérifiez les noms de fournisseur et de modèle dans votre configuration (opencode.json)",
+  "error.chain.checkConfig": "Vérifiez les noms de fournisseur et de modèle dans votre configuration (forgecode.json)",
   "error.chain.mcpFailed":
     "Le serveur MCP \"{{name}}\" a échoué. Notez qu'OpenCode ne prend pas encore en charge l'authentification MCP.",
   "error.chain.providerAuthFailed": "Échec de l'authentification du fournisseur ({{provider}}) : {{message}}",
@@ -798,7 +798,7 @@ export const dict = {
   "settings.extensions.tab.mcps": "MCP",
   "settings.extensions.tab.skills": "Compétences",
   "settings.extensions.availableAll": "Disponible pour tous les projets",
-  "settings.extensions.manageConfig": "Gérer dans opencode.json",
+  "settings.extensions.manageConfig": "Gérer dans forgecode.json",
   "settings.extensions.addSkills": "Comment ajouter des compétences",
   "project.settings.extensions.description": "Afficher les extensions disponibles pour ce projet",
   "project.settings.extensions.tab.lsps": "LSP",

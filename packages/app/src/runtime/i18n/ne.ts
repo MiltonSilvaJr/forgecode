@@ -292,7 +292,7 @@ export const dict = {
   "error.chain.responseBody": "प्रतिक्रिया मुख्य भाग:\n{{body}}",
   "error.chain.didYouMean": "के तपाईको मतलब: {{suggestions}}",
   "error.chain.modelNotFound": "मोडेल फेला परेन: {{provider}}/{{model}}",
-  "error.chain.checkConfig": "आफ्नो कन्फिगरेसन (opencode.json) प्रदायक/मोडेल नामहरू जाँच गर्नुहोस्",
+  "error.chain.checkConfig": "आफ्नो कन्फिगरेसन (forgecode.json) प्रदायक/मोडेल नामहरू जाँच गर्नुहोस्",
   "error.chain.mcpFailed":
     'MCP सर्भर "{{name}}" असफल भयो। नोट गर्नुहोस्, OpenCode ले अझै पनि MCP प्रमाणीकरणलाई समर्थन गर्दैन।',
   "error.chain.providerAuthFailed": "प्रदायक प्रमाणीकरण असफल भयो ({{provider}}): {{message}}",
@@ -566,7 +566,7 @@ export const dict = {
   "settings.extensions.tab.mcps": "MCPs",
   "settings.extensions.tab.skills": "सीपहरू",
   "settings.extensions.availableAll": "सबै परियोजनामा उपलब्ध",
-  "settings.extensions.manageConfig": "opencode.json मा व्यवस्थापन गर्नुहोस्",
+  "settings.extensions.manageConfig": "forgecode.json मा व्यवस्थापन गर्नुहोस्",
   "settings.extensions.addSkills": "सीपहरू कसरी थप्ने",
   "project.settings.extensions.description": "यस परियोजनामा उपलब्ध विस्तारहरू हेर्नुहोस्",
   "project.settings.extensions.tab.lsps": "LSPs",

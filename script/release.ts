@@ -65,11 +65,13 @@ process.chdir(root)
 
 console.log("\n=== Generating changelog ===\n")
 await rm(review, { force: true })
-await $`git fetch origin "+refs/tags/v2.*:refs/tags/v2.*" "+refs/heads/v1:refs/remotes/origin/v1"`
+await $`git fetch origin "+refs/tags/v0.*:refs/tags/v0.*" "+refs/tags/v2.*:refs/tags/v2.*" "+refs/heads/v1:refs/remotes/origin/v1"`
+// ForgeCode owns the 0.x line; the upstream v2 tags remain usable as a starting point.
 const base =
   values.from ??
-  (await $`git tag --list "v2.*" --sort=-version:refname`.text()).split("\n").find((tag) => /^v2\.\d+\.\d+$/.test(tag))
-if (!base) throw new Error("No stable V2 release tag was found")
+  (await stableTag("v0.*", /^v0\.\d+\.\d+$/)) ??
+  (await stableTag("v2.*", /^v2\.\d+\.\d+$/))
+if (!base) throw new Error("No stable ForgeCode (v0.x) or upstream (v2.x) release tag was found")
 console.log(`Comparing ${base}..${values.to}`)
 const commits = (await $`git log --format=${"%h %s"} ${commitRange(base, values.to)}`.text()).trim()
 if (!commits) throw new Error(`No OpenCode or client changes were found since ${base}`)
@@ -116,6 +118,10 @@ if (answer?.trim().toLowerCase() !== "y" && answer?.trim().toLowerCase() !== "ye
 
 await $`gh workflow run release.yml --ref dev ${input} -f release_notes=${releaseNotes}`
 console.log(`Triggered the ${version} release`)
+
+async function stableTag(pattern: string, match: RegExp) {
+  return (await $`git tag --list ${pattern} --sort=-version:refname`.text()).split("\n").find((tag) => match.test(tag))
+}
 
 async function generateReview(base: string, head: string, commits: string) {
   const endpoint = await Service.ensure()

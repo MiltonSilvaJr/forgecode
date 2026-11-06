@@ -169,18 +169,18 @@ These directories require admin/root access to write, so users cannot modify the
 
 #### macOS managed preferences
 
-On macOS, OpenCode reads managed preferences from the `ai.opencode.managed` preference domain. Deploy a `.mobileconfig` via MDM (Jamf, Kandji, FleetDM) and the settings are enforced automatically.
+On macOS, OpenCode reads managed preferences from the `ai.forgecode.managed` preference domain. Deploy a `.mobileconfig` via MDM (Jamf, Kandji, FleetDM) and the settings are enforced automatically.
 
 OpenCode checks these paths:
 
-1. `/Library/Managed Preferences/<user>/ai.opencode.managed.plist`
-2. `/Library/Managed Preferences/ai.opencode.managed.plist`
+1. `/Library/Managed Preferences/<user>/ai.forgecode.managed.plist`
+2. `/Library/Managed Preferences/ai.forgecode.managed.plist`
 
 The plist keys map directly to `opencode.json` fields. MDM metadata keys (`PayloadUUID`, `PayloadType`, etc.) are stripped automatically.
 
 **Creating a `.mobileconfig`**
 
-Use the `ai.opencode.managed` PayloadType. The OpenCode config keys go directly in the payload dict:
+Use the `ai.forgecode.managed` PayloadType. The OpenCode config keys go directly in the payload dict:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -192,7 +192,7 @@ Use the `ai.opencode.managed` PayloadType. The OpenCode config keys go directly 
   <array>
     <dict>
       <key>PayloadType</key>
-      <string>ai.opencode.managed</string>
+      <string>ai.forgecode.managed</string>
       <key>PayloadIdentifier</key>
       <string>com.example.opencode.config</string>
       <key>PayloadUUID</key>

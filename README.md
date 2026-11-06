@@ -3,11 +3,11 @@
     <picture>
       <source srcset="packages/console/app/src/asset/logo-ornate-dark.svg" media="(prefers-color-scheme: dark)">
       <source srcset="packages/console/app/src/asset/logo-ornate-light.svg" media="(prefers-color-scheme: light)">
-      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="OpenCode logo">
+      <img src="packages/console/app/src/asset/logo-ornate-light.svg" alt="ForgeCode logo">
     </picture>
   </a>
 </p>
-<p align="center">The open source AI coding agent.</p>
+<p align="center">ForgeCode — the internal fork of OpenCode.</p>
 <p align="center">
   <a href="https://opencode.ai/discord"><img alt="Discord" src="https://img.shields.io/discord/1391832426048651334?style=flat-square&label=discord" /></a>
   <a href="https://www.npmjs.com/package/@opencode/cli"><img alt="npm" src="https://img.shields.io/npm/v/@opencode/cli?style=flat-square" /></a>
@@ -39,48 +39,43 @@
   <a href="README.vi.md">Tiếng Việt</a>
 </p>
 
-[![OpenCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
+[![ForgeCode Terminal UI](packages/web/src/assets/lander/screenshot.png)](https://opencode.ai)
 
 ---
 
 ### Installation
 
-```bash
-# YOLO
-curl -fsSL https://opencode.ai/v2/install | bash
+ForgeCode is built from this repository. It is not published to the upstream
+package registries, so install it from source:
 
-# Package managers
-npm i -g @opencode/cli@latest      # or bun/pnpm/yarn
-brew install anomalyco/tap/opencode-v2 # macOS and Linux (recommended, always up to date)
-brew install opencode              # macOS and Linux (official brew formula, updated less)
-sudo pacman -S opencode            # Arch Linux (Stable)
-paru -S opencode-beta              # Arch Linux (Latest from AUR)
-mise use -g opencode               # Any OS
-nix run github:anomalyco/opencode  # Nix
+```bash
+git clone https://github.com/MiltonSilvaJr/forgecode
+cd forgecode
+bun install
+bun run dev
 ```
 
-> [!TIP]
-> Remove versions older than 0.1.x before installing.
+Build a standalone binary (the output defaults to `packages/cli/dist`):
+
+```bash
+cd packages/cli
+bun run script/build.ts --single
+```
+
+The binary is `forgecode` and reads `forgecode.json`/`forgecode.jsonc`. An
+existing `opencode.json`/`.opencode` setup is still read as legacy.
 
 ### Desktop App (BETA)
 
-OpenCode is also available as a desktop application. Download it from [opencode.ai/download](https://opencode.ai/download).
-
-| Platform              | Download                           |
-| --------------------- | ---------------------------------- |
-| macOS (Apple Silicon) | `opencode-desktop-mac-arm64.dmg`   |
-| macOS (Intel)         | `opencode-desktop-mac-x64.dmg`     |
-| Windows               | `opencode-desktop-win-x64.exe`     |
-| Linux                 | `.deb`, `.rpm`, or `.AppImage`     |
+ForgeCode also ships a desktop application built from this repository:
 
 ```bash
-# macOS (Homebrew)
-brew install --cask opencode-desktop
+bun run dev:desktop
 ```
 
 #### Installation Directory
 
-The install script installs OpenCode to `$HOME/.opencode/bin`.
+The installer places the binary in `$HOME/.forgecode/bin`.
 
 ### Agents
 

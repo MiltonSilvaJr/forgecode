@@ -27,21 +27,21 @@ describe("acp session lifecycle over the wire", () => {
       agentInfo: { name: "OpenCode" },
     })
     expect(plain.authMethods).toEqual([
-      { id: "opencode-login", name: "Login with opencode", description: "Run `opencode auth login` in the terminal" },
+      { id: "forgecode-login", name: "Login with ForgeCode", description: "Run `forgecode auth login` in the terminal" },
     ])
     expect(terminal.authMethods?.[0]?._meta).toEqual({
-      "terminal-auth": { command: "opencode", args: ["auth", "login"], label: "OpenCode Login" },
+      "terminal-auth": { command: "forgecode", args: ["auth", "login"], label: "ForgeCode Login" },
     })
     expect(standard.authMethods).toEqual([
       {
-        id: "opencode-login",
-        name: "Login with opencode",
-        description: "Run `opencode auth login` in the terminal",
+        id: "forgecode-login",
+        name: "Login with ForgeCode",
+        description: "Run `forgecode auth login` in the terminal",
         type: "terminal",
         args: ["--login"],
       },
     ])
-    expect(await acp.request("authenticate", { methodId: "opencode-login" })).toEqual({})
+    expect(await acp.request("authenticate", { methodId: "forgecode-login" })).toEqual({})
     expect(await rpcError(acp.request("authenticate", { methodId: "missing" }))).toMatchObject({
       code: -32602,
       data: { methodId: "missing" },

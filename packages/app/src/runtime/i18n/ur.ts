@@ -299,7 +299,7 @@ export const dict = {
   "error.chain.responseBody": "جواب کا متن:\n\u2068{{body}}\u2069",
   "error.chain.didYouMean": "کیا آپ کا مطلب ہے: \u2068{{suggestions}}\u2069؟",
   "error.chain.modelNotFound": "ماڈل نہیں ملا: \u2068{{provider}}\u2069/\u2068{{model}}\u2069",
-  "error.chain.checkConfig": "اپنی تشکیل (opencode.json) فراہم کنندہ/ماڈل کے نام چیک کریں۔",
+  "error.chain.checkConfig": "اپنی تشکیل (forgecode.json) فراہم کنندہ/ماڈل کے نام چیک کریں۔",
   "error.chain.mcpFailed":
     'MCP سرور "\u2068{{name}}\u2069" ناکام ہو گیا۔ نوٹ، OpenCode ابھی تک MCP تصدیق کو سپورٹ نہیں کرتا ہے۔',
   "error.chain.providerAuthFailed":
@@ -576,7 +576,7 @@ export const dict = {
   "settings.extensions.tab.mcps": "MCPs",
   "settings.extensions.tab.skills": "مہارتیں",
   "settings.extensions.availableAll": "تمام پروجیکٹس کے لیے دستیاب",
-  "settings.extensions.manageConfig": "opencode.json میں نظم کریں",
+  "settings.extensions.manageConfig": "forgecode.json میں نظم کریں",
   "settings.extensions.addSkills": "مہارتیں شامل کرنے کا طریقہ",
   "project.settings.extensions.description": "اس پروجیکٹ کے لیے دستیاب ایکسٹینشنز دیکھیں",
   "project.settings.extensions.tab.lsps": "LSPs",

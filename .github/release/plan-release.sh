@@ -2,10 +2,10 @@
 # plan-release.sh: decides version, channel and npm dist-tag from the event, ref and dispatch inputs
 # (INPUT_BUMP, INPUT_VERSION) only, and writes them to $GITHUB_OUTPUT. Nothing here reads repository files.
 #
-#   push or dispatch on dev           -> dev      0.0.0-dev-<run>     npm tag dev, desktop
-#   dispatch on dev with bump/version -> latest   x.y.z               npm tag latest, releasers only, notes required
-#   push or dispatch on beta          -> beta     0.0.0-beta-<run>    desktop only
-#   pull_request                      -> pr       0.0.0-pr-<run>      everything, dry run
+#   push or dispatch on dev           -> dev      0.1.0-dev.<run>     npm tag dev, desktop
+#   dispatch on dev with bump/version -> latest   0.x.y               npm tag latest, releasers only, notes required
+#   push or dispatch on beta          -> beta     0.1.0-beta.<run>    desktop only
+#   pull_request                      -> pr       0.1.0-pr.<run>      everything, dry run
 #
 # Releasers are actors with the admin or maintain role on the repository (the releasers team has maintain).
 . "$(dirname "$0")/lib.sh"
@@ -45,9 +45,9 @@ elif [ "$channel" = latest ]; then
     minor) version="$major.$((minor + 1)).0" ;;
     *) version="$major.$minor.$((patch + 1))" ;;
   esac
-  if [ "$major" -lt 2 ]; then version=2.0.0; fi
+  if [ "$major" -lt 1 ]; then version=0.1.0; fi
 else
-  version="0.0.0-$channel-$GITHUB_RUN_NUMBER"
+  version="0.1.0-$channel.$GITHUB_RUN_NUMBER"
   if [ "$GITHUB_RUN_ATTEMPT" != 1 ]; then version="$version.$GITHUB_RUN_ATTEMPT"; fi
 fi
 

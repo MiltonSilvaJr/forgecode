@@ -490,7 +490,7 @@ windows("windows links the curl binary before the installer replaces it", () =>
       false,
       "@opencode/cli",
       undefined,
-      (_root, home) => Effect.succeed(path.join(home, ".opencode", "bin", "opencode.exe")),
+      (_root, home) => Effect.succeed(path.join(home, ".forgecode", "bin", "forgecode.exe")),
     )
     layout.executable = test.executable
     layout.cache = test.global.cache
@@ -517,7 +517,7 @@ unix("curl method detection resolves symlinked home directories", () =>
         Effect.gen(function* () {
           const fs = yield* FileSystem.FileSystem
           const realHome = path.join(root, "real-home")
-          const bin = path.join(realHome, ".opencode", "bin", "opencode")
+          const bin = path.join(realHome, ".forgecode", "bin", "forgecode")
           yield* fs.makeDirectory(path.dirname(bin), { recursive: true })
           yield* fs.symlink(realHome, home)
           return bin

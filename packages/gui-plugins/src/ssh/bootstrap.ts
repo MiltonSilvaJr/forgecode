@@ -17,7 +17,7 @@ done
 `
 
 export const discoverScript = `set -eu
-${RemoteCli.discoverScript({ fromPath: true, cache: { directory: ".opencode/desktop-ssh", prefix: "0.0.0-beta-" } })}
+${RemoteCli.discoverScript({ fromPath: true, cache: { directory: ".forgecode/desktop-ssh", prefix: "0.0.0-beta-" } })}
 if [ -z "$cli" ]; then exit 0; fi
 ${registrationScript}`
 
@@ -57,7 +57,7 @@ export function parseRegistration(output: string) {
 }
 
 export function binaryPath(version: string) {
-  return `$HOME/.opencode/desktop-ssh/${RemoteCli.requireVersion(version)}/opencode`
+  return `$HOME/.forgecode/desktop-ssh/${RemoteCli.requireVersion(version)}/opencode`
 }
 
 function connectionAddress(address: string, password: string) {
@@ -105,7 +105,7 @@ export const bootstrap = Effect.fn("Ssh.bootstrap")(function* (input: {
   const version =
     input.development && !staged ? yield* RemoteCli.latestBeta().pipe(Effect.mapError(SshFailure.from)) : input.version
 
-  const setup = { version, directory: `.opencode/desktop-ssh/${version}` }
+  const setup = { version, directory: `.forgecode/desktop-ssh/${version}` }
 
   if (!staged) {
     const output = yield* run(RemoteCli.probeScript).pipe(Effect.mapError(() => new SshFailure("platform")))

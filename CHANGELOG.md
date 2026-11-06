@@ -1,6 +1,15 @@
 # Changelog
 
-Release notes for OpenCode V2, newest first.
+Release notes for ForgeCode, a fork of OpenCode V2, newest first.
+
+## v0.1.0 — 2026-11-06
+
+### Rebrand
+
+- Native identity is `forgecode`: config files `forgecode.json`/`forgecode.jsonc`, project directory `.forgecode/`, global config at `~/.config/forgecode`, data at `~/.local/share/forgecode`, and `FORGECODE_*` environment variables.
+- Pre-rebrand names (`opencode.json`, `.opencode/`, `OPENCODE_*`) are still read, so an existing install keeps working; native names win when both exist.
+- The binary, database (`forgecode.db`), service registration, desktop app id (`ai.forgecode.desktop`), and installer now use `forgecode`.
+- ForgeCode owns the `0.1.x` SemVer line. Preview builds are `<version>-<channel>.<build>`, for example `0.1.0-forgecode.202611061733`.
 
 ## v2.2.5 — 2026-10-30
 

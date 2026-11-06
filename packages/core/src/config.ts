@@ -271,7 +271,10 @@ export const layer = (options?: Options) =>
 
       const loadDirectory = Effect.fnUntraced(function* (directory: AbsolutePath) {
         return [
-          ...(yield* Effect.forEach(ConfigDiscovery.names, (file) => loadFile(path.join(directory, file))).pipe(
+          ...(yield* Effect.forEach(
+            [...ConfigDiscovery.legacyNames, ...ConfigDiscovery.names],
+            (file) => loadFile(path.join(directory, file)),
+          ).pipe(
             Effect.map((configs) => configs.filter((config): config is Document => config !== undefined)),
           )),
           new Directory({ type: "directory", path: directory }),
@@ -294,11 +297,11 @@ export const layer = (options?: Options) =>
           options?.content !== undefined
             ? yield* ConfigVariable.substitute({
                 type: "virtual",
-                source: "OPENCODE_CONFIG_CONTENT",
+                source: "FORGECODE_CONFIG_CONTENT",
                 dir: location.directory,
                 text: options.content,
               }).pipe(
-                Effect.flatMap((text) => parseInfo(text, "OPENCODE_CONFIG_CONTENT")),
+                Effect.flatMap((text) => parseInfo(text, "FORGECODE_CONFIG_CONTENT")),
                 Effect.map((info) => (info ? [new Document({ type: "document", info })] : [])),
                 Effect.orDie,
               )
@@ -471,9 +474,10 @@ export const layer = (options?: Options) =>
       const update = Effect.fn("Config.update")(
         function* (patch: Patch) {
           const directory = initial.global ?? AbsolutePath.make(globalService.config)
-          const candidates = ConfigDiscovery.names.map((name) => path.join(directory, name))
-          const filepath =
-            (yield* Effect.filter(candidates, fs.isFile)).at(-1) ?? path.join(directory, "opencode.jsonc")
+          const candidates = [...ConfigDiscovery.legacyNames, ...ConfigDiscovery.names].map((name) =>
+            path.join(directory, name),
+          )
+          const filepath = (yield* Effect.filter(candidates, fs.isFile)).at(-1) ?? path.join(directory, "forgecode.jsonc")
           const text = (yield* fs.readFileStringSafe(filepath)) ?? "{}\n"
           const updated = yield* Effect.try({
             try: () =>

@@ -23,9 +23,9 @@ export const dict = {
   "server.connect.address.invalid": "Insira um endereço de servidor HTTP ou HTTPS válido.",
   "server.connect.failed": "Não foi possível conectar. Verifique o endereço e a senha do servidor e tente novamente.",
   "server.connect.scan": "Digitalize o código QR",
-  "server.connect.scan.description": "Aponte sua câmera para o código QR mostrado por opencode pair.",
+  "server.connect.scan.description": "Aponte sua câmera para o código QR mostrado por forgecode pair.",
   "server.connect.scan.invalid":
-    "Este não é um código de emparelhamento OpenCode. Digitalize o código mostrado por opencode pair.",
+    "Este não é um código de emparelhamento OpenCode. Digitalize o código mostrado por forgecode pair.",
   "server.connect.camera": "Câmera de emparelhamento",
   "server.connect.camera.starting": "Abrindo a câmera…",
   "server.connect.mixedContent":
@@ -499,7 +499,7 @@ export const dict = {
   "error.chain.responseBody": "Corpo da resposta:\n{{body}}",
   "error.chain.didYouMean": "Você quis dizer: {{suggestions}}",
   "error.chain.modelNotFound": "Modelo não encontrado: {{provider}}/{{model}}",
-  "error.chain.checkConfig": "Verifique os nomes de provedor/modelo na sua configuração (opencode.json)",
+  "error.chain.checkConfig": "Verifique os nomes de provedor/modelo na sua configuração (forgecode.json)",
   "error.chain.mcpFailed": 'Servidor MCP "{{name}}" falhou. Nota: OpenCode ainda não suporta autenticação MCP.',
   "error.chain.providerAuthFailed": "Autenticação do provedor falhou ({{provider}}): {{message}}",
   "error.chain.providerInitFailed":
@@ -791,7 +791,7 @@ export const dict = {
   "settings.extensions.tab.mcps": "MCP",
   "settings.extensions.tab.skills": "Habilidades",
   "settings.extensions.availableAll": "Disponível para todos os projetos",
-  "settings.extensions.manageConfig": "Gerenciar em opencode.json",
+  "settings.extensions.manageConfig": "Gerenciar em forgecode.json",
   "settings.extensions.addSkills": "Como adicionar habilidades",
   "project.settings.extensions.description": "Ver extensões disponíveis para este projeto",
   "project.settings.extensions.tab.lsps": "LSPs",

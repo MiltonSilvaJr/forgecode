@@ -301,7 +301,7 @@ export const dict = {
   "error.chain.responseBody": "Tijelo odgovora:\n{{body}}",
   "error.chain.didYouMean": "Jeste li mislili: {{suggestions}}",
   "error.chain.modelNotFound": "Model nije pronađen: {{provider}}/{{model}}",
-  "error.chain.checkConfig": "Provjerite nazive dobavljača/modela svoje konfiguracije (opencode.json).",
+  "error.chain.checkConfig": "Provjerite nazive dobavljača/modela svoje konfiguracije (forgecode.json).",
   "error.chain.mcpFailed":
     'MCP poslužitelj "{{name}}" nije uspio. Napomena, OpenCode još ne podržava MCP autentifikaciju.',
   "error.chain.providerAuthFailed": "Provjera autentičnosti davatelja nije uspjela ({{provider}}): {{message}}",
@@ -579,7 +579,7 @@ export const dict = {
   "settings.extensions.tab.mcps": "MCP-ovi",
   "settings.extensions.tab.skills": "Vještine",
   "settings.extensions.availableAll": "Dostupno za sve projekte",
-  "settings.extensions.manageConfig": "Upravljanje u opencode.json",
+  "settings.extensions.manageConfig": "Upravljanje u forgecode.json",
   "settings.extensions.addSkills": "Kako dodati vještine",
   "project.settings.extensions.description": "Pogledajte proširenja dostupna za ovaj projekt",
   "project.settings.extensions.tab.lsps": "LSP-ovi",
@@ -740,8 +740,8 @@ export const dict = {
   "server.connect.address.invalid": "Unesite ispravnu HTTP ili HTTPS adresu poslužitelja.",
   "server.connect.failed": "Povezivanje nije uspjelo. Provjerite adresu poslužitelja i lozinku, pa pokušajte ponovno.",
   "server.connect.scan": "Skeniraj QR kod",
-  "server.connect.scan.description": "Usmjerite kameru prema QR kodu koji prikazuje opencode pair.",
-  "server.connect.scan.invalid": "Ovo nije OpenCode kod za uparivanje. Skenirajte kod koji prikazuje opencode pair.",
+  "server.connect.scan.description": "Usmjerite kameru prema QR kodu koji prikazuje forgecode pair.",
+  "server.connect.scan.invalid": "Ovo nije OpenCode kod za uparivanje. Skenirajte kod koji prikazuje forgecode pair.",
   "server.connect.camera": "Kamera za uparivanje",
   "server.connect.camera.starting": "Otvaranje kamere…",
   "server.connect.mixedContent":

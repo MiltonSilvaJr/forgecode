@@ -14,7 +14,7 @@ The URL selects the Figma directory and uses the repository's default branch, so
 
 The plugin exports `index.ts` directly. There is no build step or installation hook.
 
-For local development, add the directory to `plugins` in the project's `opencode.jsonc`:
+For local development, add the directory to `plugins` in the project's `forgecode.jsonc`:
 
 ```jsonc
 {

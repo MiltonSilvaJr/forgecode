@@ -154,8 +154,8 @@ const shellConfigs = Effect.fnUntraced(function* (home: string) {
 function cleanShellConfig(content: string) {
   const lines = content.split("\n")
   const entry = (line: string) =>
-    /^(?:export PATH=|fish_add_path\s)/.test(line.trim()) && line.includes(".opencode/bin")
-  return lines
-    .filter((line, index) => !entry(line) && !(line.trim() === "# opencode" && entry(lines[index + 1] ?? "")))
-    .join("\n")
+    /^(?:export PATH=|fish_add_path\s)/.test(line.trim()) &&
+    (line.includes(".forgecode/bin") || line.includes(".opencode/bin"))
+  const marker = (line: string) => line.trim() === "# forgecode" || line.trim() === "# opencode"
+  return lines.filter((line, index) => !entry(line) && !(marker(line) && entry(lines[index + 1] ?? ""))).join("\n")
 }

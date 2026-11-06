@@ -1,6 +1,7 @@
 export * as V1Migration from "./v1-migration.js"
 
 import { Cause, Effect, Fiber, Layer, Option, Schema, Semaphore } from "effect"
+import { env } from "@opencode/util/identity"
 import { Database } from "./database.js"
 import { storedAbsolutePath } from "./path.js"
 import { SessionMessageTable, SessionTable } from "../session/sql.js"
@@ -798,7 +799,7 @@ function resolveDirectory(directory: string) {
 
 function nextPath(options: Options, data: string) {
   if (options.nextDatabasePath) return options.nextDatabasePath
-  if (process.env.OPENCODE_DB === ":memory:") return undefined
+  if (env("DB") === ":memory:") return undefined
   return path.join(data, "opencode-next.db")
 }
 

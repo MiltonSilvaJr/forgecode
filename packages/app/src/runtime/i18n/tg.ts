@@ -288,7 +288,7 @@ export const dict = {
   "error.chain.responseBody": "Мақомоти вокуниш:\n{{body}}",
   "error.chain.didYouMean": "Оё шумо дар назар доштед: {{suggestions}}",
   "error.chain.modelNotFound": "Модели ёфт нашуд: {{provider}}/{{model}}",
-  "error.chain.checkConfig": "Номҳои провайдери конфигуратсияи худро (opencode.json) санҷед",
+  "error.chain.checkConfig": "Номҳои провайдери конфигуратсияи худро (forgecode.json) санҷед",
   "error.chain.mcpFailed":
     'MCP сервери "{{name}}" ноком шуд. Дар хотир доред, ки OpenCode тасдиқи MCP-ро ҳанӯз дастгирӣ намекунад.',
   "error.chain.providerAuthFailed": "Аутентификатсияи провайдер ноком шуд ({{provider}}): {{message}}",
@@ -562,7 +562,7 @@ export const dict = {
   "settings.extensions.tab.mcps": "MCP-ҳо",
   "settings.extensions.tab.skills": "Малакаҳо",
   "settings.extensions.availableAll": "Барои ҳамаи лоиҳаҳо дастрас аст",
-  "settings.extensions.manageConfig": "Дар opencode.json идора кунед",
+  "settings.extensions.manageConfig": "Дар forgecode.json идора кунед",
   "settings.extensions.addSkills": "Тарзи илова кардани малакаҳо",
   "project.settings.extensions.description": "Васеъкуниҳои барои ин лоиҳа дастрасро бинед",
   "project.settings.extensions.tab.lsps": "LSP-ҳо",
@@ -729,9 +729,9 @@ export const dict = {
   "server.connect.address.invalid": "Суроғаи сервери дурусти HTTP ё HTTPS-ро ворид кунед.",
   "server.connect.failed": "Пайваст шуда натавонист. Суроғаи сервер ва паролро тафтиш кунед ва аз нав кӯшиш кунед.",
   "server.connect.scan": "Рамзи QR-ро скан кунед",
-  "server.connect.scan.description": "Камераро ба рамзи QR, ки opencode pair нишон медиҳад, равона кунед.",
+  "server.connect.scan.description": "Камераро ба рамзи QR, ки forgecode pair нишон медиҳад, равона кунед.",
   "server.connect.scan.invalid":
-    "Ин рамзи ҷуфткунии OpenCode нест. Рамзеро, ки opencode pair нишон медиҳад, скан кунед.",
+    "Ин рамзи ҷуфткунии OpenCode нест. Рамзеро, ки forgecode pair нишон медиҳад, скан кунед.",
   "server.connect.camera": "Камераи ҷуфткунӣ",
   "server.connect.camera.starting": "Кушодани камера…",
   "server.connect.mixedContent":

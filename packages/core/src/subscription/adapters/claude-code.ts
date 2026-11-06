@@ -77,7 +77,7 @@ export function make(runner: CommandRunner = realRunner, keychain: KeychainProbe
           return {
             status: "error",
             code: "transport_unavailable",
-            message: "claude-code has no managed OAuth. Run: opencode auth login claude-code --source native",
+            message: "claude-code has no managed OAuth. Run: forgecode auth login claude-code --source native",
           }
         const presence = yield* SubscriptionNativeSession.claudePresence(input.env, keychain)
         if (presence.present) return { status: "already_authenticated" }

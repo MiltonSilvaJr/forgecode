@@ -37,7 +37,7 @@ describe("auth refresh command", () => {
     using server = authServer((request, url) => {
       if (url.pathname === "/api/experimental/subscription/kimi-code/refresh" && request.method === "POST") {
         return Response.json(
-          { _tag: "SubscriptionError", code: "session_expired", message: "Run opencode auth login kimi-code." },
+          { _tag: "SubscriptionError", code: "session_expired", message: "Run forgecode auth login kimi-code." },
           { status: 400 },
         )
       }
@@ -62,7 +62,7 @@ function authServer(fetch: (request: Request, url: URL) => Response | Promise<Re
 }
 
 function status() {
-  return Response.json({ version: OPENCODE_VERSION, pid: process.pid, urls: [], paths: { tmp: "/tmp/opencode" } })
+  return Response.json({ version: OPENCODE_VERSION, pid: process.pid, urls: [], paths: { tmp: "/tmp/forgecode" } })
 }
 
 function located<T>(data: T) {

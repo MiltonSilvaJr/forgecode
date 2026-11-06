@@ -193,12 +193,12 @@ permissions:
                   "*.env.*": "deny",
                   "*.env.example": "allow",
                   "*.dev.vars": "deny",
-                  "~/.local/share/opencode/mcp-auth.json": "deny",
-                  "$HOME/.local/share/opencode/mcp-auth.json": "deny",
+                  "~/.local/share/forgecode/mcp-auth.json": "deny",
+                  "$HOME/.local/share/forgecode/mcp-auth.json": "deny",
                 },
                 external_directory: {
                   "*": "ask",
-                  "~/.local/share/opencode/*": "deny",
+                  "~/.local/share/forgecode/*": "deny",
                 },
               },
             }),
@@ -214,7 +214,7 @@ permissions:
                   { action: "external_directory", resource: "*", effect: "allow" },
                   {
                     action: "external_directory",
-                    resource: "~/.local/share/opencode/*",
+                    resource: "~/.local/share/forgecode/*",
                     effect: "deny",
                   },
                   { action: "read", resource: "*.env", effect: "deny" },
@@ -231,8 +231,8 @@ permissions:
 
       const build = yield* agents.get(Agent.defaultID)
       if (!build) throw new Error("expected configured build agent")
-      const opencodeData = path.join(global.home, ".local", "share", "opencode", "*")
-      const mcpAuth = path.join(global.home, ".local", "share", "opencode", "mcp-auth.json")
+      const opencodeData = path.join(global.home, ".local", "share", "forgecode", "*")
+      const mcpAuth = path.join(global.home, ".local", "share", "forgecode", "mcp-auth.json")
       expect(build.permissions).toEqual([
         ...defaultPermissions,
         { action: "question", resource: "*", effect: "allow" },
@@ -685,7 +685,7 @@ Mixed fields.`,
           )
 
           yield* configTest.emitChange({ type: "create", path: path.join(tmp.path, "commands", "review.md") })
-          yield* configTest.emitChange({ type: "update", path: path.join(tmp.path, "opencode.json") })
+          yield* configTest.emitChange({ type: "update", path: path.join(tmp.path, "forgecode.json") })
           yield* drain
           expect(reloads).toBe(0)
 

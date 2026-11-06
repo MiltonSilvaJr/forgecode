@@ -11,6 +11,7 @@ import { Updater } from "./services/updater"
 import { OPENCODE_ARTIFACT, OPENCODE_CHANNEL, OPENCODE_LOCAL, OPENCODE_VERSION } from "./version"
 import { LayerNode } from "@opencode/util/effect/layer-node"
 import { Global } from "@opencode/util/global"
+import { env, installEnvAliases } from "@opencode/util/identity"
 import { AppProcess } from "@opencode/util/process"
 import { Config } from "./config"
 import { Npm } from "@opencode/util/npm"
@@ -18,6 +19,10 @@ import { EffectFlock } from "@opencode/util/effect-flock"
 import { Heap } from "./heap"
 import { CpuProfile } from "./cpu-profile"
 import { ShutdownDeadline } from "./shutdown-deadline"
+
+installEnvAliases()
+
+const configDirectory = env("CONFIG_DIR")
 
 // Keep requests to the local service off any proxy. Bun reads lowercase `no_proxy` alone whenever it is set, so both
 // spellings get the same merged list.
@@ -139,7 +144,7 @@ Effect.gen(function* () {
     LayerNode.compile(LayerNode.group([Global.node, AppProcess.node, Npm.node, EffectFlock.node]), {
       replacements: [
         Global.node.replace(
-          Global.layerWith(process.env.OPENCODE_CONFIG_DIR ? { config: process.env.OPENCODE_CONFIG_DIR } : {}),
+          Global.layerWith(configDirectory ? { config: configDirectory } : {}),
         ),
       ],
     }),
