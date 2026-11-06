@@ -219,6 +219,7 @@ export function normalize(input: unknown): Result {
     websearch: Info.fields.websearch,
     worktree: Info.fields.worktree,
     warming: Info.fields.warming,
+    subscription_auth: Info.fields.subscription_auth,
   }
   Object.entries(nativeAtomic).forEach(([key, schema]) => {
     if (!own(input, key)) return
@@ -550,6 +551,15 @@ function normalizeExperimental(
           diagnostics,
         )
         if (value !== undefined) result.location_idle_timeout = value
+      }
+      if (own(experimental, "forgequeue")) {
+        const value = decodeEncoded(
+          ConfigExperimental.Info.fields.forgequeue,
+          experimental.forgequeue,
+          ["experimental", "forgequeue"],
+          diagnostics,
+        )
+        if (value !== undefined) result.forgequeue = value
       }
     }
   }

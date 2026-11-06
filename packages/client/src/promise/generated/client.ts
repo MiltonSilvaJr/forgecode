@@ -146,6 +146,16 @@ import type {
   IntegrationCommandCancelOutput,
   ExperimentalIntegrationWellknownAddInput,
   ExperimentalIntegrationWellknownAddOutput,
+  ExperimentalServerSubscriptionStatusInput,
+  ExperimentalServerSubscriptionStatusOutput,
+  ExperimentalServerSubscriptionLoginInput,
+  ExperimentalServerSubscriptionLoginOutput,
+  ExperimentalServerSubscriptionConsentInput,
+  ExperimentalServerSubscriptionConsentOutput,
+  ExperimentalServerSubscriptionRefreshInput,
+  ExperimentalServerSubscriptionRefreshOutput,
+  ExperimentalServerSubscriptionTestInput,
+  ExperimentalServerSubscriptionTestOutput,
   McpListInput,
   McpListOutput,
   McpResourceCatalogInput,
@@ -1259,6 +1269,71 @@ export function make(options: ClientOptions) {
               requestOptions,
             ),
         },
+      },
+      "server.subscription": {
+        status: (input?: ExperimentalServerSubscriptionStatusInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalServerSubscriptionStatusOutput>(
+            {
+              method: "GET",
+              path: `/api/experimental/subscription/status`,
+              query: { location: input?.["location"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        login: (input: ExperimentalServerSubscriptionLoginInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalServerSubscriptionLoginOutput>(
+            {
+              method: "POST",
+              path: `/api/experimental/subscription/${encodeURIComponent(input.integrationID)}/login`,
+              query: { location: input["location"] },
+              body: { source: input["source"], accept: input["accept"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        consent: (input: ExperimentalServerSubscriptionConsentInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalServerSubscriptionConsentOutput>(
+            {
+              method: "POST",
+              path: `/api/experimental/subscription/${encodeURIComponent(input.integrationID)}/consent`,
+              query: { location: input["location"] },
+              body: { accept: input["accept"] },
+              successStatus: 204,
+              declaredStatuses: [400, 401, 403, 404],
+              empty: true,
+            },
+            requestOptions,
+          ),
+        refresh: (input: ExperimentalServerSubscriptionRefreshInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalServerSubscriptionRefreshOutput>(
+            {
+              method: "POST",
+              path: `/api/experimental/subscription/${encodeURIComponent(input.integrationID)}/refresh`,
+              query: { location: input["location"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
+        test: (input: ExperimentalServerSubscriptionTestInput, requestOptions?: RequestOptions) =>
+          request<ExperimentalServerSubscriptionTestOutput>(
+            {
+              method: "POST",
+              path: `/api/experimental/subscription/${encodeURIComponent(input.integrationID)}/test`,
+              query: { location: input["location"] },
+              body: { model: input["model"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 404],
+              empty: false,
+            },
+            requestOptions,
+          ),
       },
       mcp: {
         add: (input: ExperimentalMcpAddInput, requestOptions?: RequestOptions) =>
@@ -2741,6 +2816,19 @@ export function make(options: ClientOptions) {
         /** @deprecated Use `client.experimental.integration.wellknown.add`. Removed in the next minor. */
         add: client.experimental.integration.wellknown.add,
       },
+    },
+    /** @deprecated Use `client.experimental.server.subscription`. Removed in the next minor. */
+    "server.subscription": {
+      /** @deprecated Use `client.experimental.server.subscription.status`. Removed in the next minor. */
+      status: client.experimental["server.subscription"].status,
+      /** @deprecated Use `client.experimental.server.subscription.login`. Removed in the next minor. */
+      login: client.experimental["server.subscription"].login,
+      /** @deprecated Use `client.experimental.server.subscription.consent`. Removed in the next minor. */
+      consent: client.experimental["server.subscription"].consent,
+      /** @deprecated Use `client.experimental.server.subscription.refresh`. Removed in the next minor. */
+      refresh: client.experimental["server.subscription"].refresh,
+      /** @deprecated Use `client.experimental.server.subscription.test`. Removed in the next minor. */
+      test: client.experimental["server.subscription"].test,
     },
     mcp: {
       ...client.mcp,

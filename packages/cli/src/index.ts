@@ -47,6 +47,9 @@ const Handlers = Runtime.handlers(Commands, {
   api: () => import("./commands/handlers/api"),
   auth: {
     list: () => import("./commands/handlers/auth/list"),
+    status: () => import("./commands/handlers/auth/status"),
+    refresh: () => import("./commands/handlers/auth/refresh"),
+    test: () => import("./commands/handlers/auth/test"),
     login: () => import("./commands/handlers/auth/login"),
     logout: () => import("./commands/handlers/auth/logout"),
     export: () => import("./commands/handlers/auth/export"),
@@ -84,6 +87,12 @@ const Handlers = Runtime.handlers(Commands, {
     export: () => import("./commands/handlers/session/export"),
     import: () => import("./commands/handlers/session/import"),
   },
+  queue: {
+    $: () => import("./commands/handlers/queue"),
+    list: () => import("./commands/handlers/queue/list"),
+    activity: () => import("./commands/handlers/queue/activity"),
+  },
+  sessions: () => import("./commands/handlers/sessions"),
   service: {
     start: () => import("./commands/handlers/service/start"),
     restart: () => import("./commands/handlers/service/restart"),

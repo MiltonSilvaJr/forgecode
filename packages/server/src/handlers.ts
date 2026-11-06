@@ -22,6 +22,7 @@ import { ShellHandler } from "./handlers/shell"
 import { ReferenceHandler } from "./handlers/reference"
 import { LocationHandler } from "./handlers/location"
 import { IntegrationHandler } from "./handlers/integration"
+import { SubscriptionHandler } from "./handlers/subscription"
 import { WebSearchHandler } from "./handlers/websearch"
 import { UsageHandler } from "./handlers/usage"
 import { McpHandler } from "./handlers/mcp"
@@ -47,6 +48,7 @@ export const handlers = Layer.mergeAll(
   VoiceHandler,
   ProviderHandler,
   IntegrationHandler,
+  SubscriptionHandler,
   WebSearchHandler,
   UsageHandler,
   McpHandler,
