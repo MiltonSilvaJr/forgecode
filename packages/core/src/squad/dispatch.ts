@@ -4,12 +4,11 @@ import { randomUUID } from "node:crypto"
 import { DateTime, Effect, Schema } from "effect"
 import { eq, sql } from "drizzle-orm"
 import { Squad } from "@opencode/schema/squad"
-import { Config } from "../config.js"
 import { Database } from "../database/database.js"
 import { Git } from "../git.js"
 import { AbsolutePath } from "../schema.js"
 import { SquadAudit } from "./audit.js"
-import { DisabledError } from "./index.js"
+import { requireEnabled } from "./guard.js"
 import { InvalidInputError } from "./invalid.js"
 import { ConflictError } from "./registry.js"
 import { SquadDispatchTable } from "./sql.js"
@@ -64,13 +63,6 @@ export const toDispatch = (row: Row, warnings?: readonly string[]): Squad.Dispat
     acceptedBy: row.accepted_by === null ? undefined : Squad.SessionName.make(row.accepted_by),
     createdAt: DateTime.makeUnsafe(row.created_at),
     ...(warnings === undefined || warnings.length === 0 ? {} : { warnings }),
-  })
-
-export const requireEnabled = () =>
-  Effect.gen(function* () {
-    const config = yield* Config.Service
-    const entries = yield* config.entries()
-    if (Config.latest(entries, "squad")?.enabled !== true) return yield* new DisabledError()
   })
 
 const blank = (value: string | undefined) => value === undefined || value.trim() === ""
