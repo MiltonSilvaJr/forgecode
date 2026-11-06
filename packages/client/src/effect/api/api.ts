@@ -2032,8 +2032,44 @@ export type ExperimentalSquadAuditOperation<E = never> = (
   input?: ExperimentalSquadAuditInput,
 ) => Effect.Effect<ExperimentalSquadAuditOutput, E>
 
+export type ExperimentalSquadCheckpointInput = {
+  readonly name: Squad.SessionName
+  readonly body: string
+  readonly from?: string | undefined
+  readonly allowSecretLikeText?: boolean | undefined
+  readonly reason?: string | undefined
+}
+export type ExperimentalSquadCheckpointOutput = Squad.Checkpoint
+export type ExperimentalSquadCheckpointOperation<E = never> = (
+  input: ExperimentalSquadCheckpointInput,
+) => Effect.Effect<ExperimentalSquadCheckpointOutput, E>
+
+export type ExperimentalSquadGenerationCloseInput = {
+  readonly generationID: Squad.GenerationID
+  readonly from?: string | undefined
+  readonly force?: boolean | undefined
+  readonly reason?: string | undefined
+  readonly idempotencyKey?: string | undefined
+}
+export type ExperimentalSquadGenerationCloseOutput = Squad.TransitionReceipt
+export type ExperimentalSquadGenerationCloseOperation<E = never> = (
+  input: ExperimentalSquadGenerationCloseInput,
+) => Effect.Effect<ExperimentalSquadGenerationCloseOutput, E>
+
+export type ExperimentalSquadTransitionInput = {
+  readonly from: Squad.GenerationID
+  readonly idempotencyKey?: string | undefined
+}
+export type ExperimentalSquadTransitionOutput = Squad.TransitionReceipt
+export type ExperimentalSquadTransitionOperation<E = never> = (
+  input: ExperimentalSquadTransitionInput,
+) => Effect.Effect<ExperimentalSquadTransitionOutput, E>
+
 export interface ExperimentalSquadApi<E = never> {
-  readonly generation: { readonly create: ExperimentalSquadGenerationCreateOperation<E> }
+  readonly generation: {
+    readonly create: ExperimentalSquadGenerationCreateOperation<E>
+    readonly close: ExperimentalSquadGenerationCloseOperation<E>
+  }
   readonly session: {
     readonly list: ExperimentalSquadSessionListOperation<E>
     readonly send: ExperimentalSquadSessionSendOperation<E>
@@ -2042,6 +2078,8 @@ export interface ExperimentalSquadApi<E = never> {
   readonly plan: ExperimentalSquadPlanOperation<E>
   readonly broadcast: ExperimentalSquadBroadcastOperation<E>
   readonly audit: ExperimentalSquadAuditOperation<E>
+  readonly checkpoint: ExperimentalSquadCheckpointOperation<E>
+  readonly transition: ExperimentalSquadTransitionOperation<E>
 }
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }

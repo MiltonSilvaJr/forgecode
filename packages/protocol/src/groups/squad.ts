@@ -47,6 +47,26 @@ const BroadcastInput = Schema.Struct({
   idempotencyKey: Schema.String.pipe(optional),
 }).annotate({ identifier: "Squad.BroadcastInput" })
 
+const CheckpointInput = Schema.Struct({
+  name: Squad.SessionName,
+  body: Schema.String,
+  from: Schema.String.pipe(optional),
+  allowSecretLikeText: Schema.Boolean.pipe(optional),
+  reason: Schema.String.pipe(optional),
+}).annotate({ identifier: "Squad.CheckpointInput" })
+
+const CloseInput = Schema.Struct({
+  from: Schema.String.pipe(optional),
+  force: Schema.Boolean.pipe(optional),
+  reason: Schema.String.pipe(optional),
+  idempotencyKey: Schema.String.pipe(optional),
+}).annotate({ identifier: "Squad.CloseInput" })
+
+const TransitionInput = Schema.Struct({
+  from: Squad.GenerationID,
+  idempotencyKey: Schema.String.pipe(optional),
+}).annotate({ identifier: "Squad.TransitionInput" })
+
 export const SquadGroup = HttpApiGroup.make("server.squad")
   .add(
     HttpApiEndpoint.post("squad.generation.create", "/api/experimental/squad/generation", {
@@ -143,6 +163,49 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
         summary: "List the squad audit trail",
         description:
           "List the append-only audit lines in order, optionally since an ISO instant, with the chain digest and its integrity. Read-only: there is no write parameter. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.checkpoint", "/api/experimental/squad/checkpoint", {
+      payload: CheckpointInput,
+      success: Schema.Struct({ data: Squad.Checkpoint }),
+      error: [InvalidRequestError, ForbiddenError, SessionNotFoundError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.checkpoint",
+        summary: "Record a session checkpoint",
+        description:
+          "Validate the six required sections, normalize the body, scan for secret-like text and store it under its SHA-256. History is kept; the session points at the most recent checkpoint. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.generation.close", "/api/experimental/squad/generation/:generationID/close", {
+      params: { generationID: Squad.GenerationID },
+      payload: CloseInput,
+      success: Schema.Struct({ data: Squad.TransitionReceipt }),
+      error: [InvalidRequestError, ForbiddenError, SessionNotFoundError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.generation.close",
+        summary: "Close a squad generation",
+        description:
+          "Close the active generation once every session has an intact checkpoint and no execution is in flight, and return the transition receipt with the source registry digest. The orchestrator is kept open. Repeating the close returns the same receipt. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.transition", "/api/experimental/squad/transition", {
+      payload: TransitionInput,
+      success: Schema.Struct({ data: Squad.TransitionReceipt }),
+      error: [InvalidRequestError, ForbiddenError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.transition",
+        summary: "Bind a closed generation to the active one",
+        description:
+          "Prove that the closed generation's receipt, session set and registry digest still match and bind it to the active generation. Repeating with the same target is a no-op; a different target is a conflict. Experimental: may change without compatibility guarantees.",
       }),
     ),
   )

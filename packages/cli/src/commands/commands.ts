@@ -618,6 +618,57 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             }),
           ],
         }),
+        Spec.make("close", {
+          description: "Close a squad generation once every session has an intact checkpoint and is idle",
+          globalFlags: ServerFlags,
+          params: {
+            generation: Flag.String("generation").pipe(Flag.withDescription("Generation to close"), Flag.optional),
+            by: Flag.String("by").pipe(
+              Flag.withDescription("Session (name or id) issuing the close; excluded from the active-execution check (default: the orchestrator)"),
+              Flag.optional,
+            ),
+            force: Flag.Boolean("force").pipe(
+              Flag.withDescription("Close despite queued inbox items (requires --reason)"),
+              Flag.withDefault(false),
+            ),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Why --force is used"), Flag.optional),
+            idempotencyKey: Flag.String("idempotency-key").pipe(
+              Flag.withDescription("Idempotency key (repeating the close returns the same receipt)"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("transition", {
+          description: "Bind a closed generation to the active one after checking its receipt and registry digest",
+          globalFlags: ServerFlags,
+          params: {
+            from: Flag.String("from").pipe(Flag.withDescription("Closed generation to transition from"), Flag.optional),
+            idempotencyKey: Flag.String("idempotency-key").pipe(
+              Flag.withDescription("Idempotency key (repeating with the same target is a no-op)"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("checkpoint", {
+          description: "Record a session checkpoint (six required sections, SHA-256, secret scan)",
+          globalFlags: ServerFlags,
+          params: {
+            name: Flag.String("name").pipe(Flag.withDescription("Session name in the active generation"), Flag.optional),
+            bodyFile: Flag.String("body-file").pipe(Flag.withDescription("Read the checkpoint from a UTF-8 file"), Flag.optional),
+            allowSecretLikeText: Flag.Boolean("allow-secret-like-text").pipe(
+              Flag.withDescription("Record the checkpoint even if it looks like it holds a secret (requires --reason)"),
+              Flag.withDefault(false),
+            ),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Why secret-like text is allowed"), Flag.optional),
+            exportDir: Flag.String("export-dir").pipe(
+              Flag.withDescription("Also write the checkpoint to this directory, which must be outside a git work tree"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
         Spec.make("send", {
           description: "Enqueue a message in a squad session's inbox (proof of enqueue, never of reading)",
           globalFlags: ServerFlags,

@@ -194,6 +194,12 @@ import type {
   ExperimentalSquadBroadcastOutput,
   ExperimentalSquadAuditInput,
   ExperimentalSquadAuditOutput,
+  ExperimentalSquadCheckpointInput,
+  ExperimentalSquadCheckpointOutput,
+  ExperimentalSquadGenerationCloseInput,
+  ExperimentalSquadGenerationCloseOutput,
+  ExperimentalSquadTransitionInput,
+  ExperimentalSquadTransitionOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1432,6 +1438,23 @@ export function make(options: ClientOptions) {
               },
               requestOptions,
             ).then((value) => value.data),
+          close: (input: ExperimentalSquadGenerationCloseInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadGenerationCloseOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/squad/generation/${encodeURIComponent(input.generationID)}/close`,
+                body: {
+                  from: input["from"],
+                  force: input["force"],
+                  reason: input["reason"],
+                  idempotencyKey: input["idempotencyKey"],
+                },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 404, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
         },
         session: {
           list: (requestOptions?: RequestOptions) =>
@@ -1509,6 +1532,36 @@ export function make(options: ClientOptions) {
               method: "GET",
               path: `/api/experimental/squad/audit`,
               query: { since: input?.["since"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        checkpoint: (input: ExperimentalSquadCheckpointInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadCheckpointOutput }>(
+            {
+              method: "POST",
+              path: `/api/experimental/squad/checkpoint`,
+              body: {
+                name: input["name"],
+                body: input["body"],
+                from: input["from"],
+                allowSecretLikeText: input["allowSecretLikeText"],
+                reason: input["reason"],
+              },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 404, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        transition: (input: ExperimentalSquadTransitionInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadTransitionOutput }>(
+            {
+              method: "POST",
+              path: `/api/experimental/squad/transition`,
+              body: { from: input["from"], idempotencyKey: input["idempotencyKey"] },
               successStatus: 200,
               declaredStatuses: [400, 401, 403, 409, 503],
               empty: false,

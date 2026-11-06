@@ -880,6 +880,18 @@ export type SquadAuditEntry = {
   detail?: string
 }
 
+export type SquadTransitionReceipt = {
+  sourceGeneration: SquadGenerationID
+  sourceRegistryDigest: string
+  closed: { [x: string]: { sessionID?: SessionID; closedAt: number } }
+  checkpoints: { [x: string]: { sha256: string } }
+  previousSessionsClosed: boolean
+  previousOrchestratorKeptOpen: boolean
+  closedBy: string
+  targetGenerationID?: SquadGenerationID
+  createdAt: number
+}
+
 export type SquadEnqueueProof = {
   messageID: SessionMessageID
   name: SquadSessionName
@@ -894,6 +906,15 @@ export type SquadBroadcastResult = {
   status: "accepted" | "rejected" | "not_attempted"
   messageID?: SessionMessageID
   reason?: string
+}
+
+export type SquadCheckpoint = {
+  generationID: SquadGenerationID
+  name: SquadSessionName
+  sha256: string
+  body: string
+  bytes: number
+  createdAt: number
 }
 
 export type SquadSessionCheck = {
@@ -4523,6 +4544,30 @@ export type ExperimentalSquadBroadcastOutput = { data: SquadBroadcastReport }["d
 export type ExperimentalSquadAuditInput = { readonly since?: string | undefined }
 
 export type ExperimentalSquadAuditOutput = { data: SquadAuditChain }["data"]
+
+export type ExperimentalSquadCheckpointInput = {
+  readonly name: string
+  readonly body: string
+  readonly from?: string | undefined
+  readonly allowSecretLikeText?: boolean | undefined
+  readonly reason?: string | undefined
+}
+
+export type ExperimentalSquadCheckpointOutput = { data: SquadCheckpoint }["data"]
+
+export type ExperimentalSquadGenerationCloseInput = {
+  readonly generationID: string
+  readonly from?: string | undefined
+  readonly force?: boolean | undefined
+  readonly reason?: string | undefined
+  readonly idempotencyKey?: string | undefined
+}
+
+export type ExperimentalSquadGenerationCloseOutput = { data: SquadTransitionReceipt }["data"]
+
+export type ExperimentalSquadTransitionInput = { readonly from: string; readonly idempotencyKey?: string | undefined }
+
+export type ExperimentalSquadTransitionOutput = { data: SquadTransitionReceipt }["data"]
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 
