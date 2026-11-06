@@ -204,6 +204,8 @@ import type {
   ExperimentalSquadCheckpointOutput,
   ExperimentalSquadGenerationCloseInput,
   ExperimentalSquadGenerationCloseOutput,
+  ExperimentalSquadTransitionInput,
+  ExperimentalSquadTransitionOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1453,6 +1455,15 @@ const EndpointExperimentalSquadGenerationClose =
       ),
     )
 
+const EndpointExperimentalSquadTransition =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadTransitionInput) =>
+    preserveEffect<ExperimentalSquadTransitionOutput>()(
+      raw["squad.transition"]({ payload: { from: input["from"], idempotencyKey: input["idempotencyKey"] } }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
 const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
   generation: {
     create: EndpointExperimentalSquadGenerationCreate(raw),
@@ -1464,6 +1475,7 @@ const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
   broadcast: EndpointExperimentalSquadBroadcast(raw),
   audit: EndpointExperimentalSquadAudit(raw),
   checkpoint: EndpointExperimentalSquadCheckpoint(raw),
+  transition: EndpointExperimentalSquadTransition(raw),
 })
 
 const EndpointFormList = (raw: RawClient["server.form"]) => (input?: FormListInput) =>

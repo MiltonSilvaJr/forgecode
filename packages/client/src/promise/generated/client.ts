@@ -198,6 +198,8 @@ import type {
   ExperimentalSquadCheckpointOutput,
   ExperimentalSquadGenerationCloseInput,
   ExperimentalSquadGenerationCloseOutput,
+  ExperimentalSquadTransitionInput,
+  ExperimentalSquadTransitionOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1545,6 +1547,18 @@ export function make(options: ClientOptions) {
               },
               successStatus: 200,
               declaredStatuses: [400, 401, 403, 404, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        transition: (input: ExperimentalSquadTransitionInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadTransitionOutput }>(
+            {
+              method: "POST",
+              path: `/api/experimental/squad/transition`,
+              body: { from: input["from"], idempotencyKey: input["idempotencyKey"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
               empty: false,
             },
             requestOptions,

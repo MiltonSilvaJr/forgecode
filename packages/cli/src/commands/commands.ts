@@ -630,6 +630,18 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
           },
         }),
+        Spec.make("transition", {
+          description: "Bind a closed generation to the active one after checking its receipt and registry digest",
+          globalFlags: ServerFlags,
+          params: {
+            from: Flag.String("from").pipe(Flag.withDescription("Closed generation to transition from"), Flag.optional),
+            idempotencyKey: Flag.String("idempotency-key").pipe(
+              Flag.withDescription("Idempotency key (repeating with the same target is a no-op)"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
         Spec.make("checkpoint", {
           description: "Record a session checkpoint (six required sections, SHA-256, secret scan)",
           globalFlags: ServerFlags,

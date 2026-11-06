@@ -4563,6 +4563,10 @@ export type ExperimentalSquadGenerationCloseInput = {
 
 export type ExperimentalSquadGenerationCloseOutput = { data: SquadTransitionReceipt }["data"]
 
+export type ExperimentalSquadTransitionInput = { readonly from: string; readonly idempotencyKey?: string | undefined }
+
+export type ExperimentalSquadTransitionOutput = { data: SquadTransitionReceipt }["data"]
+
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 
 export type FormListOutput = { location: LocationPublicRef; data: Array<FormInfo> }

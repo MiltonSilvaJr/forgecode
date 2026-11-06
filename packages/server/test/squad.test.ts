@@ -54,6 +54,7 @@ it.live("forbids squad routes when the flag is off", () =>
       await expect(api.experimental.squad.generation.close({ generationID: "gen-1" })).rejects.toMatchObject({
         _tag: "ForbiddenError",
       })
+      await expect(api.experimental.squad.transition({ from: "gen-1" })).rejects.toMatchObject({ _tag: "ForbiddenError" })
     })
   }),
 )
@@ -99,6 +100,11 @@ it.live("creates and lists a generation when the flag is on", () =>
       expect(receipt.sourceRegistryDigest).toMatch(/^[0-9a-f]{64}$/u)
       expect(receipt.checkpoints.ATLAS?.sha256).toBe(checkpoint.sha256)
       expect(await api.experimental.squad.generation.close({ generationID: "gen-1" })).toEqual(receipt)
+      await expect(api.experimental.squad.transition({ from: "gen-1" })).rejects.toMatchObject({ _tag: "ConflictError" })
+      await api.experimental.squad.generation.create({ ...generation, generation: "gen-2" })
+      const bound = await api.experimental.squad.transition({ from: "gen-1" })
+      expect(bound.targetGenerationID).toBe("gen-2")
+      expect(bound.sourceRegistryDigest).toBe(receipt.sourceRegistryDigest)
     })
   }),
 )

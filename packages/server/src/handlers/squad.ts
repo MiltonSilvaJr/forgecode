@@ -43,13 +43,18 @@ const sendError = (ref: string) => (error: unknown) => {
   return squadError(error)
 }
 
-const closeError = (generation: string) => (error: unknown) => {
+const pendencyError = (error: unknown) => {
   const tagged = error as { _tag?: string; message?: string; pendencies?: readonly string[] }
-  if (tagged._tag === "SessionNotFoundError")
-    return new SessionNotFoundError({ sessionID: generation, message: tagged.message ?? `generation ${generation} not found` })
   if (tagged._tag === "ConflictError" && tagged.pendencies && tagged.pendencies.length > 0)
     return new ConflictError({ message: `${tagged.message}: ${tagged.pendencies.join("; ")}` })
   return squadError(error)
+}
+
+const closeError = (generation: string) => (error: unknown) => {
+  const tagged = error as { _tag?: string; message?: string }
+  if (tagged._tag === "SessionNotFoundError")
+    return new SessionNotFoundError({ sessionID: generation, message: tagged.message ?? `generation ${generation} not found` })
+  return pendencyError(error)
 }
 
 const checkpointError = (name: string) => (error: unknown) => {
@@ -162,6 +167,14 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           Effect.provide(services),
           catchMissingGlobal,
           Effect.mapError(closeError(ctx.params.generationID)),
+          Effect.map((data) => ({ data })),
+        ),
+      )
+      .handle("squad.transition", (ctx) =>
+        SquadTransition.transition(ctx.payload).pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(pendencyError),
           Effect.map((data) => ({ data })),
         ),
       )

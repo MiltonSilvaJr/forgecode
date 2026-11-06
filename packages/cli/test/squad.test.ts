@@ -223,4 +223,13 @@ describe("squad command", () => {
     expect(output).toContain("orchestrator kept open: true")
     expect(output).toContain("ATLAS")
   })
+
+  test("squad transition --help shows the flags and a missing --from is a usage error", async () => {
+    const help = await cli(["squad", "transition", "--help"])
+    expect(help.exitCode).toBe(0)
+    for (const flag of ["--from", "--idempotency-key"]) expect(help.stdout).toContain(flag)
+    const result = await cli(["squad", "transition"])
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr).toContain("--from")
+  })
 })

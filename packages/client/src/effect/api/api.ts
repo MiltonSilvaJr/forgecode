@@ -2054,6 +2054,15 @@ export type ExperimentalSquadGenerationCloseOperation<E = never> = (
   input: ExperimentalSquadGenerationCloseInput,
 ) => Effect.Effect<ExperimentalSquadGenerationCloseOutput, E>
 
+export type ExperimentalSquadTransitionInput = {
+  readonly from: Squad.GenerationID
+  readonly idempotencyKey?: string | undefined
+}
+export type ExperimentalSquadTransitionOutput = Squad.TransitionReceipt
+export type ExperimentalSquadTransitionOperation<E = never> = (
+  input: ExperimentalSquadTransitionInput,
+) => Effect.Effect<ExperimentalSquadTransitionOutput, E>
+
 export interface ExperimentalSquadApi<E = never> {
   readonly generation: {
     readonly create: ExperimentalSquadGenerationCreateOperation<E>
@@ -2068,6 +2077,7 @@ export interface ExperimentalSquadApi<E = never> {
   readonly broadcast: ExperimentalSquadBroadcastOperation<E>
   readonly audit: ExperimentalSquadAuditOperation<E>
   readonly checkpoint: ExperimentalSquadCheckpointOperation<E>
+  readonly transition: ExperimentalSquadTransitionOperation<E>
 }
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }

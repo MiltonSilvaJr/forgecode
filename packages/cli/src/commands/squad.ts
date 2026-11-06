@@ -78,9 +78,10 @@ export function formatReceipt(receipt: {
   closed: Record<string, unknown>
   previousOrchestratorKeptOpen: boolean
   closedBy: string
+  targetGenerationID?: string | undefined
 }) {
   return [
-    `Generation ${receipt.sourceGeneration} closed by ${receipt.closedBy}`,
+    `Generation ${receipt.sourceGeneration} closed by ${receipt.closedBy}${receipt.targetGenerationID ? `, bound to ${receipt.targetGenerationID}` : ""}`,
     `closed sessions: ${Object.keys(receipt.closed).join(", ") || "(none)"}`,
     `orchestrator kept open: ${receipt.previousOrchestratorKeptOpen}`,
     `source registry digest ${receipt.sourceRegistryDigest}`,
