@@ -549,6 +549,15 @@ function normalizeExperimental(
         )
         if (value !== undefined) result.location_idle_timeout = value
       }
+      if (own(experimental, "forgequeue")) {
+        const value = decodeEncoded(
+          ConfigExperimental.Info.fields.forgequeue,
+          experimental.forgequeue,
+          ["experimental", "forgequeue"],
+          diagnostics,
+        )
+        if (value !== undefined) result.forgequeue = value
+      }
     }
   }
   if (Object.keys(result).length || (isRecord(input.experimental) && !Object.keys(input.experimental).length))

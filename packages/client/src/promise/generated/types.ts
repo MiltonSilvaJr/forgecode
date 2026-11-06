@@ -2567,6 +2567,7 @@ export type ConfigEntry =
             resource: string
             effect: "allow" | "deny"
           }>
+          forgequeue?: { enabled?: boolean }
         }
       }
     }
