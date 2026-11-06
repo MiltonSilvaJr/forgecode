@@ -133,3 +133,7 @@ export function formatDispatch(dispatch: {
 export function formatRelease(receipt: { released: string; to: string; trees: number; checkpointSha256: string }) {
   return `Released ${receipt.trees} tree(s) from ${receipt.released} to ${receipt.to} (checkpoint sha256 ${receipt.checkpointSha256})`
 }
+
+export function formatPanel(_document: unknown) {
+  return ""
+}

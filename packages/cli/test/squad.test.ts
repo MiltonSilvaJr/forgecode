@@ -10,6 +10,7 @@ import {
   exportCheckpoint,
   formatDispatch,
   formatEnqueue,
+  formatPanel,
   formatReceipt,
   formatRelease,
   insideGitTree,
@@ -340,5 +341,69 @@ describe("squad command", () => {
     const missing = await cli(["squad", "dispatch", "accept"])
     expect(missing.exitCode).toBe(2)
     expect(missing.stderr).toContain("--orq")
+  })
+
+  test("squad panel build and show document their flags", async () => {
+    const build = await cli(["squad", "panel", "build", "--help"])
+    expect(build.exitCode).toBe(0)
+    for (const flag of ["--out", "--json"]) expect(build.stdout).toContain(flag)
+    const show = await cli(["squad", "panel", "show", "--help"])
+    expect(show.exitCode).toBe(0)
+    expect(show.stdout).toContain("--json")
+  })
+
+  it.live("panel build prints and writes the kanban document; show summarizes it by column", () =>
+    Effect.gen(function* () {
+      const server = yield* ServerProcess.start<never, never>(serverOptions(true))
+      const url = HttpServer.formatAddress(server.address)
+      const env = { OPENCODE_PASSWORD: "secret" }
+      const printed = yield* Effect.promise(() => cli(["squad", "panel", "build", "--server", url], env))
+      expect(printed.stdout).toContain("versao_schema")
+      expect(printed.exitCode).toBe(0)
+      const dir = yield* Effect.promise(() => fs.mkdtemp(path.join(os.tmpdir(), "squad-panel-")))
+      const out = path.join(dir, "kanban.json")
+      const written = yield* Effect.promise(() => cli(["squad", "panel", "build", "--out", out, "--server", url], env))
+      expect(written.exitCode).toBe(0)
+      expect(written.stdout).toContain(out)
+      const document = JSON.parse(yield* Effect.promise(() => fs.readFile(out, "utf8"))) as Record<string, unknown>
+      for (const key of ["versao_schema", "revisao", "atualizado_em", "colunas", "cards", "fonte"]) expect(document).toHaveProperty(key)
+      const shown = yield* Effect.promise(() => cli(["squad", "panel", "show", "--server", url], env))
+      expect(shown.exitCode).toBe(0)
+      for (const column of ["backlog", "in_progress", "in_review", "blocked", "done"]) expect(shown.stdout).toContain(column)
+    }),
+  )
+
+  test("the panel summary counts cards per column and names the ones that cannot show progress", () => {
+    const stage = { status: "unknown", evidence: null, source: "none" }
+    const card = (id: string, coluna: string, progressa: boolean, desconhecido: string[]) => ({
+      id,
+      titulo: id,
+      coluna,
+      agente: "ATLAS",
+      prioridade: null,
+      prs: [],
+      refs: [],
+      evidencias: [],
+      bloqueio: null,
+      atualizado_em: null,
+      estagios: { jira: stage, ci: stage, merge: stage, deploy: stage, acceptance: stage },
+      exigidos: ["ci"],
+      desconhecido,
+      progressa,
+    })
+    const output = formatPanel({
+      versao_schema: 1,
+      revisao: "r1",
+      atualizado_em: "2026-01-01T00:00:00.000Z",
+      colunas: ["backlog", "in_progress", "in_review", "blocked", "done"],
+      cards: { A: card("A", "backlog", false, ["ci"]), B: card("B", "backlog", true, []), C: card("C", "done", true, []) },
+      fonte: {},
+    })
+    expect(output).toContain("backlog: 2")
+    expect(output).toContain("done: 1")
+    expect(output).toContain("in_review: 0")
+    expect(output).toContain("progressa: false")
+    expect(output).toContain("A")
+    expect(output).toContain("desconhecido: ci")
   })
 })
