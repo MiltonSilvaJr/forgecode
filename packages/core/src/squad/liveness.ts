@@ -23,6 +23,12 @@ export interface Facts {
 
 export interface Thresholds {
   readonly staleAfter: number
+  readonly deadAfter?: number
+}
+
+/** The durable execution claim of a session: set while a turn is in flight, kept by a shutdown or a crash. */
+export interface Claim {
+  readonly since?: number
 }
 
 const terminals = new Set(["session.execution.succeeded", "session.execution.failed", "session.execution.interrupted"])
@@ -71,7 +77,7 @@ export const classify = (facts: Facts, now: number, thresholds: Thresholds): Squ
   })
 }
 
-export const measure = (info: Session.Info, events: ReadonlyArray<LogEvent>, thresholds: Thresholds) =>
+export const measure = (info: Session.Info, events: ReadonlyArray<LogEvent>, thresholds: Thresholds, _claim?: Claim) =>
   Clock.currentTimeMillis.pipe(Effect.map((now) => classify(factsFrom(info, events), now, thresholds)))
 
 const DefaultStaleAfter = Duration.toMillis(Duration.minutes(60))
