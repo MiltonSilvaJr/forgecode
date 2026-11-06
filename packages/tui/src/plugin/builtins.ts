@@ -6,6 +6,7 @@ import SidebarFooter from "../feature-plugins/sidebar/footer"
 import SidebarLimit from "../feature-plugins/sidebar/limit"
 import SidebarMcp from "../feature-plugins/sidebar/mcp"
 import SidebarTodo from "../feature-plugins/sidebar/todo"
+import SquadBoard from "../feature-plugins/squad"
 import DiffViewer from "../feature-plugins/system/diff-viewer"
 import Notifications from "../feature-plugins/system/notifications"
 import Plugins from "../feature-plugins/system/plugins"
@@ -25,6 +26,7 @@ export const builtins = [
   SidebarFooter,
   Notifications,
   Plugins,
+  SquadBoard,
   Stats,
   Merman,
   Latex,
