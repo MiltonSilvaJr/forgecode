@@ -2,7 +2,7 @@ export * as SquadDispatch from "./dispatch.js"
 
 import { randomUUID } from "node:crypto"
 import { DateTime, Effect, Schema } from "effect"
-import { eq, sql } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 import { Squad } from "@opencode/schema/squad"
 import { Database } from "../database/database.js"
 import { Git } from "../git.js"
@@ -202,8 +202,39 @@ export interface AcceptInput {
 }
 
 export const accept = Effect.fn("SquadDispatch.accept")(function* (input: AcceptInput) {
+  yield* requireEnabled()
   const db = (yield* Database.Service).db
+  const store = yield* SquadStore.Service
+  const audit = yield* SquadAudit.Service
   const row = yield* db.select().from(SquadDispatchTable).where(eq(SquadDispatchTable.orq_id, input.orq)).get().pipe(Effect.orDie)
   if (!row) return yield* new DispatchNotFoundError({ message: `dispatch ${input.orq} not found` })
-  return toDispatch(row)
+  const generation = yield* store.activeGeneration(db)
+  if (row.generation_id !== generation?.id)
+    return yield* new ConflictError({ message: `dispatch ${input.orq} belongs to generation ${row.generation_id}, not the active one`, pendencies: [] })
+  if (row.state === "accepted") return toDispatch(row)
+  if (row.state !== "open")
+    return yield* new ConflictError({ message: `dispatch ${input.orq} is ${row.state}; only an open dispatch can be accepted`, pendencies: [] })
+
+  const by = input.by?.trim() || row.owner
+  // The state guard keeps two concurrent accepts from both writing and auditing.
+  const updated = yield* db
+    .update(SquadDispatchTable)
+    .set({ state: "accepted", accepted_at: Date.now(), accepted_by: by })
+    .where(and(eq(SquadDispatchTable.id, row.id), eq(SquadDispatchTable.state, "open")))
+    .returning()
+    .get()
+    .pipe(Effect.orDie)
+  if (!updated) {
+    const current = yield* db.select().from(SquadDispatchTable).where(eq(SquadDispatchTable.id, row.id)).get().pipe(Effect.orDie)
+    return toDispatch(current ?? row)
+  }
+  yield* audit.append({
+    kind: "dispatch_accept",
+    generation: row.generation_id,
+    target: row.owner,
+    result: "accepted",
+    actor: by,
+    detail: `${row.orq_id} head=${row.head} head_oid=${row.head_oid ?? "unknown"}`,
+  })
+  return toDispatch(updated)
 })
