@@ -9,6 +9,7 @@ import { SquadCheck } from "@opencode/core/squad/check"
 import { SquadLaunch } from "@opencode/core/squad/launch"
 import { SquadPlan } from "@opencode/core/squad/plan"
 import { SquadRegistry } from "@opencode/core/squad/registry"
+import { SquadReplace } from "@opencode/core/squad/replace"
 import { SquadSend } from "@opencode/core/squad/send"
 import { SquadStatus } from "@opencode/core/squad/status"
 import {
@@ -148,6 +149,26 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           catchMissingGlobal,
           Effect.mapError(sendError(ctx.payload.name)),
           Effect.map((data) => ({ data })),
+        ),
+      )
+      .handle("squad.session.replace", (ctx) =>
+        Effect.gen(function* () {
+          const registry = yield* SquadRegistry.Service
+          const target = yield* registry.resolve(ctx.params.sessionRef)
+          const entry = yield* SquadReplace.replace({
+            name: target.name,
+            provider: ctx.payload.provider,
+            model: ctx.payload.model,
+            variant: ctx.payload.variant,
+            reason: ctx.payload.reason,
+            author: ctx.payload.from,
+            timeout: ctx.payload.timeout,
+          })
+          return { data: entry }
+        }).pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(sendError(ctx.params.sessionRef)),
         ),
       )
       .handle("squad.liveness", () =>

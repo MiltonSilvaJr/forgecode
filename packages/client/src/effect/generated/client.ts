@@ -200,6 +200,8 @@ import type {
   ExperimentalSquadSessionLaunchOutput,
   ExperimentalSquadBroadcastInput,
   ExperimentalSquadBroadcastOutput,
+  ExperimentalSquadSessionReplaceInput,
+  ExperimentalSquadSessionReplaceOutput,
   ExperimentalSquadBlockInput,
   ExperimentalSquadBlockOutput,
   ExperimentalSquadLivenessOutput,
@@ -1429,6 +1431,25 @@ const EndpointExperimentalSquadBroadcast =
       ),
     )
 
+const EndpointExperimentalSquadSessionReplace =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadSessionReplaceInput) =>
+    preserveEffect<ExperimentalSquadSessionReplaceOutput>()(
+      raw["squad.session.replace"]({
+        params: { sessionRef: input["sessionRef"] },
+        payload: {
+          provider: input["provider"],
+          model: input["model"],
+          variant: input["variant"],
+          reason: input["reason"],
+          from: input["from"],
+          timeout: input["timeout"],
+        },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
 const EndpointExperimentalSquadBlock = (raw: RawClient["server.squad"]) => (input: ExperimentalSquadBlockInput) =>
   preserveEffect<ExperimentalSquadBlockOutput>()(
     raw["squad.block"]({
@@ -1467,6 +1488,7 @@ const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
     list: EndpointExperimentalSquadSessionList(raw),
     send: EndpointExperimentalSquadSessionSend(raw),
     launch: EndpointExperimentalSquadSessionLaunch(raw),
+    replace: EndpointExperimentalSquadSessionReplace(raw),
   },
   check: EndpointExperimentalSquadCheck(raw),
   plan: EndpointExperimentalSquadPlan(raw),

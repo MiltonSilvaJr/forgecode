@@ -52,6 +52,9 @@ it.live("forbids squad routes when the flag is off", () =>
         _tag: "ForbiddenError",
       })
       await expect(api.experimental.squad.liveness()).rejects.toMatchObject({ _tag: "ForbiddenError" })
+      await expect(api.experimental.squad.session.replace({ sessionRef: "GHOST", provider: "openai" })).rejects.toMatchObject({
+        _tag: "ForbiddenError",
+      })
       await expect(
         api.experimental.squad.block({ name: "ATLAS", waitingOn: "human", reason: "approval" }),
       ).rejects.toMatchObject({ _tag: "ForbiddenError" })
@@ -78,6 +81,9 @@ it.live("creates and lists a generation when the flag is on", () =>
       await expect(
         api.experimental.squad.block({ name: "ATLAS", waitingOn: "human", reason: "approval" }),
       ).rejects.toMatchObject({ _tag: "ConflictError" })
+      await expect(api.experimental.squad.session.replace({ sessionRef: "GHOST", provider: "openai" })).rejects.toMatchObject({
+        _tag: "SessionNotFoundError",
+      })
       const liveness = await api.experimental.squad.liveness()
       expect(liveness.generation).toBe("gen-1")
       expect(liveness.previous).toBeNull()

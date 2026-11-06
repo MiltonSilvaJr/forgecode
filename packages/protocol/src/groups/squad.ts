@@ -62,6 +62,15 @@ const BlockInput = Schema.Struct({
   from: Schema.String.pipe(optional),
 }).annotate({ identifier: "Squad.BlockInput" })
 
+const ReplaceInput = Schema.Struct({
+  provider: Schema.String,
+  model: Schema.String.pipe(optional),
+  variant: Schema.String.pipe(optional),
+  reason: Schema.String.pipe(optional),
+  from: Schema.String.pipe(optional),
+  timeout: Schema.Int.pipe(optional).annotate({ description: "Verification timeout in milliseconds." }),
+}).annotate({ identifier: "Squad.ReplaceInput" })
+
 export const SquadGroup = HttpApiGroup.make("server.squad")
   .add(
     HttpApiEndpoint.post("squad.generation.create", "/api/experimental/squad/generation", {
@@ -159,6 +168,21 @@ export const SquadGroup = HttpApiGroup.make("server.squad")
         summary: "Broadcast a message to the active generation",
         description:
           "Validate every recipient first, then enqueue in configuration order. Delivery is best-effort and not transactional: a failure in the middle keeps what was queued and reports the rest as not_attempted. Experimental: may change without compatibility guarantees.",
+      }),
+    ),
+  )
+  .add(
+    HttpApiEndpoint.post("squad.session.replace", "/api/experimental/squad/session/:sessionRef/replace", {
+      params: { sessionRef: Squad.SessionRef },
+      payload: ReplaceInput,
+      success: Schema.Struct({ data: Squad.SessionEntry }),
+      error: [InvalidRequestError, ForbiddenError, SessionNotFoundError, ConflictError, ServiceUnavailableError],
+    }).annotateMerge(
+      OpenApi.annotations({
+        identifier: "experimental.squad.session.replace",
+        summary: "Replace a squad session",
+        description:
+          "Give the name a new session on another provider, model or variant, inheriting the checkpoint, and launch it. The registry keeps one entry per generation and name; the old session is left untouched. Experimental: may change without compatibility guarantees.",
       }),
     ),
   )

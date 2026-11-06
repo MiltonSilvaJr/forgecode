@@ -166,6 +166,19 @@ describe("squad command", () => {
     expect(result.stderr).toContain("--waiting")
   })
 
+  test("squad session replace --help shows the replace flags", async () => {
+    const result = await cli(["squad", "session", "replace", "--help"])
+    expect(result.exitCode).toBe(0)
+    for (const flag of ["--name", "--provider", "--model", "--variant", "--reason", "--json"])
+      expect(result.stdout).toContain(flag)
+  })
+
+  test("session replace without --provider is a usage error before reaching the server", async () => {
+    const result = await cli(["squad", "session", "replace", "--name", "ATLAS"])
+    expect(result.exitCode).toBe(2)
+    expect(result.stderr).toContain("--provider")
+  })
+
   test("squad launch --help shows the launch flags", async () => {
     const result = await cli(["squad", "launch", "--help"])
     expect(result.exitCode).toBe(0)

@@ -611,6 +611,23 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
             json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
           },
         }),
+        Spec.make("session", {
+          description: "Manage squad sessions",
+          commands: [
+            Spec.make("replace", {
+              description: "Give a session name a new session on another provider, model or variant",
+              globalFlags: ServerFlags,
+              params: {
+                name: Flag.String("name").pipe(Flag.withDescription("Session name in the active generation"), Flag.optional),
+                provider: Flag.String("provider").pipe(Flag.withDescription("New provider"), Flag.optional),
+                model: Flag.String("model").pipe(Flag.withDescription("New model (defaults to the current one)"), Flag.optional),
+                variant: Flag.String("variant").pipe(Flag.withDescription("New variant (defaults to the current one)"), Flag.optional),
+                reason: Flag.String("reason").pipe(Flag.withDescription("Why the session is replaced"), Flag.optional),
+                json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+              },
+            }),
+          ],
+        }),
         Spec.make("block", {
           description: "Declare why a verified session is stopped (human or tool), or clear the declaration",
           globalFlags: ServerFlags,

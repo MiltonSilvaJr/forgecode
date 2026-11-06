@@ -4580,6 +4580,18 @@ export type ExperimentalSquadBroadcastInput = {
 
 export type ExperimentalSquadBroadcastOutput = { data: SquadBroadcastReport }["data"]
 
+export type ExperimentalSquadSessionReplaceInput = {
+  readonly sessionRef: string | string
+  readonly provider: string
+  readonly model?: string | undefined
+  readonly variant?: string | undefined
+  readonly reason?: string | undefined
+  readonly from?: string | undefined
+  readonly timeout?: number | undefined
+}
+
+export type ExperimentalSquadSessionReplaceOutput = { data: SquadSessionEntry }["data"]
+
 export type ExperimentalSquadBlockInput = {
   readonly name: string
   readonly waitingOn: "human" | "tool"
