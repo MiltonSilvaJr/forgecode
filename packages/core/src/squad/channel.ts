@@ -1,11 +1,12 @@
 export * as SquadChannel from "./channel.js"
 
 import { createHash } from "node:crypto"
-import { Context, DateTime, Effect, Layer, Schema } from "effect"
+import { Context, DateTime, Effect, Layer, Schema, Stream } from "effect"
 import { Session } from "@opencode/schema/session"
 import { SessionMessage } from "@opencode/schema/session-message"
 import type { SessionInbox } from "@opencode/schema/session-inbox"
 import { Session as Sessions } from "../session.js"
+import type { LogEvent } from "./liveness.js"
 
 export class ChannelError extends Schema.TaggedError<ChannelError>()("ChannelError", {
   message: Schema.String,
@@ -68,6 +69,61 @@ export const layer = Layer.effect(
           .inbox(sessionID)
           .pipe(Effect.catch(() => rejected(`inbox of session ${sessionID} is unavailable`)), Effect.catchDefect(() => rejected(`inbox of session ${sessionID} is unavailable`)))
         return items.map((item) => ({ id: item.id, delivery: item.delivery, createdAt: DateTime.toEpochMillis(item.time.created) }))
+      }),
+    })
+  }),
+)
+
+type CreateInput = Parameters<Sessions.Interface["create"]>[0]
+
+/**
+ * The session reads and the one write `launch` needs besides the inbox. Like `SquadChannel`, it keeps every
+ * touch of the core session service in this file; a missing session is `undefined`, any other failure is a
+ * `ChannelError`.
+ */
+export interface SessionsInterface {
+  readonly create: (input: CreateInput) => Effect.Effect<Session.Info, ChannelError>
+  readonly get: (sessionID: Session.ID) => Effect.Effect<Session.Info | undefined, ChannelError>
+  readonly events: (sessionID: Session.ID) => Effect.Effect<ReadonlyArray<LogEvent>, ChannelError>
+}
+
+export class SessionsService extends Context.Service<SessionsService, SessionsInterface>()("@opencode/Squad/Sessions") {}
+
+const durableTypes = new Set([
+  "session.inbox.enqueued",
+  "session.inbox.delivered",
+  "session.execution.started",
+  "session.execution.succeeded",
+  "session.execution.failed",
+  "session.execution.interrupted",
+])
+
+export const sessionsLayer = Layer.effect(
+  SessionsService,
+  Effect.gen(function* () {
+    const sessions = yield* Sessions.Service
+    return SessionsService.of({
+      create: Effect.fn("SquadSessions.create")(function* (input) {
+        return yield* sessions
+          .create(input)
+          .pipe(Effect.catch(() => rejected("session could not be created")), Effect.catchDefect(() => rejected("session could not be created")))
+      }),
+      get: Effect.fn("SquadSessions.get")(function* (sessionID) {
+        return yield* sessions.get(sessionID).pipe(
+          Effect.catchTag("Session.NotFoundError", () => Effect.succeed(undefined)),
+          Effect.catchDefect(() => rejected(`session ${sessionID} is unavailable`)),
+        )
+      }),
+      events: Effect.fn("SquadSessions.events")(function* (sessionID) {
+        const items = yield* Stream.runCollect(sessions.log({ sessionID, after: 0 })).pipe(
+          Effect.catch(() => rejected(`log of session ${sessionID} is unavailable`)),
+          Effect.catchDefect(() => rejected(`log of session ${sessionID} is unavailable`)),
+        )
+        return items.flatMap((item): LogEvent[] => {
+          if (item.type === "log.synced" || !durableTypes.has(item.type)) return []
+          const inboxID = "inboxID" in item.data ? String(item.data.inboxID) : undefined
+          return [{ type: item.type, created: item.created, seq: item.durable.seq, ...(inboxID === undefined ? {} : { inboxID }) }]
+        })
       }),
     })
   }),
