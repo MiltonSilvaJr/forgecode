@@ -2154,6 +2154,9 @@ export type ExperimentalSquadDispatchAcceptOperation<E = never> = (
   input: ExperimentalSquadDispatchAcceptInput,
 ) => Effect.Effect<ExperimentalSquadDispatchAcceptOutput, E>
 
+export type ExperimentalSquadPanelOutput = Squad.PanelDocument
+export type ExperimentalSquadPanelOperation<E = never> = () => Effect.Effect<ExperimentalSquadPanelOutput, E>
+
 export interface ExperimentalSquadApi<E = never> {
   readonly generation: {
     readonly create: ExperimentalSquadGenerationCreateOperation<E>
@@ -2179,6 +2182,7 @@ export interface ExperimentalSquadApi<E = never> {
     readonly accept: ExperimentalSquadDispatchAcceptOperation<E>
   }
   readonly release: ExperimentalSquadReleaseOperation<E>
+  readonly panel: ExperimentalSquadPanelOperation<E>
 }
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }

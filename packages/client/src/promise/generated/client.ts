@@ -214,6 +214,7 @@ import type {
   ExperimentalSquadReleaseOutput,
   ExperimentalSquadDispatchAcceptInput,
   ExperimentalSquadDispatchAcceptOutput,
+  ExperimentalSquadPanelOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1705,6 +1706,17 @@ export function make(options: ClientOptions) {
               body: { from: input["from"], to: input["to"], reason: input["reason"], actor: input["actor"] },
               successStatus: 200,
               declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        panel: (requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadPanelOutput }>(
+            {
+              method: "GET",
+              path: `/api/experimental/squad/panel`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 503],
               empty: false,
             },
             requestOptions,

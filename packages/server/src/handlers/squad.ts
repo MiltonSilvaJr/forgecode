@@ -11,6 +11,7 @@ import { SquadCheck } from "@opencode/core/squad/check"
 import { SquadDispatch } from "@opencode/core/squad/dispatch"
 import { SquadOwnership } from "@opencode/core/squad/ownership"
 import { SquadLaunch } from "@opencode/core/squad/launch"
+import { SquadPanel } from "@opencode/core/squad/panel"
 import { SquadPlan } from "@opencode/core/squad/plan"
 import { SquadRegistry } from "@opencode/core/squad/registry"
 import { SquadReplace } from "@opencode/core/squad/replace"
@@ -301,6 +302,14 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           Effect.provide(services),
           catchMissingGlobal,
           Effect.mapError(acceptError(ctx.params.orqId)),
+          Effect.map((data) => ({ data })),
+        ),
+      )
+      .handle("squad.panel", () =>
+        SquadPanel.build().pipe(
+          Effect.provide(services),
+          catchMissingGlobal,
+          Effect.mapError(squadError),
           Effect.map((data) => ({ data })),
         ),
       )

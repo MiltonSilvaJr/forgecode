@@ -322,6 +322,12 @@ export type SquadCostSnapshot = { cost?: number; tokens?: { input?: number; outp
 
 export type SquadReleaseReceipt = { released: string; to: string; trees: number; checkpointSha256: string }
 
+export type SquadStage = {
+  status: "verified" | "failed" | "unknown"
+  evidence: { type: string; reference: string; at?: number } | null
+  source: string
+}
+
 export type PermissionID = string
 
 export type PermissionSource = { type: "tool"; messageID: string; id: string }
@@ -976,6 +982,22 @@ export type SquadSessionCheck = {
   name: SquadSessionName
   checks: Array<SquadCheckItem>
   credential: "present" | "absent" | "unknown"
+}
+
+export type SquadPanelCard = {
+  id: string
+  titulo: string
+  coluna: "backlog" | "in_progress" | "in_review" | "blocked" | "done"
+  agente: string
+  prioridade?: string
+  refs: Array<string>
+  evidencias: Array<string>
+  bloqueio?: string
+  atualizadoEm?: number
+  estagios: { jira: SquadStage; ci: SquadStage; merge: SquadStage; deploy: SquadStage; acceptance: SquadStage }
+  exigidos: Array<"jira" | "ci" | "merge" | "deploy" | "acceptance">
+  desconhecido: Array<"jira" | "ci" | "merge" | "deploy" | "acceptance">
+  progressa: boolean
 }
 
 export type PermissionRequest = {
@@ -2434,6 +2456,15 @@ export type SquadSessionStatus = {
 }
 
 export type SquadCheckReport = { sessions: Array<SquadSessionCheck> }
+
+export type SquadPanelDocument = {
+  versaoSchema: number
+  revisao: string
+  atualizadoEm: number
+  colunas: Array<string>
+  cards: { [x: string]: SquadPanelCard }
+  fonte: { [x: string]: string }
+}
 
 export type PtyCreated = {
   id: EventID
@@ -4728,6 +4759,8 @@ export type ExperimentalSquadReleaseOutput = { data: SquadReleaseReceipt }["data
 export type ExperimentalSquadDispatchAcceptInput = { readonly orqId: string }
 
 export type ExperimentalSquadDispatchAcceptOutput = { data: SquadDispatch }["data"]
+
+export type ExperimentalSquadPanelOutput = { data: SquadPanelDocument }["data"]
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 
