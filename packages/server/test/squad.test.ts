@@ -177,7 +177,7 @@ it.live("launch creates a real session through the wired services and never repo
     yield* Effect.promise(async () => {
       const outcome = await api.experimental.squad.session.launch({ sessionRef: "ATLAS", timeout: 1000 }).then(
         (entry) => entry.state,
-        (error: { _tag?: string }) => error._tag,
+        (error: { _tag?: string }) => error._tag ?? "unknown",
       )
       const listed = await api.experimental.squad.session.list()
       expect(listed.sessions[0]?.sessionID).toBeDefined()

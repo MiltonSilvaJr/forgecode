@@ -1,7 +1,13 @@
+import { Database } from "@opencode/core/database/database"
+import { Git } from "@opencode/core/git"
 import { FileSystem } from "@opencode/core/filesystem"
 import { Location } from "@opencode/core/location"
 import { LocationServiceMap } from "@opencode/core/location-service-map"
 import { AbsolutePath } from "@opencode/core/schema"
+import { SquadActivity } from "@opencode/core/squad/activity"
+import { SquadChannel } from "@opencode/core/squad/channel"
+import { CredentialPresence } from "@opencode/core/squad/credential"
+import { SquadStore } from "@opencode/core/squad/store"
 import { SquadActivate } from "@opencode/core/squad/activate"
 import { SquadAudit } from "@opencode/core/squad/audit"
 import { SquadBlock } from "@opencode/core/squad/block"
@@ -92,38 +98,54 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
     const global = yield* Global.Service
     const locations = yield* LocationServiceMap.Service
     const services = locations.get(Location.Ref.make({ directory: AbsolutePath.make(global.config) }))
+    const registry = yield* SquadRegistry.Service
+    const context = yield* Effect.context<
+      | SquadActivity.Service
+      | SquadAudit.Service
+      | SquadChannel.Service
+      | SquadChannel.SessionsService
+      | CredentialPresence.Service
+      | Database.Service
+      | Git.Service
+      | SquadOwnership.CheckpointPort
+      | SquadRegistry.Service
+      | SquadStore.Service
+    >()
     return handlers
       .handle("squad.generation.create", (ctx) =>
         Effect.gen(function* () {
-          const registry = yield* SquadRegistry.Service
           const created = yield* registry
             .init(ctx.payload)
-            .pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
+            .pipe(Effect.provide(services),
+          Effect.provide(context), catchMissingGlobal, Effect.mapError(squadError))
           const generation = yield* registry
             .generation(created.id)
-            .pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
+            .pipe(Effect.provide(services),
+          Effect.provide(context), catchMissingGlobal, Effect.mapError(squadError))
           return { data: generation! }
         }),
       )
       .handle("squad.session.list", () =>
         Effect.gen(function* () {
-          const registry = yield* SquadRegistry.Service
-          const active = yield* registry.active().pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
+          const active = yield* registry.active().pipe(Effect.provide(services),
+          Effect.provide(context), catchMissingGlobal, Effect.mapError(squadError))
           if (!active) return yield* new ConflictError({ message: "no active generation" })
           const generation = yield* registry
             .generation(active.id)
-            .pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
+            .pipe(Effect.provide(services),
+          Effect.provide(context), catchMissingGlobal, Effect.mapError(squadError))
           return { data: { generation: generation!.id, sessions: generation!.sessions } }
         }),
       )
       .handle("squad.check", () =>
         Effect.gen(function* () {
-          const registry = yield* SquadRegistry.Service
-          const active = yield* registry.active().pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
+          const active = yield* registry.active().pipe(Effect.provide(services),
+          Effect.provide(context), catchMissingGlobal, Effect.mapError(squadError))
           if (!active) return yield* new ConflictError({ message: "no active generation" })
           const generation = yield* registry
             .generation(active.id)
-            .pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
+            .pipe(Effect.provide(services),
+          Effect.provide(context), catchMissingGlobal, Effect.mapError(squadError))
           const report = yield* SquadCheck.check({
             sessions: generation!.sessions.map((entry) => ({
               name: entry.name,
@@ -133,20 +155,23 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
               location: entry.location.directory,
               branch: entry.branch,
             })),
-          }).pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
+          }).pipe(Effect.provide(services),
+          Effect.provide(context), catchMissingGlobal, Effect.mapError(squadError))
           return { data: report }
         }),
       )
       .handle("squad.plan", () =>
         Effect.gen(function* () {
-          const registry = yield* SquadRegistry.Service
-          const active = yield* registry.active().pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
+          const active = yield* registry.active().pipe(Effect.provide(services),
+          Effect.provide(context), catchMissingGlobal, Effect.mapError(squadError))
           if (!active) return yield* new ConflictError({ message: "no active generation" })
           const generation = yield* registry
             .generation(active.id)
-            .pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
+            .pipe(Effect.provide(services),
+          Effect.provide(context), catchMissingGlobal, Effect.mapError(squadError))
           const document = yield* SquadPlan.plan({ generationID: generation!.id, sessions: generation!.sessions }).pipe(
             Effect.provide(services),
+          Effect.provide(context),
             catchMissingGlobal,
             Effect.mapError(squadError),
           )
@@ -156,6 +181,7 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
       .handle("squad.broadcast", (ctx) =>
         SquadBroadcast.broadcast(ctx.payload).pipe(
           Effect.provide(services),
+          Effect.provide(context),
           catchMissingGlobal,
           Effect.mapError(squadError),
           Effect.map((data) => ({ data })),
@@ -163,14 +189,15 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
       )
       .handle("squad.audit", (ctx) =>
         Effect.gen(function* () {
-          const registry = yield* SquadRegistry.Service
           const since = ctx.query.since === undefined ? undefined : Date.parse(ctx.query.since)
           if (since !== undefined && Number.isNaN(since))
             return yield* new InvalidRequestError({ message: "since must be an ISO instant", field: "since" })
           // Reading the trail is gated by the same flag as every squad route.
-          yield* registry.countActive().pipe(Effect.provide(services), catchMissingGlobal, Effect.mapError(squadError))
+          yield* registry.countActive().pipe(Effect.provide(services),
+          Effect.provide(context), catchMissingGlobal, Effect.mapError(squadError))
           const chain = yield* SquadAudit.chain(since === undefined ? undefined : { since }).pipe(
             Effect.provide(services),
+          Effect.provide(context),
             catchMissingGlobal,
             Effect.mapError(squadError),
           )
@@ -186,6 +213,7 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           idempotencyKey: ctx.payload.idempotencyKey,
         }).pipe(
           Effect.provide(services),
+          Effect.provide(context),
           catchMissingGlobal,
           Effect.mapError(closeError(ctx.params.generationID)),
           Effect.map((data) => ({ data })),
@@ -194,6 +222,7 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
       .handle("squad.transition", (ctx) =>
         SquadTransition.transition(ctx.payload).pipe(
           Effect.provide(services),
+          Effect.provide(context),
           catchMissingGlobal,
           Effect.mapError(pendencyError),
           Effect.map((data) => ({ data })),
@@ -205,6 +234,7 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           registryPath: path.join(global.data, "opencode.db"),
         }).pipe(
           Effect.provide(services),
+          Effect.provide(context),
           catchMissingGlobal,
           Effect.mapError(pendencyError),
           Effect.map((data) => ({ data })),
@@ -213,6 +243,7 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
       .handle("squad.checkpoint", (ctx) =>
         SquadCheckpoint.write({ ...ctx.payload, actor: ctx.payload.from }).pipe(
           Effect.provide(services),
+          Effect.provide(context),
           catchMissingGlobal,
           Effect.mapError(checkpointError(ctx.payload.name)),
           Effect.map((data) => ({ data })),
@@ -227,6 +258,7 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           author: ctx.payload.from,
         }).pipe(
           Effect.provide(services),
+          Effect.provide(context),
           catchMissingGlobal,
           Effect.mapError(sendError(ctx.payload.name)),
           Effect.map((data) => ({ data })),
@@ -234,7 +266,6 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
       )
       .handle("squad.session.replace", (ctx) =>
         Effect.gen(function* () {
-          const registry = yield* SquadRegistry.Service
           const target = yield* registry.resolve(ctx.params.sessionRef)
           const entry = yield* SquadReplace.replace({
             name: target.name,
@@ -248,6 +279,7 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           return { data: entry }
         }).pipe(
           Effect.provide(services),
+          Effect.provide(context),
           catchMissingGlobal,
           Effect.mapError(sendError(ctx.params.sessionRef)),
         ),
@@ -255,6 +287,7 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
       .handle("squad.liveness", () =>
         SquadStatus.status().pipe(
           Effect.provide(services),
+          Effect.provide(context),
           catchMissingGlobal,
           Effect.mapError(squadError),
           Effect.map((data) => ({ data })),
@@ -262,7 +295,6 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
       )
       .handle("squad.session.launch", (ctx) =>
         Effect.gen(function* () {
-          const registry = yield* SquadRegistry.Service
           const target = yield* registry.resolve(ctx.params.sessionRef)
           const launched = yield* SquadLaunch.launch({
             only: target.name,
@@ -274,6 +306,7 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
           return { data: launched[0]! }
         }).pipe(
           Effect.provide(services),
+          Effect.provide(context),
           catchMissingGlobal,
           Effect.mapError(sendError(ctx.params.sessionRef)),
         ),
@@ -281,6 +314,7 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
       .handle("squad.session.send", (ctx) =>
         SquadSend.send({ to: ctx.params.sessionRef, ...ctx.payload }).pipe(
           Effect.provide(services),
+          Effect.provide(context),
           catchMissingGlobal,
           Effect.mapError(sendError(ctx.params.sessionRef)),
           Effect.map((data) => ({ data })),
@@ -289,6 +323,7 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
       .handle("squad.dispatch.create", (ctx) =>
         SquadDispatch.create({ ...ctx.payload, actor: ctx.payload.from }).pipe(
           Effect.provide(services),
+          Effect.provide(context),
           catchMissingGlobal,
           Effect.mapError(squadError),
           Effect.map((data) => ({ data })),
@@ -297,6 +332,7 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
       .handle("squad.dispatch.list", () =>
         SquadDispatch.list().pipe(
           Effect.provide(services),
+          Effect.provide(context),
           catchMissingGlobal,
           Effect.mapError(squadError),
           Effect.map((data) => ({ data })),
@@ -305,6 +341,7 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
       .handle("squad.release", (ctx) =>
         SquadOwnership.release({ from: ctx.payload.from, to: ctx.payload.to, reason: ctx.payload.reason, actor: ctx.payload.actor }).pipe(
           Effect.provide(services),
+          Effect.provide(context),
           catchMissingGlobal,
           Effect.mapError(squadError),
           Effect.map((data) => ({ data })),
@@ -313,6 +350,7 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
       .handle("squad.dispatch.accept", (ctx) =>
         SquadDispatch.accept({ orq: ctx.params.orqId }).pipe(
           Effect.provide(services),
+          Effect.provide(context),
           catchMissingGlobal,
           Effect.mapError(acceptError(ctx.params.orqId)),
           Effect.map((data) => ({ data })),
@@ -321,6 +359,7 @@ export const SquadHandler = HttpApiBuilder.group(Api, "server.squad", (handlers)
       .handle("squad.panel", () =>
         SquadPanel.build().pipe(
           Effect.provide(services),
+          Effect.provide(context),
           catchMissingGlobal,
           Effect.mapError(squadError),
           Effect.map((data) => ({ data })),
