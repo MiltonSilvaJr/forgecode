@@ -110,9 +110,17 @@ Uma sessão só vira `verified` com as quatro evidências duráveis: o modelo me
 
 `panel build --out <arquivo>` grava o documento no caminho pedido. `panel show` imprime o resumo por coluna.
 
-### Sem painel próprio
+### Painel no TUI (somente leitura)
 
-Não existe tela de TUI ou de app para o painel. O consumo é feito pelo plugin `painel-kanban`, que é externo a este repositório, por `squad panel show` e pelo arquivo `kanban.json`. As fontes de Jira e CI entram por comandos somente leitura configurados em `squad.panel`.
+A rota `squad-board` do TUI (`/squad-board`, atrás de `experimental.squad_board`) mostra o painel como
+board kanban — colunas, cards, sessões e liveness da geração ativa — direto do servidor, sem réplica de
+regra de negócio e **sem escrita alguma**: nenhuma mutação do squad é feita por essa tela. `j`/`k`
+movem o foco entre cards, `h`/`l` trocam de coluna, `enter` abre o detalhe do card, `r` força um
+refresh e `esc` volta. Para agir sobre o squad — aceitar um dispatch, enviar mensagem, fechar geração —
+use os comandos normais (`squad send`, `squad dispatch accept`, etc.), nunca a tela.
+
+Consumo fora do TUI continua por `squad panel show`, pelo plugin externo `painel-kanban` e pelo arquivo
+`kanban.json`. As fontes de Jira e CI entram por comandos somente leitura configurados em `squad.panel`.
 
 ### Limites e segurança
 
