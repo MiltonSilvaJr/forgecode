@@ -2620,6 +2620,7 @@ export type ConfigEntry =
             resource: string
             effect: "allow" | "deny"
           }>
+          forgequeue?: { enabled?: boolean }
         }
         subscription_auth?: {
           enabled?: boolean
