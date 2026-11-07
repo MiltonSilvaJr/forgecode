@@ -18,19 +18,19 @@ await mkdir(archiveDir, { recursive: true })
 await packDistribution({
   root,
   name: pkg.name,
-  command: "opencode",
-  legacyCommand: "opencode2",
-  binary: "opencode",
-  packagePrefix: "@opencode/cli-",
+  command: "forgecode",
+  legacyCommand: "forgecode2",
+  binary: "forgecode",
+  packagePrefix: "@forgecode/cli-",
   archive: (target) => target.startsWith("linux-"),
 })
 if (existsSync(path.join(root, "node"))) {
   await packDistribution({
     root: path.join(root, "node"),
-    name: "@opencode/cli-node",
-    command: "opencode2-node",
-    binary: "opencode2-node",
-    packagePrefix: "@opencode/cli-node-",
+    name: "@forgecode/cli-node",
+    command: "forgecode2-node",
+    binary: "forgecode2-node",
+    packagePrefix: "@forgecode/cli-node-",
     archive: () => true,
   })
 }
@@ -91,7 +91,7 @@ async function packDistribution(input: {
     ),
   )
 
-  await Promise.all(Object.keys(binaries).map((name) => pack(`${input.root}/${name.replace("@opencode/", "")}`)))
+  await Promise.all(Object.keys(binaries).map((name) => pack(`${input.root}/${name.replace("@forgecode/", "")}`)))
   await pack(`${input.root}/${input.name}`)
   await Promise.all(
     Object.keys(binaries)
@@ -99,7 +99,7 @@ async function packDistribution(input: {
       .filter(input.archive)
       .map((target) =>
         archive(
-          path.join(input.root, `${input.packagePrefix.replace("@opencode/", "")}${target}`, "bin"),
+          path.join(input.root, `${input.packagePrefix.replace("@forgecode/", "")}${target}`, "bin"),
           target,
           input.binary,
         ),

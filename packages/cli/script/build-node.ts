@@ -118,7 +118,7 @@ for (const target of targets) {
   if (bundleOnly) continue
 
   const name = `cli-node-${targetName(target)}`
-  const binary = target.platform === "win32" ? "opencode2-node.exe" : "opencode2-node"
+  const binary = target.platform === "win32" ? "forgecode2-node.exe" : "forgecode2-node"
   const output = path.join(outdir, name, "bin", binary)
   if (!builder) throw new Error("Node SEA builder is unavailable")
   await mkdir(path.dirname(output), { recursive: true })

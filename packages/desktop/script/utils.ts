@@ -22,37 +22,37 @@ export function resolveChannel(): Channel {
 export const CLI_BINARIES: Array<{ target: string; package: string; os: string; cpu: string }> = [
   {
     target: "darwin-arm64",
-    package: "@opencode/cli-darwin-arm64",
+    package: "@forgecode/cli-darwin-arm64",
     os: "darwin",
     cpu: "arm64",
   },
   {
     target: "darwin-x64",
-    package: "@opencode/cli-darwin-x64-baseline",
+    package: "@forgecode/cli-darwin-x64-baseline",
     os: "darwin",
     cpu: "x64",
   },
   {
     target: "windows-arm64",
-    package: "@opencode/cli-windows-arm64",
+    package: "@forgecode/cli-windows-arm64",
     os: "win32",
     cpu: "arm64",
   },
   {
     target: "windows-x64",
-    package: "@opencode/cli-windows-x64-baseline",
+    package: "@forgecode/cli-windows-x64-baseline",
     os: "win32",
     cpu: "x64",
   },
   {
     target: "linux-x64",
-    package: "@opencode/cli-linux-x64-baseline",
+    package: "@forgecode/cli-linux-x64-baseline",
     os: "linux",
     cpu: "x64",
   },
   {
     target: "linux-arm64",
-    package: "@opencode/cli-linux-arm64",
+    package: "@forgecode/cli-linux-arm64",
     os: "linux",
     cpu: "arm64",
   },

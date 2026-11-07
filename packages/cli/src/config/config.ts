@@ -17,7 +17,7 @@ export interface Interface {
   readonly update: (update: (draft: Draft<Info>) => void) => Effect.Effect<Info, Error>
 }
 
-export class Service extends Context.Service<Service, Interface>()("@opencode/cli/config/Config") {}
+export class Service extends Context.Service<Service, Interface>()("@forgecode/cli/config/Config") {}
 
 const decode = Schema.decodeUnknownOption(Info)
 const decodeRecord = Schema.decodeUnknownOption(Schema.Record(Schema.String, Schema.Unknown))

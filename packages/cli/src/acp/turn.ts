@@ -37,7 +37,7 @@ export interface Interface {
 }
 
 /** Core acknowledges an interrupt before its cleanup settles, and its shell tool waits 3s before SIGKILL. */
-export const CancelDrainTimeout = Context.Reference<Duration.Input>("@opencode/cli/acp/Turn/CancelDrainTimeout", {
+export const CancelDrainTimeout = Context.Reference<Duration.Input>("@forgecode/cli/acp/Turn/CancelDrainTimeout", {
   defaultValue: () => "5 seconds",
 })
 

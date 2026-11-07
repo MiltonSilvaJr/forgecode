@@ -118,7 +118,7 @@ export interface Interface {
   ) => { readonly command: ReadonlyArray<string>; readonly run: Effect.Effect<void, Error> } | undefined
 }
 
-export class Service extends Context.Service<Service, Interface>()("@opencode/cli/Updater") {}
+export class Service extends Context.Service<Service, Interface>()("@forgecode/cli/Updater") {}
 
 export function decodePolicy(text: string): Policy | undefined {
   // The CLI only projects this host-level preference instead of initializing
