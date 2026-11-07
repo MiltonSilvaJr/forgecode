@@ -81,16 +81,16 @@ async function globalLayer(experimental: Record<string, boolean>) {
 test("the palette/slash command is gated by config.experimental.squad_board", async () => {
   const enabled = await globalLayer({ squad_board: true })
   expect(enabled.mode).toBe("global")
-  expect(enabled.commands.map((command) => ("id" in command ? command.id : ""))).toContain("squad.board.open")
-  const command = enabled.commands.find((item) => "id" in item && item.id === "squad.board.open")
+  expect(enabled.commands!.map((command) => ("id" in command ? command.id : ""))).toContain("squad.board.open")
+  const command = enabled.commands!.find((item) => "id" in item && item.id === "squad.board.open")
   expect(command && "slash" in command ? command.slash : undefined).toEqual({ name: "squad-board" })
   expect(command && "palette" in command ? command.palette : undefined).toBe(true)
 
   const disabled = await globalLayer({})
-  expect(disabled.commands.length).toBe(0)
+  expect(disabled.commands!.length).toBe(0)
 })
 
 test("no global layer command declares a bind", async () => {
   const layer = await globalLayer({ squad_board: true })
-  expect(layer.commands.every((command) => !("bind" in command) || command.bind === undefined)).toBe(true)
+  expect(layer.commands!.every((command) => !("bind" in command) || command.bind === undefined)).toBe(true)
 })

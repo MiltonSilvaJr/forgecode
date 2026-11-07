@@ -61,7 +61,10 @@ export function Sessions(props: {
         <box height={1} />
         <text fg={theme.text.base} wrapMode="none">
           geração anterior {previous()!.id} · fechada em{" "}
-          {previous()!.closedAt !== null ? formatInstant(previous()!.closedAt) : "—"} · por {previous()!.closedBy ?? "—"}
+          {(() => {
+            const closedAt = previous()!.closedAt
+            return closedAt !== null ? formatInstant(closedAt) : "—"
+          })()} · por {previous()!.closedBy ?? "—"}
         </text>
         <For each={previous()!.sessions}>
           {(session) => (

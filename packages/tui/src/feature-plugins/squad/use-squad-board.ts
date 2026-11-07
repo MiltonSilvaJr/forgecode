@@ -77,7 +77,8 @@ export function useSquadBoard(port: SquadReadPort, options: SquadBoardOptions): 
     const run = (async () => {
       const [panel, liveness] = await Promise.allSettled([port.panel(), port.liveness()])
       if (disposed) return
-      const prior = state().type === "ready" ? state() : undefined
+      const current = state()
+      const prior = current.type === "ready" ? current : undefined
       if (!prior && panel.status === "rejected") {
         const terminal = terminalState(panel.reason, options)
         if (terminal) {

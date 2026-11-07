@@ -1,7 +1,6 @@
 /** @jsxImportSource @opentui/solid */
 import { expect, test } from "bun:test"
 import { testRender } from "@opentui/solid"
-import type { Plugin } from "@opencode/plugin/tui"
 import type { SquadLivenessReport, SquadPanelDocument } from "@opencode/client"
 import { Board } from "../../src/feature-plugins/squad/board"
 import { useSquadBoard, type SquadBoardHandle, type SquadReadPort } from "../../src/feature-plugins/squad/use-squad-board"

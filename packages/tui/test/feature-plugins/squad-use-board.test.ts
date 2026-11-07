@@ -15,7 +15,7 @@ function harness(options: {
   panel?: () => Promise<SquadPanelDocument>
   liveness?: () => Promise<SquadLivenessReport>
   now?: () => number
-}) {
+}): Harness {
   const calls: string[] = []
   const port = {
     panel: () => {

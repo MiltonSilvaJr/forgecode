@@ -68,13 +68,15 @@ async function renderBoard() {
     calls,
     focusedCardID: () => {
       const focused = theme.background.formfield.focused.toInts().join(",")
-      const hit = collect(app.renderer.root).find(
-        (node) =>
+      const hit = collect(app.renderer.root).find((node) => {
+        const backgroundColor = (node as unknown as { backgroundColor?: { toInts(): number[] } }).backgroundColor
+        return (
           typeof node.id === "string" &&
           node.id.startsWith("squad-card-") &&
-          node.backgroundColor !== undefined &&
-          node.backgroundColor.toInts().join(",") === focused,
-      )
+          backgroundColor !== undefined &&
+          backgroundColor.toInts().join(",") === focused
+        )
+      })
       return hit ? hit.id.replace("squad-card-", "") : undefined
     },
   }
