@@ -131,6 +131,10 @@ export interface Interface {
     readonly defaultRemoteBranch: (repository: Repository, remote?: string) => Effect.Effect<string | undefined>
     /** Empty when HEAD is unborn. */
     readonly rootCommits: (repository: Repository) => Effect.Effect<readonly string[], CommandError>
+    /** Resolves a branch or tag name to its commit OID, or undefined when the ref does not exist. */
+    readonly resolve: (repository: Repository, ref: string) => Effect.Effect<string | undefined>
+    /** True when `ancestor` is reachable from `descendant`, false when it is not, undefined when git could not tell (missing object, no repository). */
+    readonly isAncestor: (repository: Repository, ancestor: string, descendant: string) => Effect.Effect<boolean | undefined>
   }
   readonly sync: {
     readonly fetchRemotes: (repository: Repository, input?: { prune?: boolean }) => Effect.Effect<void, OperationError>
@@ -313,6 +317,19 @@ const layer = Layer.effect(
       const result = yield* run(repository.worktree, proc, ["symbolic-ref", "--quiet", "--short", "HEAD"])
       if (result.exitCode !== 0) return undefined
       return result.text.trim() || undefined
+    })
+
+    const resolve = Effect.fn("Git.history.resolve")(function* (repository: Repository, ref: string) {
+      const result = yield* run(repository.worktree, proc, ["rev-parse", "--verify", "--quiet", `${ref}^{commit}`])
+      if (result.exitCode !== 0) return undefined
+      return result.text.trim() || undefined
+    })
+
+    const isAncestor = Effect.fn("Git.history.isAncestor")(function* (repository: Repository, ancestor: string, descendant: string) {
+      const result = yield* run(repository.worktree, proc, ["merge-base", "--is-ancestor", `${ancestor}^{commit}`, `${descendant}^{commit}`])
+      if (result.exitCode === 0) return true
+      if (result.exitCode === 1) return false
+      return undefined
     })
 
     const remoteHead = Effect.fn("Git.history.defaultRemoteBranch")(function* (
@@ -1455,7 +1472,7 @@ const layer = Layer.effect(
     return Service.of({
       repo: { discover, fingerprint, clone, create },
       remote: { get: remote },
-      history: { head, branch, defaultRemoteBranch: remoteHead, rootCommits: roots },
+      history: { head, branch, defaultRemoteBranch: remoteHead, rootCommits: roots, resolve, isAncestor },
       sync: { fetchRemotes: fetch, fetchBranch, checkoutRemoteBranch: checkout, resetHard: reset },
       worktree: { create: worktreeCreate, remove: worktreeRemove, list: worktreeList },
       index: { refresh, ignored },

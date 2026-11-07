@@ -17,6 +17,7 @@ import { ConfigPlugin } from "./config/plugin.js"
 import { ConfigPolicy } from "./config/policy.js"
 import { ConfigProvider } from "./config/provider.js"
 import { ConfigReference } from "./config/reference.js"
+import { ConfigSquad } from "./config/squad.js"
 import { ConfigWebSearch } from "./config/websearch.js"
 import { ConfigToolOutput } from "./config/tool-output.js"
 import { ConfigWatcher } from "./config/watcher.js"
@@ -115,6 +116,7 @@ export class Info extends Schema.Class<Info>("Config.Info")({
   }),
   providers: Schema.Record(Schema.String, ConfigProvider.Info).pipe(optional),
   experimental: ConfigExperimental.Info.pipe(optional),
+  squad: ConfigSquad.Info.pipe(optional),
   subscription_auth: ConfigSubscriptionAuth.Info.pipe(optional),
 }) {}
 

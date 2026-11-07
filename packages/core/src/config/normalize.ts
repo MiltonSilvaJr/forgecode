@@ -16,6 +16,7 @@ import { ConfigPlugin } from "@opencode/schema/config/plugin"
 import { ConfigPolicy } from "@opencode/schema/config/policy"
 import { ConfigProvider } from "@opencode/schema/config/provider"
 import { ConfigReference } from "@opencode/schema/config/reference"
+import { ConfigSquad } from "@opencode/schema/config/squad"
 import { ConfigExperimental } from "@opencode/schema/config/experimental"
 import { Permission } from "@opencode/schema/permission"
 import { ConfigAgentV1 } from "../v1/config/agent.js"
@@ -197,6 +198,7 @@ export function normalize(input: unknown): Result {
   normalizeWatcher(input, encoded, diagnostics)
   normalizeFormatter(input, encoded, diagnostics)
   normalizeLsp(input, encoded, diagnostics)
+  normalizeSquad(input, encoded, diagnostics)
 
   const model = own(input, "model")
     ? decodeValue(ConfigModel.Selection, input.model, ["model"], diagnostics)
@@ -600,6 +602,27 @@ function normalizeLsp(input: Record<string, unknown>, encoded: Record<string, un
   }
   const entries = decodeMap(input.lsp, ConfigLSP.Entry, ["lsp"], diagnostics, decodeEncoded)
   if (isRecord(input.lsp) && (!Object.keys(input.lsp).length || Object.keys(entries).length)) encoded.lsp = entries
+}
+
+function normalizeSquad(input: Record<string, unknown>, encoded: Record<string, unknown>, diagnostics: Diagnostic[]) {
+  if (!own(input, "squad")) return
+  if (!isRecord(input.squad)) {
+    invalid(["squad"], diagnostics)
+    return
+  }
+  const squad = input.squad
+  const fields = ConfigSquad.Info.fields
+  const recognized = new Set(Object.keys(fields))
+  Object.keys(squad).forEach((key) => {
+    if (!recognized.has(key)) invalid(["squad", key], diagnostics)
+  })
+  const result: Record<string, unknown> = {}
+  for (const [key, field] of Object.entries(fields)) {
+    if (!own(squad, key)) continue
+    const value = decodeEncoded(field as Schema.Codec<unknown, unknown, never, never>, squad[key], ["squad", key], diagnostics)
+    if (value !== undefined) result[key] = value
+  }
+  if (Object.keys(result).length || !Object.keys(squad).length) encoded.squad = result
 }
 
 function migrateTools(value: unknown, diagnostics: Diagnostic[]) {

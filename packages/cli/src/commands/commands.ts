@@ -544,6 +544,296 @@ const Root = Spec.make(typeof OPENCODE_CLI_NAME === "string" ? OPENCODE_CLI_NAME
         }),
       ],
     }),
+    Spec.make("squad", {
+      description: "Orchestrate multi-session squads (experimental, behind squad.enabled; não libera execução produtiva, não aprova, não faz merge nem deploy)",
+      commands: [
+        Spec.make("init", {
+          description: "Create a squad generation from a JSON config file",
+          globalFlags: ServerFlags,
+          params: {
+            generation: Flag.String("generation").pipe(
+              Flag.withDescription("Generation ID slug"),
+              Flag.optional,
+            ),
+            config: Flag.String("config").pipe(
+              Flag.withDescription("JSON config file declaring the sessions"),
+              Flag.optional,
+            ),
+            replace: Flag.Boolean("replace").pipe(
+              Flag.withDescription("Replace the active generation (requires --reason)"),
+              Flag.withDefault(false),
+            ),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Reason for --replace"), Flag.optional),
+            idempotencyKey: Flag.String("idempotency-key").pipe(
+              Flag.withDescription("Idempotency key (a retry with the same key is a no-op)"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("check", {
+          description: "Validate the active generation's sessions without mutating anything (seguro, sem efeito; não libera execução produtiva)",
+          globalFlags: ServerFlags,
+          params: {
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("plan", {
+          description: "Simulate the launch of the active generation with no effect (seguro, sem efeito; não libera execução produtiva)",
+          globalFlags: ServerFlags,
+          params: {
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("broadcast", {
+          description: "Validate every recipient, then enqueue a message in each verified session of the active generation",
+          globalFlags: ServerFlags,
+          params: {
+            messageFile: Flag.String("message-file").pipe(
+              Flag.withDescription("Read the message from a UTF-8 file"),
+              Flag.optional,
+            ),
+            includeSelf: Flag.Boolean("include-self").pipe(
+              Flag.withDescription("Include the calling session among the recipients"),
+              Flag.withDefault(false),
+            ),
+            idempotencyKey: Flag.String("idempotency-key").pipe(
+              Flag.withDescription("Idempotency key (same key, same message id per recipient)"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("status", {
+          description: "Show the active and previous generation with measured activity and liveness (read-only)",
+          globalFlags: ServerFlags,
+          params: {
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("session", {
+          description: "Manage squad sessions",
+          commands: [
+            Spec.make("replace", {
+              description: "Give a session name a new session on another provider, model or variant",
+              globalFlags: ServerFlags,
+              params: {
+                name: Flag.String("name").pipe(Flag.withDescription("Session name in the active generation"), Flag.optional),
+                provider: Flag.String("provider").pipe(Flag.withDescription("New provider"), Flag.optional),
+                model: Flag.String("model").pipe(Flag.withDescription("New model (defaults to the current one)"), Flag.optional),
+                variant: Flag.String("variant").pipe(Flag.withDescription("New variant (defaults to the current one)"), Flag.optional),
+                reason: Flag.String("reason").pipe(Flag.withDescription("Why the session is replaced"), Flag.optional),
+                json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+              },
+            }),
+          ],
+        }),
+        Spec.make("block", {
+          description: "Declare why a verified session is stopped (human or tool), or clear the declaration",
+          globalFlags: ServerFlags,
+          params: {
+            name: Flag.String("name").pipe(Flag.withDescription("Session name in the active generation"), Flag.optional),
+            waiting: Flag.String("waiting").pipe(Flag.withDescription("What the session waits on: human or tool"), Flag.optional),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Why the session is blocked"), Flag.optional),
+            clear: Flag.Boolean("clear").pipe(Flag.withDescription("Clear the declared block"), Flag.withDefault(false)),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("launch", {
+          description: "Create or adopt the active generation's sessions and verify each by durable evidence",
+          globalFlags: ServerFlags,
+          params: {
+            only: Flag.String("only").pipe(Flag.withDescription("Launch only this session name"), Flag.optional),
+            retry: Flag.Boolean("retry").pipe(
+              Flag.withDescription("Retry a failed or starting session (requires --reason)"),
+              Flag.withDefault(false),
+            ),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Reason for --retry"), Flag.optional),
+            adopt: Flag.String("adopt").pipe(
+              Flag.withDescription("Adopt an existing session: name=ses_... (comma separated for several)"),
+              Flag.optional,
+            ),
+            timeout: Flag.String("timeout").pipe(
+              Flag.withDescription("Verification timeout in seconds (default: squad.launch.verify_timeout)"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("audit", {
+          description: "Inspect the append-only squad audit trail",
+          commands: [
+            Spec.make("export", {
+              description: "Write the audit lines to a file and print the chain digest",
+              globalFlags: ServerFlags,
+              params: {
+                since: Flag.String("since").pipe(Flag.withDescription("ISO instant to start from"), Flag.optional),
+                out: Flag.String("out").pipe(Flag.withDescription("File to write the lines to (JSON lines)"), Flag.optional),
+                json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+              },
+            }),
+          ],
+        }),
+        Spec.make("close", {
+          description: "Close a squad generation once every session has an intact checkpoint and is idle",
+          globalFlags: ServerFlags,
+          params: {
+            generation: Flag.String("generation").pipe(Flag.withDescription("Generation to close"), Flag.optional),
+            by: Flag.String("by").pipe(
+              Flag.withDescription("Session (name or id) issuing the close; excluded from the active-execution check (default: the orchestrator)"),
+              Flag.optional,
+            ),
+            force: Flag.Boolean("force").pipe(
+              Flag.withDescription("Close despite queued inbox items (requires --reason)"),
+              Flag.withDefault(false),
+            ),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Why --force is used"), Flag.optional),
+            idempotencyKey: Flag.String("idempotency-key").pipe(
+              Flag.withDescription("Idempotency key (repeating the close returns the same receipt)"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("transition", {
+          description: "Bind a closed generation to the active one after checking its receipt and registry digest",
+          globalFlags: ServerFlags,
+          params: {
+            from: Flag.String("from").pipe(Flag.withDescription("Closed generation to transition from"), Flag.optional),
+            idempotencyKey: Flag.String("idempotency-key").pipe(
+              Flag.withDescription("Idempotency key (repeating with the same target is a no-op)"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("activate", {
+          description: "Hand the active generation to its orchestrator (bootstrap only; productive stays false)",
+          globalFlags: ServerFlags,
+          params: {
+            generation: Flag.String("generation").pipe(Flag.withDescription("Generation to activate (must be the active one)"), Flag.optional),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("checkpoint", {
+          description: "Record a session checkpoint (six required sections, SHA-256, secret scan)",
+          globalFlags: ServerFlags,
+          params: {
+            name: Flag.String("name").pipe(Flag.withDescription("Session name in the active generation"), Flag.optional),
+            bodyFile: Flag.String("body-file").pipe(Flag.withDescription("Read the checkpoint from a UTF-8 file"), Flag.optional),
+            allowSecretLikeText: Flag.Boolean("allow-secret-like-text").pipe(
+              Flag.withDescription("Record the checkpoint even if it looks like it holds a secret (requires --reason)"),
+              Flag.withDefault(false),
+            ),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Why secret-like text is allowed"), Flag.optional),
+            exportDir: Flag.String("export-dir").pipe(
+              Flag.withDescription("Also write the checkpoint to this directory, which must be outside a git work tree"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("send", {
+          description: "Enqueue a message in a squad session's inbox (proof of enqueue, never of reading)",
+          globalFlags: ServerFlags,
+          params: {
+            to: Flag.String("to").pipe(Flag.withDescription("Session name in the active generation"), Flag.optional),
+            sessionId: Flag.String("session-id").pipe(Flag.withDescription("Session ID"), Flag.optional),
+            messageFile: Flag.String("message-file").pipe(
+              Flag.withDescription("Read the message from a UTF-8 file"),
+              Flag.optional,
+            ),
+            delivery: Flag.String("delivery").pipe(
+              Flag.withDescription("Delivery mode: queue (default) or steer"),
+              Flag.withDefault("queue"),
+            ),
+            idempotencyKey: Flag.String("idempotency-key").pipe(
+              Flag.withDescription("Idempotency key (same key, same message id, one inbox row)"),
+              Flag.optional,
+            ),
+            allowSelf: Flag.Boolean("allow-self").pipe(
+              Flag.withDescription("Allow sending to the calling session"),
+              Flag.withDefault(false),
+            ),
+            dispatch: Flag.String("dispatch").pipe(
+              Flag.withDescription("Dispatch id (ORQ-...): the target must own the dispatch's tree"),
+              Flag.optional,
+            ),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+        Spec.make("dispatch", {
+          description: "Create and list squad dispatches (ORQ-id, owner, base/head, DoR/DoD)",
+          commands: [
+            Spec.make("create", {
+              description: "Validate and record a dispatch for the active generation",
+              globalFlags: ServerFlags,
+              params: {
+                file: Flag.String("file").pipe(
+                  Flag.withDescription("JSON file with scope, base, head, dor, dod, proof, exclusions, milestone"),
+                  Flag.optional,
+                ),
+                to: Flag.String("to").pipe(Flag.withDescription("Owner session name in the active generation"), Flag.optional),
+                send: Flag.Boolean("send").pipe(
+                  Flag.withDescription("Also deliver the dispatch to its owner through the channel"),
+                  Flag.withDefault(false),
+                ),
+                exigidos: Flag.String("exigidos").pipe(
+                  Flag.withDescription("Required stages, comma separated: jira,ci,merge,deploy,acceptance (default ci,merge,acceptance)"),
+                  Flag.optional,
+                ),
+                json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+              },
+            }),
+            Spec.make("list", {
+              description: "List the dispatches of the active generation",
+              globalFlags: ServerFlags,
+              params: {
+                json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+              },
+            }),
+            Spec.make("accept", {
+              description: "Accept an open dispatch of the active generation",
+              globalFlags: ServerFlags,
+              params: {
+                orq: Flag.String("orq").pipe(Flag.withDescription("Dispatch id (ORQ-<generation>-<NNN>)"), Flag.optional),
+                json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+              },
+            }),
+          ],
+        }),
+        Spec.make("panel", {
+          description: "Build and show the squad kanban panel with per-stage evidence (read-only)",
+          commands: [
+            Spec.make("build", {
+              description: "Build the kanban document; prints it, or writes it to --out and prints the path",
+              globalFlags: ServerFlags,
+              params: {
+                out: Flag.String("out").pipe(Flag.withDescription("Write the document to this file"), Flag.optional),
+                json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+              },
+            }),
+            Spec.make("show", {
+              description: "Summarize the panel by column, naming cards that cannot show progress",
+              globalFlags: ServerFlags,
+              params: {
+                json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+              },
+            }),
+          ],
+        }),
+        Spec.make("release", {
+          description: "Hand the trees owned by one squad session to another (requires the owner's checkpoint)",
+          globalFlags: ServerFlags,
+          params: {
+            from: Flag.String("from").pipe(Flag.withDescription("Current owner session name"), Flag.optional),
+            to: Flag.String("to").pipe(Flag.withDescription("New owner session name in the active generation"), Flag.optional),
+            reason: Flag.String("reason").pipe(Flag.withDescription("Reason for the handover"), Flag.optional),
+            json: Flag.Boolean("json").pipe(Flag.withDescription("Output as JSON"), Flag.withDefault(false)),
+          },
+        }),
+      ],
+    }),
     Spec.make("queue", {
       description: "Queue a message for a session's inbox",
       globalFlags: ServerFlags,

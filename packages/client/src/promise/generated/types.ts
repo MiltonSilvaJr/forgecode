@@ -308,6 +308,26 @@ export type ProjectCommands = { start?: string }
 
 export type ProjectTime = { created: number; updated: number; active: number; archived?: number }
 
+export type SquadGenerationID = string
+
+export type SquadSessionName = string
+
+export type SquadRole = "orchestrator" | "worker"
+
+export type SquadSessionState = "creating" | "starting" | "verified" | "closed" | "failed"
+
+export type SquadCheckItem = { check: string; verdict: "ok" | "warn" | "fail"; reason?: string }
+
+export type SquadCostSnapshot = { cost?: number; tokens?: { input?: number; output?: number }; unknown: boolean }
+
+export type SquadReleaseReceipt = { released: string; to: string; trees: number; checkpointSha256: string }
+
+export type SquadStage = {
+  status: "verified" | "failed" | "unknown"
+  evidence: { type: string; reference: string; at?: number } | null
+  source: string
+}
+
 export type PermissionID = string
 
 export type PermissionSource = { type: "tool"; messageID: string; id: string }
@@ -399,6 +419,14 @@ export type ConfigWorktree = { directory: string }
 export type ConfigModelReasoning =
   | { supported: false }
   | { supported: true; toggle?: boolean; effort?: Array<string>; budget?: { min?: number; max?: number } }
+
+export type ConfigSquadLaunch = { verify_timeout: string }
+
+export type ConfigSquadCheckpoint = { max_bytes: number | "Infinity" | "-Infinity" | "NaN" }
+
+export type ConfigSquadCredential = { expiry_warn: string }
+
+export type ConfigSquadPanel = { jira_command?: string; ci_command?: string; ci_evidence?: string }
 
 export type ConfigSubscriptionAuthSourceKind = "env" | "store" | "native" | "keychain" | "api_key"
 
@@ -827,6 +855,149 @@ export type Project = {
   commands?: ProjectCommands
   time: ProjectTime
   sandboxes: Array<string>
+}
+
+export type SquadAuditEntry = {
+  id: number
+  at: number
+  kind:
+    | "init"
+    | "launch"
+    | "send"
+    | "broadcast"
+    | "dispatch"
+    | "dispatch_accept"
+    | "checkpoint"
+    | "close"
+    | "transition"
+    | "activate"
+    | "release"
+    | "block"
+    | "block_clear"
+    | "session_replace"
+  generation?: SquadGenerationID
+  target: string
+  sessionID?: SessionID
+  messageID?: SessionMessageID
+  messageSha256?: string
+  delivery?: SessionInboxDelivery
+  result: string
+  idempotencyKey?: string
+  actor: string
+  prevHash: string
+  detail?: string
+}
+
+export type SquadTransitionReceipt = {
+  sourceGeneration: SquadGenerationID
+  sourceRegistryDigest: string
+  closed: { [x: string]: { sessionID?: SessionID; closedAt: number } }
+  checkpoints: { [x: string]: { sha256: string } }
+  previousSessionsClosed: boolean
+  previousOrchestratorKeptOpen: boolean
+  closedBy: string
+  targetGenerationID?: SquadGenerationID
+  createdAt: number
+}
+
+export type SquadEnqueueProof = {
+  messageID: SessionMessageID
+  name: SquadSessionName
+  sessionID: SessionID
+  delivery: SessionInboxDelivery
+  at: number
+}
+
+export type SquadBroadcastResult = {
+  name: SquadSessionName
+  sessionID?: SessionID
+  status: "accepted" | "rejected" | "not_attempted"
+  messageID?: SessionMessageID
+  reason?: string
+}
+
+export type SquadBlock = {
+  generationID: SquadGenerationID
+  name: SquadSessionName
+  waitingOn: "human" | "tool"
+  reason: string
+  author: string
+  createdAt: number
+  clearedAt?: number
+}
+
+export type SquadPreviousSession = { name: SquadSessionName; sessionID?: SessionID; state: "closed" }
+
+export type SquadCheckpoint = {
+  generationID: SquadGenerationID
+  name: SquadSessionName
+  sha256: string
+  body: string
+  bytes: number
+  createdAt: number
+}
+
+export type SquadDispatch = {
+  id: string
+  generationID: SquadGenerationID
+  orqID: string
+  seq: number
+  scope: string
+  owner: SquadSessionName
+  base: string
+  head: string
+  dor: string
+  dod: string
+  proof: string
+  exclusions: [string, ...Array<string>]
+  exigidos: [
+    "jira" | "ci" | "merge" | "deploy" | "acceptance",
+    ...Array<"jira" | "ci" | "merge" | "deploy" | "acceptance">,
+  ]
+  milestone: string
+  baseOid?: string
+  headOid?: string
+  validation: "verified" | "unknown" | "failed"
+  state: "open" | "accepted" | "done" | "blocked"
+  acceptedAt?: number
+  acceptedBy?: SquadSessionName
+  createdAt: number
+  warnings?: Array<string>
+  sent?: { messageID: SessionMessageID; at: number }
+}
+
+export type SquadLiveness = {
+  verdict: "working" | "idle" | "stalled" | "presumed_dead" | "unknown"
+  measuredAt: number
+  lastActivity?: number
+  sentAt?: number
+  source?: "execution" | "inbox"
+  sessionState?: SquadSessionState
+  workingStale: boolean
+  presumedDead: boolean
+  cause?: string
+}
+
+export type SquadSessionCheck = {
+  name: SquadSessionName
+  checks: Array<SquadCheckItem>
+  credential: "present" | "absent" | "unknown"
+}
+
+export type SquadPanelCard = {
+  id: string
+  titulo: string
+  coluna: "backlog" | "in_progress" | "in_review" | "blocked" | "done"
+  agente: string
+  prioridade?: string
+  refs: Array<string>
+  evidencias: Array<string>
+  bloqueio?: string
+  atualizadoEm?: number
+  estagios: { jira: SquadStage; ci: SquadStage; merge: SquadStage; deploy: SquadStage; acceptance: SquadStage }
+  exigidos: Array<"jira" | "ci" | "merge" | "deploy" | "acceptance">
+  desconhecido: Array<"jira" | "ci" | "merge" | "deploy" | "acceptance">
+  progressa: boolean
 }
 
 export type PermissionRequest = {
@@ -1688,6 +1859,39 @@ export type SessionUsageRecorded = {
   data: { sessionID: SessionID; source: "title" | "compaction"; cost: MoneyUSD; tokens: TokenUsageInfo }
 }
 
+export type SquadSessionEntry = {
+  generationID: SquadGenerationID
+  name: SquadSessionName
+  role: SquadRole
+  provider: string
+  model: string
+  variant?: string
+  location: LocationRef
+  branch?: string
+  sessionID?: SessionID
+  adoptedAt?: number
+  state: SquadSessionState
+  marker?: string
+  promptSha256?: string
+  checkpointSha256?: string
+  productive: boolean
+  lastError?: string
+  createdAt: number
+  updatedAt: number
+}
+
+export type SquadPlanEntry = {
+  name: SquadSessionName
+  provider: string
+  model: string
+  variant?: string
+  location: LocationRef
+  branch?: string
+  sessionID?: SessionID
+  action: "adopt" | "create"
+  promptSha256: string
+}
+
 export type LocationShutdown = {
   id: EventID
   created: number
@@ -2221,6 +2425,47 @@ export type ConnectionInfo = ConnectionCredentialInfo | ConnectionEnvInfo
 
 export type SubscriptionAuthStatus = { enabled: boolean; providers: Array<SubscriptionAuthStatusProvider> }
 
+export type SquadAuditChain = {
+  entries: Array<SquadAuditEntry>
+  digest: string
+  integrity: "integrity_ok" | "integrity_broken"
+}
+
+export type SquadBroadcastReport = { results: Array<SquadBroadcastResult> }
+
+export type SquadPreviousGeneration = {
+  id: SquadGenerationID
+  closedAt?: number
+  closedBy?: string
+  sessions: Array<SquadPreviousSession>
+}
+
+export type SquadSessionStatus = {
+  name: SquadSessionName
+  role: SquadRole
+  provider: string
+  model: string
+  variant?: string
+  location: LocationRef
+  branch?: string
+  sessionID?: SessionID
+  state: SquadSessionState
+  liveness: SquadLiveness
+  inboxPending: number
+  cost: SquadCostSnapshot
+}
+
+export type SquadCheckReport = { sessions: Array<SquadSessionCheck> }
+
+export type SquadPanelDocument = {
+  versaoSchema: number
+  revisao: string
+  atualizadoEm: number
+  colunas: Array<string>
+  cards: { [x: string]: SquadPanelCard }
+  fonte: { [x: string]: string }
+}
+
 export type PtyCreated = {
   id: EventID
   created: number
@@ -2622,6 +2867,16 @@ export type ConfigEntry =
           }>
           forgequeue?: { enabled?: boolean }
         }
+        squad?: {
+          enabled?: boolean | null
+          state_dir?: string
+          liveness?: { stale_after: string; dead_after: string }
+          writer_scope?: "worktree" | "repository"
+          launch?: ConfigSquadLaunch
+          checkpoint?: ConfigSquadCheckpoint
+          credential?: ConfigSquadCredential
+          panel?: ConfigSquadPanel
+        }
         subscription_auth?: {
           enabled?: boolean
           sources?: { [x: string]: Array<ConfigSubscriptionAuthSourceKind> }
@@ -2670,6 +2925,20 @@ export type SessionInboxItem =
   | { type: "compaction"; payload: SessionInboxCompactionPayload; delivery: SessionInboxDelivery }
   | { type: "move"; payload: SessionInboxMovePayload1; delivery: SessionInboxDelivery }
 
+export type SquadGeneration = {
+  id: SquadGenerationID
+  runID: string
+  state: "active" | "closed"
+  configDigest?: string
+  createdAt: number
+  closedAt?: number
+  closedBy?: string
+  sourceGenerationID?: SquadGenerationID
+  sessions: Array<SquadSessionEntry>
+}
+
+export type SquadPlanDocument = { generationID: SquadGenerationID; sessions: Array<SquadPlanEntry> }
+
 export type SessionMessageAssistantTool1 = {
   type: "tool"
   id: string
@@ -2697,6 +2966,14 @@ export type CredentialEntry = {
   label: string
   active: boolean
   value: CredentialValue
+}
+
+export type SquadLivenessReport = {
+  generation: SquadGenerationID | null
+  sessions: Array<SquadSessionStatus>
+  inboxPending: number
+  cost: SquadCostSnapshot
+  previous: SquadPreviousGeneration | null
 }
 
 export type FormFields1 = [FormField1, ...Array<FormField1>]
@@ -3252,6 +3529,14 @@ export type ProjectNotFoundError = {
 }
 export const isProjectNotFoundError = (value: unknown): value is ProjectNotFoundError =>
   typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "ProjectNotFoundError"
+
+export type DispatchNotFoundError = {
+  readonly _tag: "DispatchNotFoundError"
+  readonly orqID: string
+  readonly message: string
+}
+export const isDispatchNotFoundError = (value: unknown): value is DispatchNotFoundError =>
+  typeof value === "object" && value !== null && "_tag" in value && value["_tag"] === "DispatchNotFoundError"
 
 export type PermissionSavedNotFoundError = {
   readonly _tag: "PermissionSavedNotFoundError"
@@ -4332,6 +4617,154 @@ export type ProjectUpdateInput = {
 }
 
 export type ProjectUpdateOutput = Project
+
+export type ExperimentalSquadGenerationCreateInput = {
+  readonly generation: string
+  readonly sessions: ReadonlyArray<{
+    readonly name: string
+    readonly role: "orchestrator" | "worker"
+    readonly provider: string
+    readonly model: string
+    readonly variant?: string
+    readonly location: { readonly directory: string; readonly workspaceID?: string }
+    readonly branch?: string
+    readonly sessionID?: string
+  }>
+  readonly replace?: boolean | undefined
+  readonly reason?: string | undefined
+  readonly idempotencyKey?: string | undefined
+}
+
+export type ExperimentalSquadGenerationCreateOutput = { data: SquadGeneration }["data"]
+
+export type ExperimentalSquadSessionListOutput = {
+  data: { generation: SquadGenerationID; sessions: Array<SquadSessionEntry> }
+}["data"]
+
+export type ExperimentalSquadCheckOutput = { data: SquadCheckReport }["data"]
+
+export type ExperimentalSquadPlanOutput = { data: SquadPlanDocument }["data"]
+
+export type ExperimentalSquadSessionSendInput = {
+  readonly sessionRef: string | string
+  readonly text: string
+  readonly delivery?: ("steer" | "queue") | undefined
+  readonly from?: string | undefined
+  readonly allowSelf?: boolean | undefined
+  readonly idempotencyKey?: string | undefined
+  readonly dispatch?: string | undefined
+}
+
+export type ExperimentalSquadSessionSendOutput = { data: SquadEnqueueProof }["data"]
+
+export type ExperimentalSquadSessionLaunchInput = {
+  readonly sessionRef: string | string
+  readonly retry?: boolean | undefined
+  readonly reason?: string | undefined
+  readonly adopt?: string | undefined
+  readonly timeout?: number | undefined
+}
+
+export type ExperimentalSquadSessionLaunchOutput = { data: SquadSessionEntry }["data"]
+
+export type ExperimentalSquadBroadcastInput = {
+  readonly text: string
+  readonly from?: string | undefined
+  readonly includeSelf?: boolean | undefined
+  readonly idempotencyKey?: string | undefined
+}
+
+export type ExperimentalSquadBroadcastOutput = { data: SquadBroadcastReport }["data"]
+
+export type ExperimentalSquadSessionReplaceInput = {
+  readonly sessionRef: string | string
+  readonly provider: string
+  readonly model?: string | undefined
+  readonly variant?: string | undefined
+  readonly reason?: string | undefined
+  readonly from?: string | undefined
+  readonly timeout?: number | undefined
+}
+
+export type ExperimentalSquadSessionReplaceOutput = { data: SquadSessionEntry }["data"]
+
+export type ExperimentalSquadBlockInput = {
+  readonly name: string
+  readonly waitingOn: "human" | "tool"
+  readonly reason: string
+  readonly clear?: boolean | undefined
+  readonly from?: string | undefined
+}
+
+export type ExperimentalSquadBlockOutput = { data: SquadBlock }["data"]
+
+export type ExperimentalSquadLivenessOutput = { data: SquadLivenessReport }["data"]
+
+export type ExperimentalSquadAuditInput = { readonly since?: string | undefined }
+
+export type ExperimentalSquadAuditOutput = { data: SquadAuditChain }["data"]
+
+export type ExperimentalSquadCheckpointInput = {
+  readonly name: string
+  readonly body: string
+  readonly from?: string | undefined
+  readonly allowSecretLikeText?: boolean | undefined
+  readonly reason?: string | undefined
+}
+
+export type ExperimentalSquadCheckpointOutput = { data: SquadCheckpoint }["data"]
+
+export type ExperimentalSquadGenerationCloseInput = {
+  readonly generationID: string
+  readonly from?: string | undefined
+  readonly force?: boolean | undefined
+  readonly reason?: string | undefined
+  readonly idempotencyKey?: string | undefined
+}
+
+export type ExperimentalSquadGenerationCloseOutput = { data: SquadTransitionReceipt }["data"]
+
+export type ExperimentalSquadTransitionInput = { readonly from: string; readonly idempotencyKey?: string | undefined }
+
+export type ExperimentalSquadTransitionOutput = { data: SquadTransitionReceipt }["data"]
+
+export type ExperimentalSquadActivateInput = { readonly generation?: string | undefined }
+
+export type ExperimentalSquadActivateOutput = { data: SquadEnqueueProof }["data"]
+
+export type ExperimentalSquadDispatchCreateInput = {
+  readonly scope?: string | undefined
+  readonly owner?: string | undefined
+  readonly base?: string | undefined
+  readonly head?: string | undefined
+  readonly dor?: string | undefined
+  readonly dod?: string | undefined
+  readonly proof?: string | undefined
+  readonly exclusions?: ReadonlyArray<string> | undefined
+  readonly exigidos?: ReadonlyArray<"jira" | "ci" | "merge" | "deploy" | "acceptance"> | undefined
+  readonly milestone?: string | undefined
+  readonly from?: string | undefined
+  readonly send?: boolean | undefined
+}
+
+export type ExperimentalSquadDispatchCreateOutput = { data: SquadDispatch }["data"]
+
+export type ExperimentalSquadDispatchListOutput = { data: Array<SquadDispatch> }["data"]
+
+export type ExperimentalSquadReleaseInput = {
+  readonly from: string
+  readonly to: string
+  readonly reason: string
+  readonly actor?: string | undefined
+}
+
+export type ExperimentalSquadReleaseOutput = { data: SquadReleaseReceipt }["data"]
+
+export type ExperimentalSquadDispatchAcceptInput = { readonly orqId: string }
+
+export type ExperimentalSquadDispatchAcceptOutput = { data: SquadDispatch }["data"]
+
+export type ExperimentalSquadPanelOutput = { data: SquadPanelDocument }["data"]
 
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 

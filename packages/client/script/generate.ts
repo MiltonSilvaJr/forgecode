@@ -46,6 +46,7 @@ import { SessionInbox } from "@opencode/schema/session-inbox"
 import { Shell } from "@opencode/schema/shell"
 import { Skill } from "@opencode/schema/skill"
 import { Snapshot } from "@opencode/schema/snapshot"
+import { Squad } from "@opencode/schema/squad"
 import { UsageLimits } from "@opencode/schema/usage-limits"
 import { Vcs } from "@opencode/schema/vcs"
 import { WebSearch } from "@opencode/schema/websearch"
@@ -65,14 +66,14 @@ const effectCompiled = compile(ClientApi, {
   namespace: clientNamespace,
   aliases: true,
 })
-// Subscription routes are new experimental APIs, not moved stable SDK methods.
+// Subscription and squad routes are new experimental APIs, not moved stable SDK methods.
 const promiseContract = {
   ...promiseCompiled,
-  aliases: promiseCompiled.aliases?.filter((alias) => alias.fromGroup !== "subscription"),
+  aliases: promiseCompiled.aliases?.filter((alias) => !["subscription", "squad"].includes(alias.fromGroup)),
 }
 const effectContract = {
   ...effectCompiled,
-  aliases: effectCompiled.aliases?.filter((alias) => alias.fromGroup !== "subscription"),
+  aliases: effectCompiled.aliases?.filter((alias) => !["subscription", "squad"].includes(alias.fromGroup)),
 }
 const effectTypeReferences = [
   ...namespaceTypes("Agent", "@opencode/schema/agent", Agent),
@@ -113,6 +114,7 @@ const effectTypeReferences = [
   ...namespaceTypes("Shell", "@opencode/schema/shell", Shell),
   ...namespaceTypes("Skill", "@opencode/schema/skill", Skill),
   ...namespaceTypes("Snapshot", "@opencode/schema/snapshot", Snapshot),
+  ...namespaceTypes("Squad", "@opencode/schema/squad", Squad),
   ...namespaceTypes("UsageLimits", "@opencode/schema/usage-limits", UsageLimits),
   ...namespaceTypes("Vcs", "@opencode/schema/vcs", Vcs),
   ...namespaceTypes("WebSearch", "@opencode/schema/websearch", WebSearch),

@@ -183,6 +183,40 @@ import type {
   ProjectListOutput,
   ProjectUpdateInput,
   ProjectUpdateOutput,
+  ExperimentalSquadGenerationCreateInput,
+  ExperimentalSquadGenerationCreateOutput,
+  ExperimentalSquadSessionListOutput,
+  ExperimentalSquadCheckOutput,
+  ExperimentalSquadPlanOutput,
+  ExperimentalSquadSessionSendInput,
+  ExperimentalSquadSessionSendOutput,
+  ExperimentalSquadSessionLaunchInput,
+  ExperimentalSquadSessionLaunchOutput,
+  ExperimentalSquadBroadcastInput,
+  ExperimentalSquadBroadcastOutput,
+  ExperimentalSquadSessionReplaceInput,
+  ExperimentalSquadSessionReplaceOutput,
+  ExperimentalSquadBlockInput,
+  ExperimentalSquadBlockOutput,
+  ExperimentalSquadLivenessOutput,
+  ExperimentalSquadAuditInput,
+  ExperimentalSquadAuditOutput,
+  ExperimentalSquadCheckpointInput,
+  ExperimentalSquadCheckpointOutput,
+  ExperimentalSquadGenerationCloseInput,
+  ExperimentalSquadGenerationCloseOutput,
+  ExperimentalSquadTransitionInput,
+  ExperimentalSquadTransitionOutput,
+  ExperimentalSquadActivateInput,
+  ExperimentalSquadActivateOutput,
+  ExperimentalSquadDispatchCreateInput,
+  ExperimentalSquadDispatchCreateOutput,
+  ExperimentalSquadDispatchListOutput,
+  ExperimentalSquadReleaseInput,
+  ExperimentalSquadReleaseOutput,
+  ExperimentalSquadDispatchAcceptInput,
+  ExperimentalSquadDispatchAcceptOutput,
+  ExperimentalSquadPanelOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1400,6 +1434,307 @@ export function make(options: ClientOptions) {
               requestOptions,
             ),
         },
+      },
+      squad: {
+        generation: {
+          create: (input: ExperimentalSquadGenerationCreateInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadGenerationCreateOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/squad/generation`,
+                body: {
+                  generation: input["generation"],
+                  sessions: input["sessions"],
+                  replace: input["replace"],
+                  reason: input["reason"],
+                  idempotencyKey: input["idempotencyKey"],
+                },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+          close: (input: ExperimentalSquadGenerationCloseInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadGenerationCloseOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/squad/generation/${encodeURIComponent(input.generationID)}/close`,
+                body: {
+                  from: input["from"],
+                  force: input["force"],
+                  reason: input["reason"],
+                  idempotencyKey: input["idempotencyKey"],
+                },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 404, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+        },
+        session: {
+          list: (requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadSessionListOutput }>(
+              {
+                method: "GET",
+                path: `/api/experimental/squad/session`,
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+          send: (input: ExperimentalSquadSessionSendInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadSessionSendOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/squad/session/${encodeURIComponent(input.sessionRef)}/send`,
+                body: {
+                  text: input["text"],
+                  delivery: input["delivery"],
+                  from: input["from"],
+                  allowSelf: input["allowSelf"],
+                  idempotencyKey: input["idempotencyKey"],
+                  dispatch: input["dispatch"],
+                },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 404, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+          launch: (input: ExperimentalSquadSessionLaunchInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadSessionLaunchOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/squad/session/${encodeURIComponent(input.sessionRef)}/launch`,
+                body: {
+                  retry: input["retry"],
+                  reason: input["reason"],
+                  adopt: input["adopt"],
+                  timeout: input["timeout"],
+                },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 404, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+          replace: (input: ExperimentalSquadSessionReplaceInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadSessionReplaceOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/squad/session/${encodeURIComponent(input.sessionRef)}/replace`,
+                body: {
+                  provider: input["provider"],
+                  model: input["model"],
+                  variant: input["variant"],
+                  reason: input["reason"],
+                  from: input["from"],
+                  timeout: input["timeout"],
+                },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 404, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+        },
+        check: (requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadCheckOutput }>(
+            {
+              method: "GET",
+              path: `/api/experimental/squad/check`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        plan: (requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadPlanOutput }>(
+            {
+              method: "GET",
+              path: `/api/experimental/squad/plan`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        broadcast: (input: ExperimentalSquadBroadcastInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadBroadcastOutput }>(
+            {
+              method: "POST",
+              path: `/api/experimental/squad/broadcast`,
+              body: {
+                text: input["text"],
+                from: input["from"],
+                includeSelf: input["includeSelf"],
+                idempotencyKey: input["idempotencyKey"],
+              },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        block: (input: ExperimentalSquadBlockInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadBlockOutput }>(
+            {
+              method: "POST",
+              path: `/api/experimental/squad/block`,
+              body: {
+                name: input["name"],
+                waitingOn: input["waitingOn"],
+                reason: input["reason"],
+                clear: input["clear"],
+                from: input["from"],
+              },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 404, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        liveness: (requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadLivenessOutput }>(
+            {
+              method: "GET",
+              path: `/api/experimental/squad/liveness`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        audit: (input?: ExperimentalSquadAuditInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadAuditOutput }>(
+            {
+              method: "GET",
+              path: `/api/experimental/squad/audit`,
+              query: { since: input?.["since"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        checkpoint: (input: ExperimentalSquadCheckpointInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadCheckpointOutput }>(
+            {
+              method: "POST",
+              path: `/api/experimental/squad/checkpoint`,
+              body: {
+                name: input["name"],
+                body: input["body"],
+                from: input["from"],
+                allowSecretLikeText: input["allowSecretLikeText"],
+                reason: input["reason"],
+              },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 404, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        transition: (input: ExperimentalSquadTransitionInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadTransitionOutput }>(
+            {
+              method: "POST",
+              path: `/api/experimental/squad/transition`,
+              body: { from: input["from"], idempotencyKey: input["idempotencyKey"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        activate: (input?: ExperimentalSquadActivateInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadActivateOutput }>(
+            {
+              method: "POST",
+              path: `/api/experimental/squad/activate`,
+              body: { generation: input?.["generation"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        dispatch: {
+          create: (input?: ExperimentalSquadDispatchCreateInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadDispatchCreateOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/squad/dispatch`,
+                body: {
+                  scope: input?.["scope"],
+                  owner: input?.["owner"],
+                  base: input?.["base"],
+                  head: input?.["head"],
+                  dor: input?.["dor"],
+                  dod: input?.["dod"],
+                  proof: input?.["proof"],
+                  exclusions: input?.["exclusions"],
+                  exigidos: input?.["exigidos"],
+                  milestone: input?.["milestone"],
+                  from: input?.["from"],
+                  send: input?.["send"],
+                },
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+          list: (requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadDispatchListOutput }>(
+              {
+                method: "GET",
+                path: `/api/experimental/squad/dispatch`,
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+          accept: (input: ExperimentalSquadDispatchAcceptInput, requestOptions?: RequestOptions) =>
+            request<{ readonly data: ExperimentalSquadDispatchAcceptOutput }>(
+              {
+                method: "POST",
+                path: `/api/experimental/squad/dispatch/${encodeURIComponent(input.orqId)}/accept`,
+                successStatus: 200,
+                declaredStatuses: [400, 401, 403, 404, 409, 503],
+                empty: false,
+              },
+              requestOptions,
+            ).then((value) => value.data),
+        },
+        release: (input: ExperimentalSquadReleaseInput, requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadReleaseOutput }>(
+            {
+              method: "POST",
+              path: `/api/experimental/squad/release`,
+              body: { from: input["from"], to: input["to"], reason: input["reason"], actor: input["actor"] },
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
+        panel: (requestOptions?: RequestOptions) =>
+          request<{ readonly data: ExperimentalSquadPanelOutput }>(
+            {
+              method: "GET",
+              path: `/api/experimental/squad/panel`,
+              successStatus: 200,
+              declaredStatuses: [400, 401, 403, 409, 503],
+              empty: false,
+            },
+            requestOptions,
+          ).then((value) => value.data),
       },
       file: {
         write: (input: ExperimentalFileWriteInput, requestOptions?: RequestOptions) =>

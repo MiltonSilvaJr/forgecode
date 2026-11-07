@@ -189,6 +189,40 @@ import type {
   ProjectListOutput,
   ProjectUpdateInput,
   ProjectUpdateOutput,
+  ExperimentalSquadGenerationCreateInput,
+  ExperimentalSquadGenerationCreateOutput,
+  ExperimentalSquadSessionListOutput,
+  ExperimentalSquadCheckOutput,
+  ExperimentalSquadPlanOutput,
+  ExperimentalSquadSessionSendInput,
+  ExperimentalSquadSessionSendOutput,
+  ExperimentalSquadSessionLaunchInput,
+  ExperimentalSquadSessionLaunchOutput,
+  ExperimentalSquadBroadcastInput,
+  ExperimentalSquadBroadcastOutput,
+  ExperimentalSquadSessionReplaceInput,
+  ExperimentalSquadSessionReplaceOutput,
+  ExperimentalSquadBlockInput,
+  ExperimentalSquadBlockOutput,
+  ExperimentalSquadLivenessOutput,
+  ExperimentalSquadAuditInput,
+  ExperimentalSquadAuditOutput,
+  ExperimentalSquadCheckpointInput,
+  ExperimentalSquadCheckpointOutput,
+  ExperimentalSquadGenerationCloseInput,
+  ExperimentalSquadGenerationCloseOutput,
+  ExperimentalSquadTransitionInput,
+  ExperimentalSquadTransitionOutput,
+  ExperimentalSquadActivateInput,
+  ExperimentalSquadActivateOutput,
+  ExperimentalSquadDispatchCreateInput,
+  ExperimentalSquadDispatchCreateOutput,
+  ExperimentalSquadDispatchListOutput,
+  ExperimentalSquadReleaseInput,
+  ExperimentalSquadReleaseOutput,
+  ExperimentalSquadDispatchAcceptInput,
+  ExperimentalSquadDispatchAcceptOutput,
+  ExperimentalSquadPanelOutput,
   FormListInput,
   FormListOutput,
   PermissionRequestListInput,
@@ -1326,6 +1360,285 @@ const adaptGroupProject = (raw: RawClient["server.project"]) => ({
   update: EndpointProjectUpdate(raw),
 })
 
+const EndpointExperimentalSquadGenerationCreate =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadGenerationCreateInput) =>
+    preserveEffect<ExperimentalSquadGenerationCreateOutput>()(
+      raw["squad.generation.create"]({
+        payload: {
+          generation: input["generation"],
+          sessions: input["sessions"],
+          replace: input["replace"],
+          reason: input["reason"],
+          idempotencyKey: input["idempotencyKey"],
+        },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
+const EndpointExperimentalSquadSessionList = (raw: RawClient["server.squad"]) => () =>
+  preserveEffect<ExperimentalSquadSessionListOutput>()(
+    raw["squad.session.list"]({}).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
+const EndpointExperimentalSquadCheck = (raw: RawClient["server.squad"]) => () =>
+  preserveEffect<ExperimentalSquadCheckOutput>()(
+    raw["squad.check"]({}).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
+const EndpointExperimentalSquadPlan = (raw: RawClient["server.squad"]) => () =>
+  preserveEffect<ExperimentalSquadPlanOutput>()(
+    raw["squad.plan"]({}).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
+const EndpointExperimentalSquadSessionSend =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadSessionSendInput) =>
+    preserveEffect<ExperimentalSquadSessionSendOutput>()(
+      raw["squad.session.send"]({
+        params: { sessionRef: input["sessionRef"] },
+        payload: {
+          text: input["text"],
+          delivery: input["delivery"],
+          from: input["from"],
+          allowSelf: input["allowSelf"],
+          idempotencyKey: input["idempotencyKey"],
+          dispatch: input["dispatch"],
+        },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
+const EndpointExperimentalSquadSessionLaunch =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadSessionLaunchInput) =>
+    preserveEffect<ExperimentalSquadSessionLaunchOutput>()(
+      raw["squad.session.launch"]({
+        params: { sessionRef: input["sessionRef"] },
+        payload: { retry: input["retry"], reason: input["reason"], adopt: input["adopt"], timeout: input["timeout"] },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
+const EndpointExperimentalSquadBroadcast =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadBroadcastInput) =>
+    preserveEffect<ExperimentalSquadBroadcastOutput>()(
+      raw["squad.broadcast"]({
+        payload: {
+          text: input["text"],
+          from: input["from"],
+          includeSelf: input["includeSelf"],
+          idempotencyKey: input["idempotencyKey"],
+        },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
+const EndpointExperimentalSquadSessionReplace =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadSessionReplaceInput) =>
+    preserveEffect<ExperimentalSquadSessionReplaceOutput>()(
+      raw["squad.session.replace"]({
+        params: { sessionRef: input["sessionRef"] },
+        payload: {
+          provider: input["provider"],
+          model: input["model"],
+          variant: input["variant"],
+          reason: input["reason"],
+          from: input["from"],
+          timeout: input["timeout"],
+        },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
+const EndpointExperimentalSquadBlock = (raw: RawClient["server.squad"]) => (input: ExperimentalSquadBlockInput) =>
+  preserveEffect<ExperimentalSquadBlockOutput>()(
+    raw["squad.block"]({
+      payload: {
+        name: input["name"],
+        waitingOn: input["waitingOn"],
+        reason: input["reason"],
+        clear: input["clear"],
+        from: input["from"],
+      },
+    }).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
+const EndpointExperimentalSquadLiveness = (raw: RawClient["server.squad"]) => () =>
+  preserveEffect<ExperimentalSquadLivenessOutput>()(
+    raw["squad.liveness"]({}).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
+const EndpointExperimentalSquadAudit = (raw: RawClient["server.squad"]) => (input?: ExperimentalSquadAuditInput) =>
+  preserveEffect<ExperimentalSquadAuditOutput>()(
+    raw["squad.audit"]({ query: { since: input?.["since"] } }).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
+const EndpointExperimentalSquadCheckpoint =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadCheckpointInput) =>
+    preserveEffect<ExperimentalSquadCheckpointOutput>()(
+      raw["squad.checkpoint"]({
+        payload: {
+          name: input["name"],
+          body: input["body"],
+          from: input["from"],
+          allowSecretLikeText: input["allowSecretLikeText"],
+          reason: input["reason"],
+        },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
+const EndpointExperimentalSquadGenerationClose =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadGenerationCloseInput) =>
+    preserveEffect<ExperimentalSquadGenerationCloseOutput>()(
+      raw["squad.generation.close"]({
+        params: { generationID: input["generationID"] },
+        payload: {
+          from: input["from"],
+          force: input["force"],
+          reason: input["reason"],
+          idempotencyKey: input["idempotencyKey"],
+        },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
+const EndpointExperimentalSquadTransition =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadTransitionInput) =>
+    preserveEffect<ExperimentalSquadTransitionOutput>()(
+      raw["squad.transition"]({ payload: { from: input["from"], idempotencyKey: input["idempotencyKey"] } }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
+const EndpointExperimentalSquadActivate =
+  (raw: RawClient["server.squad"]) => (input?: ExperimentalSquadActivateInput) =>
+    preserveEffect<ExperimentalSquadActivateOutput>()(
+      raw["squad.activate"]({ payload: { generation: input?.["generation"] } }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
+const EndpointExperimentalSquadDispatchCreate =
+  (raw: RawClient["server.squad"]) => (input?: ExperimentalSquadDispatchCreateInput) =>
+    preserveEffect<ExperimentalSquadDispatchCreateOutput>()(
+      raw["squad.dispatch.create"]({
+        payload: {
+          scope: input?.["scope"],
+          owner: input?.["owner"],
+          base: input?.["base"],
+          head: input?.["head"],
+          dor: input?.["dor"],
+          dod: input?.["dod"],
+          proof: input?.["proof"],
+          exclusions: input?.["exclusions"],
+          exigidos: input?.["exigidos"],
+          milestone: input?.["milestone"],
+          from: input?.["from"],
+          send: input?.["send"],
+        },
+      }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
+const EndpointExperimentalSquadDispatchList = (raw: RawClient["server.squad"]) => () =>
+  preserveEffect<ExperimentalSquadDispatchListOutput>()(
+    raw["squad.dispatch.list"]({}).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
+const EndpointExperimentalSquadRelease = (raw: RawClient["server.squad"]) => (input: ExperimentalSquadReleaseInput) =>
+  preserveEffect<ExperimentalSquadReleaseOutput>()(
+    raw["squad.release"]({
+      payload: { from: input["from"], to: input["to"], reason: input["reason"], actor: input["actor"] },
+    }).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
+const EndpointExperimentalSquadDispatchAccept =
+  (raw: RawClient["server.squad"]) => (input: ExperimentalSquadDispatchAcceptInput) =>
+    preserveEffect<ExperimentalSquadDispatchAcceptOutput>()(
+      raw["squad.dispatch.accept"]({ params: { orqId: input["orqId"] } }).pipe(
+        Effect.mapError(mapClientError),
+        Effect.map((value) => value.data),
+      ),
+    )
+
+const EndpointExperimentalSquadPanel = (raw: RawClient["server.squad"]) => () =>
+  preserveEffect<ExperimentalSquadPanelOutput>()(
+    raw["squad.panel"]({}).pipe(
+      Effect.mapError(mapClientError),
+      Effect.map((value) => value.data),
+    ),
+  )
+
+const adaptGroupExperimentalSquad = (raw: RawClient["server.squad"]) => ({
+  generation: {
+    create: EndpointExperimentalSquadGenerationCreate(raw),
+    close: EndpointExperimentalSquadGenerationClose(raw),
+  },
+  session: {
+    list: EndpointExperimentalSquadSessionList(raw),
+    send: EndpointExperimentalSquadSessionSend(raw),
+    launch: EndpointExperimentalSquadSessionLaunch(raw),
+    replace: EndpointExperimentalSquadSessionReplace(raw),
+  },
+  check: EndpointExperimentalSquadCheck(raw),
+  plan: EndpointExperimentalSquadPlan(raw),
+  broadcast: EndpointExperimentalSquadBroadcast(raw),
+  block: EndpointExperimentalSquadBlock(raw),
+  liveness: EndpointExperimentalSquadLiveness(raw),
+  audit: EndpointExperimentalSquadAudit(raw),
+  checkpoint: EndpointExperimentalSquadCheckpoint(raw),
+  transition: EndpointExperimentalSquadTransition(raw),
+  activate: EndpointExperimentalSquadActivate(raw),
+  dispatch: {
+    create: EndpointExperimentalSquadDispatchCreate(raw),
+    list: EndpointExperimentalSquadDispatchList(raw),
+    accept: EndpointExperimentalSquadDispatchAccept(raw),
+  },
+  release: EndpointExperimentalSquadRelease(raw),
+  panel: EndpointExperimentalSquadPanel(raw),
+})
+
 const EndpointFormList = (raw: RawClient["server.form"]) => (input?: FormListInput) =>
   preserveEffect<FormListOutput>()(
     raw["form.list"]({ query: { location: input?.["location"] } }).pipe(Effect.mapError(mapClientError)),
@@ -2039,6 +2352,7 @@ const adaptClient = (raw: RawClient) => {
       integration: adaptGroupExperimentalIntegration(raw["server.integration"]),
       subscription: adaptGroupExperimentalSubscription(raw["server.subscription"]),
       mcp: adaptGroupExperimentalMcp(raw["server.mcp"]),
+      squad: adaptGroupExperimentalSquad(raw["server.squad"]),
       file: adaptGroupExperimentalFile(raw["server.fs"]),
       migration: adaptGroupExperimentalMigration(raw["server.migration"]),
       usage: adaptGroupExperimentalUsage(raw["server.usage"]),

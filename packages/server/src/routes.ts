@@ -15,6 +15,8 @@ import { PtyTicket } from "@opencode/core/pty/ticket"
 import { PersistentPty } from "@opencode/core/persistent-pty"
 import { Project } from "@opencode/core/project"
 import { Worktree } from "@opencode/core/worktree"
+import { SessionExecution } from "@opencode/core/session/execution"
+import { SessionStore } from "@opencode/core/session/store"
 import { Session } from "@opencode/core/session"
 import { Instance } from "@opencode/core/instance/service"
 import { SessionTransfer } from "@opencode/core/session/transfer"
@@ -24,6 +26,7 @@ import { Job } from "@opencode/core/job"
 import { KV } from "@opencode/core/kv"
 import { Mcp } from "@opencode/core/mcp/index"
 import { Global } from "@opencode/util/global"
+import { Git } from "@opencode/core/git"
 import { FSUtil } from "@opencode/util/fs-util"
 import { InstructionDiscovery } from "@opencode/core/instruction-discovery"
 import { LocationServiceMap } from "@opencode/core/location-service-map"
@@ -57,6 +60,7 @@ import type { ServerOptions } from "./options"
 const applicationServiceNodes = [
   Global.node,
   FSUtil.node,
+  Git.node,
   Database.node,
   KV.node,
   Bus.node,
@@ -67,6 +71,8 @@ const applicationServiceNodes = [
   Project.sweepNode,
   Worktree.node,
   Session.node,
+  SessionExecution.node,
+  SessionStore.node,
   Instance.node,
   SessionTransfer.node,
   InstructionEntry.node,

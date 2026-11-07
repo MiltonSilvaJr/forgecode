@@ -32,6 +32,7 @@ import type { Integration } from "@opencode/schema/integration"
 import type { Mcp } from "@opencode/schema/mcp"
 import type { PtyTicket } from "@opencode/schema/pty-ticket"
 import type { Credential } from "@opencode/schema/credential"
+import type { Squad } from "@opencode/schema/squad"
 import type { PermissionSaved } from "@opencode/schema/permission-saved"
 import type { FileSystem } from "@opencode/schema/filesystem"
 import type { Command } from "@opencode/schema/command"
@@ -1965,6 +1966,232 @@ export interface ProjectApi<E = never> {
   readonly update: ProjectUpdateOperation<E>
 }
 
+export type ExperimentalSquadGenerationCreateInput = {
+  readonly generation: Squad.GenerationID
+  readonly sessions: ReadonlyArray<{
+    readonly name: Squad.SessionName
+    readonly role: Squad.Role
+    readonly provider: string
+    readonly model: string
+    readonly variant?: string | undefined
+    readonly location: { readonly directory: AbsolutePath; readonly workspaceID?: Workspace.ID | undefined }
+    readonly branch?: string | undefined
+    readonly sessionID?: Session.ID | undefined
+  }>
+  readonly replace?: boolean | undefined
+  readonly reason?: string | undefined
+  readonly idempotencyKey?: string | undefined
+}
+export type ExperimentalSquadGenerationCreateOutput = Squad.Generation
+export type ExperimentalSquadGenerationCreateOperation<E = never> = (
+  input: ExperimentalSquadGenerationCreateInput,
+) => Effect.Effect<ExperimentalSquadGenerationCreateOutput, E>
+
+export type ExperimentalSquadSessionListOutput = {
+  readonly generation: Squad.GenerationID
+  readonly sessions: ReadonlyArray<Squad.SessionEntry>
+}
+export type ExperimentalSquadSessionListOperation<E = never> = () => Effect.Effect<
+  ExperimentalSquadSessionListOutput,
+  E
+>
+
+export type ExperimentalSquadCheckOutput = Squad.CheckReport
+export type ExperimentalSquadCheckOperation<E = never> = () => Effect.Effect<ExperimentalSquadCheckOutput, E>
+
+export type ExperimentalSquadPlanOutput = Squad.PlanDocument
+export type ExperimentalSquadPlanOperation<E = never> = () => Effect.Effect<ExperimentalSquadPlanOutput, E>
+
+export type ExperimentalSquadSessionSendInput = {
+  readonly sessionRef: Squad.SessionRef
+  readonly text: string
+  readonly delivery?: SessionInbox.Delivery | undefined
+  readonly from?: string | undefined
+  readonly allowSelf?: boolean | undefined
+  readonly idempotencyKey?: string | undefined
+  readonly dispatch?: string | undefined
+}
+export type ExperimentalSquadSessionSendOutput = Squad.EnqueueProof
+export type ExperimentalSquadSessionSendOperation<E = never> = (
+  input: ExperimentalSquadSessionSendInput,
+) => Effect.Effect<ExperimentalSquadSessionSendOutput, E>
+
+export type ExperimentalSquadSessionLaunchInput = {
+  readonly sessionRef: Squad.SessionRef
+  readonly retry?: boolean | undefined
+  readonly reason?: string | undefined
+  readonly adopt?: Session.ID | undefined
+  readonly timeout?: number | undefined
+}
+export type ExperimentalSquadSessionLaunchOutput = Squad.SessionEntry
+export type ExperimentalSquadSessionLaunchOperation<E = never> = (
+  input: ExperimentalSquadSessionLaunchInput,
+) => Effect.Effect<ExperimentalSquadSessionLaunchOutput, E>
+
+export type ExperimentalSquadBroadcastInput = {
+  readonly text: string
+  readonly from?: string | undefined
+  readonly includeSelf?: boolean | undefined
+  readonly idempotencyKey?: string | undefined
+}
+export type ExperimentalSquadBroadcastOutput = Squad.BroadcastReport
+export type ExperimentalSquadBroadcastOperation<E = never> = (
+  input: ExperimentalSquadBroadcastInput,
+) => Effect.Effect<ExperimentalSquadBroadcastOutput, E>
+
+export type ExperimentalSquadSessionReplaceInput = {
+  readonly sessionRef: Squad.SessionRef
+  readonly provider: string
+  readonly model?: string | undefined
+  readonly variant?: string | undefined
+  readonly reason?: string | undefined
+  readonly from?: string | undefined
+  readonly timeout?: number | undefined
+}
+export type ExperimentalSquadSessionReplaceOutput = Squad.SessionEntry
+export type ExperimentalSquadSessionReplaceOperation<E = never> = (
+  input: ExperimentalSquadSessionReplaceInput,
+) => Effect.Effect<ExperimentalSquadSessionReplaceOutput, E>
+
+export type ExperimentalSquadBlockInput = {
+  readonly name: Squad.SessionName
+  readonly waitingOn: "human" | "tool"
+  readonly reason: string
+  readonly clear?: boolean | undefined
+  readonly from?: string | undefined
+}
+export type ExperimentalSquadBlockOutput = Squad.Block
+export type ExperimentalSquadBlockOperation<E = never> = (
+  input: ExperimentalSquadBlockInput,
+) => Effect.Effect<ExperimentalSquadBlockOutput, E>
+
+export type ExperimentalSquadLivenessOutput = Squad.LivenessReport
+export type ExperimentalSquadLivenessOperation<E = never> = () => Effect.Effect<ExperimentalSquadLivenessOutput, E>
+
+export type ExperimentalSquadAuditInput = { readonly since?: string | undefined }
+export type ExperimentalSquadAuditOutput = Squad.AuditChain
+export type ExperimentalSquadAuditOperation<E = never> = (
+  input?: ExperimentalSquadAuditInput,
+) => Effect.Effect<ExperimentalSquadAuditOutput, E>
+
+export type ExperimentalSquadCheckpointInput = {
+  readonly name: Squad.SessionName
+  readonly body: string
+  readonly from?: string | undefined
+  readonly allowSecretLikeText?: boolean | undefined
+  readonly reason?: string | undefined
+}
+export type ExperimentalSquadCheckpointOutput = Squad.Checkpoint
+export type ExperimentalSquadCheckpointOperation<E = never> = (
+  input: ExperimentalSquadCheckpointInput,
+) => Effect.Effect<ExperimentalSquadCheckpointOutput, E>
+
+export type ExperimentalSquadGenerationCloseInput = {
+  readonly generationID: Squad.GenerationID
+  readonly from?: string | undefined
+  readonly force?: boolean | undefined
+  readonly reason?: string | undefined
+  readonly idempotencyKey?: string | undefined
+}
+export type ExperimentalSquadGenerationCloseOutput = Squad.TransitionReceipt
+export type ExperimentalSquadGenerationCloseOperation<E = never> = (
+  input: ExperimentalSquadGenerationCloseInput,
+) => Effect.Effect<ExperimentalSquadGenerationCloseOutput, E>
+
+export type ExperimentalSquadTransitionInput = {
+  readonly from: Squad.GenerationID
+  readonly idempotencyKey?: string | undefined
+}
+export type ExperimentalSquadTransitionOutput = Squad.TransitionReceipt
+export type ExperimentalSquadTransitionOperation<E = never> = (
+  input: ExperimentalSquadTransitionInput,
+) => Effect.Effect<ExperimentalSquadTransitionOutput, E>
+
+export type ExperimentalSquadActivateInput = { readonly generation?: Squad.GenerationID | undefined }
+export type ExperimentalSquadActivateOutput = Squad.EnqueueProof
+export type ExperimentalSquadActivateOperation<E = never> = (
+  input?: ExperimentalSquadActivateInput,
+) => Effect.Effect<ExperimentalSquadActivateOutput, E>
+
+export type ExperimentalSquadDispatchCreateInput = {
+  readonly scope?: string | undefined
+  readonly owner?: string | undefined
+  readonly base?: string | undefined
+  readonly head?: string | undefined
+  readonly dor?: string | undefined
+  readonly dod?: string | undefined
+  readonly proof?: string | undefined
+  readonly exclusions?: ReadonlyArray<string> | undefined
+  readonly exigidos?: ReadonlyArray<"jira" | "ci" | "merge" | "deploy" | "acceptance"> | undefined
+  readonly milestone?: string | undefined
+  readonly from?: string | undefined
+  readonly send?: boolean | undefined
+}
+export type ExperimentalSquadDispatchCreateOutput = Squad.Dispatch
+export type ExperimentalSquadDispatchCreateOperation<E = never> = (
+  input?: ExperimentalSquadDispatchCreateInput,
+) => Effect.Effect<ExperimentalSquadDispatchCreateOutput, E>
+
+export type ExperimentalSquadDispatchListOutput = ReadonlyArray<Squad.Dispatch>
+export type ExperimentalSquadDispatchListOperation<E = never> = () => Effect.Effect<
+  ExperimentalSquadDispatchListOutput,
+  E
+>
+
+export type ExperimentalSquadReleaseInput = {
+  readonly from: string
+  readonly to: string
+  readonly reason: string
+  readonly actor?: string | undefined
+}
+export type ExperimentalSquadReleaseOutput = {
+  readonly released: string
+  readonly to: string
+  readonly trees: number
+  readonly checkpointSha256: string
+}
+export type ExperimentalSquadReleaseOperation<E = never> = (
+  input: ExperimentalSquadReleaseInput,
+) => Effect.Effect<ExperimentalSquadReleaseOutput, E>
+
+export type ExperimentalSquadDispatchAcceptInput = { readonly orqId: string }
+export type ExperimentalSquadDispatchAcceptOutput = Squad.Dispatch
+export type ExperimentalSquadDispatchAcceptOperation<E = never> = (
+  input: ExperimentalSquadDispatchAcceptInput,
+) => Effect.Effect<ExperimentalSquadDispatchAcceptOutput, E>
+
+export type ExperimentalSquadPanelOutput = Squad.PanelDocument
+export type ExperimentalSquadPanelOperation<E = never> = () => Effect.Effect<ExperimentalSquadPanelOutput, E>
+
+export interface ExperimentalSquadApi<E = never> {
+  readonly generation: {
+    readonly create: ExperimentalSquadGenerationCreateOperation<E>
+    readonly close: ExperimentalSquadGenerationCloseOperation<E>
+  }
+  readonly session: {
+    readonly list: ExperimentalSquadSessionListOperation<E>
+    readonly send: ExperimentalSquadSessionSendOperation<E>
+    readonly launch: ExperimentalSquadSessionLaunchOperation<E>
+    readonly replace: ExperimentalSquadSessionReplaceOperation<E>
+  }
+  readonly check: ExperimentalSquadCheckOperation<E>
+  readonly plan: ExperimentalSquadPlanOperation<E>
+  readonly broadcast: ExperimentalSquadBroadcastOperation<E>
+  readonly block: ExperimentalSquadBlockOperation<E>
+  readonly liveness: ExperimentalSquadLivenessOperation<E>
+  readonly audit: ExperimentalSquadAuditOperation<E>
+  readonly checkpoint: ExperimentalSquadCheckpointOperation<E>
+  readonly transition: ExperimentalSquadTransitionOperation<E>
+  readonly activate: ExperimentalSquadActivateOperation<E>
+  readonly dispatch: {
+    readonly create: ExperimentalSquadDispatchCreateOperation<E>
+    readonly list: ExperimentalSquadDispatchListOperation<E>
+    readonly accept: ExperimentalSquadDispatchAcceptOperation<E>
+  }
+  readonly release: ExperimentalSquadReleaseOperation<E>
+  readonly panel: ExperimentalSquadPanelOperation<E>
+}
+
 export type FormListInput = { readonly location?: { readonly directory?: string | undefined } | undefined }
 export type FormListOutput = { readonly location: Location.PublicRef; readonly data: ReadonlyArray<Form.Info> }
 export type FormListOperation<E = never> = (input?: FormListInput) => Effect.Effect<FormListOutput, E>
@@ -3125,6 +3352,7 @@ export interface AppApi<E = never> {
     readonly integration: ExperimentalIntegrationApi<E>
     readonly subscription: ExperimentalSubscriptionApi<E>
     readonly mcp: ExperimentalMcpApi<E>
+    readonly squad: ExperimentalSquadApi<E>
     readonly file: ExperimentalFileApi<E>
     readonly migration: ExperimentalMigrationApi<E>
     readonly usage: ExperimentalUsageApi<E>

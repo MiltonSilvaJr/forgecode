@@ -382,4 +382,24 @@ describe("SessionStore", () => {
       expect(yield* SessionHistory.decodeMessageRows(database.db, rows)).toEqual(hydrated)
     }).pipe(Effect.provide(partRows)),
   )
+
+  it.effect("reads the execution claim without releasing it", () =>
+    Effect.gen(function* () {
+      yield* seedSessions([{ id: "ses_claimed_at", updated: 1 }])
+      const store = yield* SessionStore.Service
+      const sessionID = Session.ID.make("ses_claimed_at")
+
+      expect(yield* store.claimedAt(sessionID)).toBeUndefined()
+      expect(yield* store.claimedAt(Session.ID.make("ses_claimed_at_missing"))).toBeUndefined()
+
+      yield* store.claim(sessionID)
+      const since = yield* store.claimedAt(sessionID)
+      expect(since).toBeDefined()
+      expect(yield* store.claimedAt(sessionID)).toBe(since)
+      expect(yield* store.listSuspended()).toEqual([sessionID])
+
+      yield* store.release(sessionID)
+      expect(yield* store.claimedAt(sessionID)).toBeUndefined()
+    }),
+  )
 })

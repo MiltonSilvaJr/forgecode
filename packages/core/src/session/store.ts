@@ -77,6 +77,8 @@ export interface Interface {
    * down mid-turn.
    */
   readonly claim: (sessionID: Session.ID) => Effect.Effect<void>
+  /** When the Session's execution claim was recorded, or undefined when it holds none. Reading never releases it. */
+  readonly claimedAt: (sessionID: Session.ID) => Effect.Effect<number | undefined>
   /** Releases the claim and resets resume accounting. Terminal events call this on commit. */
   readonly release: (sessionID: Session.ID) => Effect.Effect<void>
   /**
@@ -226,6 +228,15 @@ const layer = Layer.effect(
           .where(and(eq(SessionTable.id, sessionID), isNull(SessionTable.time_suspended)))
           .run()
           .pipe(Effect.orDie)
+      }),
+      claimedAt: Effect.fn("SessionStore.claimedAt")(function* (sessionID) {
+        const row = yield* db
+          .select({ since: SessionTable.time_suspended })
+          .from(SessionTable)
+          .where(eq(SessionTable.id, sessionID))
+          .get()
+          .pipe(Effect.orDie)
+        return row?.since ?? undefined
       }),
       release: Effect.fn("SessionStore.release")(function* (sessionID) {
         yield* db

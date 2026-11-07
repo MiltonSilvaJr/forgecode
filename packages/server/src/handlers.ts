@@ -33,6 +33,14 @@ import { VcsHandler } from "./handlers/vcs"
 import { EventFeed } from "./event-feed"
 import { MigrationHandler } from "./handlers/migration"
 import { ConfigHandler } from "./handlers/config"
+import { SquadHandler } from "./handlers/squad"
+import { SquadActivity } from "@opencode/core/squad/activity"
+import { SquadAudit } from "@opencode/core/squad/audit"
+import { SquadChannel } from "@opencode/core/squad/channel"
+import { SquadOwnership } from "@opencode/core/squad/ownership"
+import { CredentialPresence } from "@opencode/core/squad/credential"
+import { SquadRegistry } from "@opencode/core/squad/registry"
+import { SquadStore } from "@opencode/core/squad/store"
 
 export const handlers = Layer.mergeAll(
   ServerHandler,
@@ -68,4 +76,5 @@ export const handlers = Layer.mergeAll(
   WorktreeHandler,
   VcsHandler,
   ConfigHandler,
+  SquadHandler.pipe(Layer.provide(SquadRegistry.layer), Layer.provide(SquadStore.layer), Layer.provide(CredentialPresence.layer), Layer.provide(SquadChannel.layer), Layer.provide(SquadAudit.layer), Layer.provide(SquadActivity.layer), Layer.provide(SquadOwnership.checkpointLayer), Layer.provide(SquadChannel.sessionsLayer)),
 )

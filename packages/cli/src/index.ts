@@ -97,6 +97,36 @@ const Handlers = Runtime.handlers(Commands, {
     list: () => import("./commands/handlers/queue/list"),
     activity: () => import("./commands/handlers/queue/activity"),
   },
+  squad: {
+    init: () => import("./commands/handlers/squad"),
+    check: () => import("./commands/handlers/squad/check"),
+    plan: () => import("./commands/handlers/squad/plan"),
+    send: () => import("./commands/handlers/squad/send"),
+    checkpoint: () => import("./commands/handlers/squad/checkpoint"),
+    close: () => import("./commands/handlers/squad/close"),
+    transition: () => import("./commands/handlers/squad/transition"),
+    activate: () => import("./commands/handlers/squad/activate"),
+    broadcast: () => import("./commands/handlers/squad/broadcast"),
+    launch: () => import("./commands/handlers/squad/launch"),
+    status: () => import("./commands/handlers/squad/status"),
+    block: () => import("./commands/handlers/squad/block"),
+    session: {
+      replace: () => import("./commands/handlers/squad/session-replace"),
+    },
+    audit: {
+      export: () => import("./commands/handlers/squad/audit-export"),
+    },
+    release: () => import("./commands/handlers/squad/release"),
+    panel: {
+      build: () => import("./commands/handlers/squad/panel-build"),
+      show: () => import("./commands/handlers/squad/panel-show"),
+    },
+    dispatch: {
+      create: () => import("./commands/handlers/squad/dispatch-create"),
+      list: () => import("./commands/handlers/squad/dispatch-list"),
+      accept: () => import("./commands/handlers/squad/dispatch-accept"),
+    },
+  },
   sessions: () => import("./commands/handlers/sessions"),
   service: {
     start: () => import("./commands/handlers/service/start"),
