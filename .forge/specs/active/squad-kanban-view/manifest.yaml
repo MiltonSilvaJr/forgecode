@@ -1,0 +1,56 @@
+id: squad-kanban-view
+type: feature
+mode: brownfield
+rigor: spec-anchored
+scale: 3
+status: implemented
+created_at: "2026-11-06"
+updated_at: "2026-11-06"
+owner: "Milton Antonio da Silva Jr"
+parent:
+  baseline: .forge/product/current
+affects_surfaces:
+  - ui
+affected_capabilities:
+  - squad-kanban-view
+affected_paths:
+  - packages/tui/src/feature-plugins/squad
+  - packages/tui/src/plugin/builtins.ts
+  - packages/tui/src/feature-plugins/system/storybook/index.tsx
+  - packages/tui/src/feature-plugins/system/storybook/squad-board.tsx
+  - packages/tui/test/feature-plugins
+  - packages/cli/README.md
+# Estratégia de base branch: worktree .forge/worktrees/squad-kanban-view, branch
+# feature/squad-kanban-view, criado a partir de origin/dev DEPOIS do merge do squad-orchestration.
+# Nunca a partir de feature/squad-orchestration (herdaria 110 arquivos de outras features; B3 do base).
+# Gate de entrada em /forge:implement: E1-E8 de design.md §1.3. Hoje E1 falha
+# (git merge-base --is-ancestor feature/squad-orchestration origin/dev -> exit 1).
+dependencies:
+  specs:
+    - squad-orchestration
+  code:
+    - packages/schema/src/squad.ts
+    - packages/protocol/src/groups/squad.ts
+    - packages/client/src/promise/generated/client.ts
+    - packages/client/src/promise/generated/types.ts
+    - packages/plugin/src/tui/context.ts
+gates:
+  requirements_reviewed: true
+  design_reviewed: true
+  tasks_reviewed: true
+  implementation_verified: false
+  human_archive_approval: false
+# Fases scale 3 pendentes: /forge:analyze (exige tasks-ready; analysis.md atual é revisão manual,
+# Status FAIL) e /forge:shard. impact.json existe (impact.sh --change, rc 0), mas o grafo
+# (.forge/graph/graph.json, 2026-11-05) não contém o código do base nem a view.
+dev_loop:
+  sharded: true
+  stories_path: stories/
+  epic_context_compiled: true
+quick_plan:
+  enabled: false
+  skipped_phases: []
+  justification:
+archive:
+  eligible: false
+  reason: "not implemented — dependency squad-orchestration is not merged into dev; HITL gates pending; open decisions DA-01..DA-08 in design.md §8"

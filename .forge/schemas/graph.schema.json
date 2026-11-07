@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge.dev/schemas/graph.schema.json",
+  "title": "Forge code graph (.forge/graph/graph.json)",
+  "description": "Persistent deterministic code graph (doc §16.2/§16.3). Engine: subset local nativo (ADR 0001) — AST/structural extraction local; LLM only for node summaries (optional, cached by fingerprint). Nodes are files/modules; edges are import/reference relations.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "generated_at", "engine", "stats", "nodes", "edges"],
+  "properties": {
+    "schema": { "const": "graph/v0" },
+    "generated_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T" },
+    "engine": { "enum": ["native", "tree-sitter"] },
+    "root": { "type": "string" },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nodes", "edges", "languages"],
+      "properties": {
+        "nodes": { "type": "integer", "minimum": 0 },
+        "edges": { "type": "integer", "minimum": 0 },
+        "languages": { "type": "array", "items": { "type": "string" } },
+        "summaries_stale": { "type": "integer", "minimum": 0 },
+        "census": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+        "layer_coverage": {
+          "type": "object",
+          "description": "Cobertura de camada (issue #38). O denominador é a população EM ESCOPO da taxonomia — classificados + lacunas. Nós declarados fora da taxonomia (codegraph.layers com layer: unknown) saem do denominador: unknown declarado é o estado CORRETO de frontend, tooling, conteúdo estático e spec de E2E, não um buraco. ratio null quando o denominador é zero (cobertura indefinida, jamais 100% por vacuidade).",
+          "additionalProperties": false,
+          "required": ["classified", "unclassified", "out_of_taxonomy", "denominator", "ratio"],
+          "properties": {
+            "classified": { "type": "integer", "minimum": 0 },
+            "unclassified": { "type": "integer", "minimum": 0 },
+            "out_of_taxonomy": { "type": "integer", "minimum": 0 },
+            "denominator": { "type": "integer", "minimum": 0 },
+            "ratio": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+          }
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "lang", "loc", "fingerprint", "layer"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "lang": { "enum": ["js", "ts", "csharp", "go", "python", "kotlin", "java", "shell", "other"] },
+          "loc": { "type": "integer", "minimum": 0 },
+          "fingerprint": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "layer": { "enum": ["api", "application", "domain", "infrastructure", "contracts", "test", "config", "unknown"] },
+          "summary": { "type": ["string", "null"] },
+          "roles": { "type": "array", "items": { "type": "string" } },
+          "taxonomy": {
+            "const": "out",
+            "description": "Presente apenas quando o repositório DECLAROU este path fora da taxonomia (codegraph.layers com layer: unknown). Ausência é o default e significa 'em escopo' — um repositório sem bloco codegraph: produz exatamente o grafo de antes desta chave existir."
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to", "kind", "resolved"],
+        "properties": {
+          "from": { "type": "string", "minLength": 1 },
+          "to": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["import", "reference", "namespace"] },
+          "resolved": { "type": "boolean" }
+        }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "authz": { "type": "object" },
+        "observability": { "type": "object" }
+      }
+    }
+  }
+}

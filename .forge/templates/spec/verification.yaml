@@ -1,0 +1,7 @@
+# Technical evidence (schema: .forge/schemas/verification.schema.json; doc §10.10).
+# Written by .forge/scripts/spec-verify.sh — do not edit by hand.
+verification:
+  commit: "<sha>"
+  checks: []
+  evidence:
+    - verification.md

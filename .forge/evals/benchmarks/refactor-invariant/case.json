@@ -1,0 +1,21 @@
+{
+  "schema": "benchmark-case/v1",
+  "id": "refactor-invariant",
+  "category": "refactor",
+  "prompt": "Plan a refactor that preserves public behavior and records invariants before implementation.",
+  "artifacts": [
+    {
+      "path": "refactor.md",
+      "content": "Move payment calculation into a domain service without changing API responses."
+    }
+  ],
+  "grading": {
+    "expectations": ["Behavioral invariants are listed", "Verification covers no-regression checks"],
+    "baseline_pass_rate": 0.5,
+    "variant_pass_rate": 1
+  },
+  "budget": {
+    "profile": "standard",
+    "runs": 1
+  }
+}

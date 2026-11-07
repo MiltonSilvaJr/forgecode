@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge/schemas/progress.schema.json",
+  "title": "progress.json — ponteiro de progresso do change",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["change_id", "total_stories", "done_stories", "total_tasks", "done_tasks", "current_wave"],
+  "properties": {
+    "change_id": { "type": "string" },
+    "updated_at": { "type": "string" },
+    "current_wave": { "type": ["string", "null"] },
+    "current_story": { "type": ["string", "null"] },
+    "total_stories": { "type": "integer", "minimum": 0 },
+    "done_stories": { "type": "integer", "minimum": 0 },
+    "total_tasks": { "type": "integer", "minimum": 0 },
+    "done_tasks": { "type": "integer", "minimum": 0 },
+    "open_deferrals": { "type": "integer", "minimum": 0 },
+    "last_commit": { "type": ["string", "null"] },
+    "notes": { "type": ["string", "null"] }
+  }
+}

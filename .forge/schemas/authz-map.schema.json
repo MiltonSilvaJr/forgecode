@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge.dev/schemas/authz-map.schema.json",
+  "title": "Forge authz-map (endpoint → policy declaration)",
+  "description": "Declarative list of API endpoints and the authorization policy that governs each (REQ-14, design §2.4). Every endpoint MUST declare a negative_contract_test reference — this is the declarative half of the anti-false-negative triad (static gate + negative contract test + consumer CI decision-log evidence): a gate that proves only PEP import, never PEP application (see graph-govern.mjs).",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["method", "path", "action", "resource", "policy", "negative_contract_test"],
+    "properties": {
+      "method": { "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] },
+      "path": { "type": "string", "minLength": 1, "pattern": "^/" },
+      "action": { "type": "string", "minLength": 1 },
+      "resource": { "type": "string", "minLength": 1 },
+      "policy": { "type": "string", "minLength": 1 },
+      "negative_contract_test": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["unauthenticated_401", "forbidden_403"],
+        "properties": {
+          "unauthenticated_401": { "type": "string", "minLength": 1 },
+          "forbidden_403": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

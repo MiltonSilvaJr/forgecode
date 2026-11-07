@@ -1,0 +1,14 @@
+stage: archive
+required_inputs:
+  - manifest.yaml
+  - tasks.md
+  - verification.yaml
+  - spec-delta.yaml
+  - impact.json?
+required_outputs:
+  - evidence/runs/*/run-manifest.json
+validators:
+  - validate-spec
+  - validate-archive
+budget_class: medium
+evidence_required: true

@@ -1,0 +1,200 @@
+#!/usr/bin/env bash
+# Forge post-merge (§20.4) — after a merge into the integration branch:
+#   1. prunes dead worktree refs and removes CLEAN worktrees whose branch is already merged
+#      into HEAD (mandatory cleanup, §20.4/v3.1);
+#   2. accumulates the merged branch's conventional commits into the root CHANGELOG.md
+#      ([Unreleased], Keep a Changelog) — no-op when there is no root CHANGELOG.md;
+#   3. suggests promotion to staging when running on the integration branch.
+# Informational hook — o git IGNORA o exit status do post-merge, então falhar aqui não desfaz o
+# merge; o que muda é o DESFECHO OBSERVÁVEL: uma delegação quebrada passa a ter linha própria e
+# exit≠0, em vez de sair pelo mesmo "post-merge OK" de uma execução bem-sucedida (issue #49).
+set -u
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+cd "$ROOT" || exit 0
+
+# Resolução do alvo delegado (issue #141): core.hooksPath é gravado ABSOLUTO para o tronco
+# (#41/#54, LDG-0042), mas cada worktree carrega sua PRÓPRIA cópia de .forge/scripts/ (issue
+# #41). Um hook novo (vindo do tronco via hooksPath) encontra scripts antigos na worktree que o
+# executa e falhava por causa alheia. Precedência: a árvore que executa primeiro; se o alvo
+# faltar lá E a árvore do hook (o tronco, quando hooksPath é absoluto) o tiver, usa o do tronco
+# com uma linha nomeando-o; falha só quando falta nas duas.
+HOOK_FORGE_DIR="$(cd "$(dirname "$0")/../.." 2>/dev/null && pwd)" || HOOK_FORGE_DIR=""
+# Só serve de fallback quando termina em .forge E carrega a maquinaria deste hook — caso
+# contrário (symlink solto, HOME, checkout parcial) o tronco fica indisponível, como antes da #141.
+case "$HOOK_FORGE_DIR" in
+  */.forge) [ -f "$HOOK_FORGE_DIR/hooks/git/${0##*/}" ] || HOOK_FORGE_DIR="" ;;
+  *) HOOK_FORGE_DIR="" ;;
+esac
+resolve_delegated() {  # resolve_delegated <label> <rel-sob-.forge/> — ecoa o caminho resolvido em
+  # stdout; rc 0 = achado (própria árvore, ou do tronco com aviso em stderr nomeando-o); rc 1 =
+  # ausente nas duas com o diretório-lar presente em ao menos uma (bloqueio é do chamador); rc 2 =
+  # diretório-lar ausente nas duas (no-op legítimo — harness não instalado).
+  local label="$1" rel="$2"
+  local wt="$ROOT/.forge/$rel" trunk="" wt_dir trunk_dir=""
+  wt_dir="$(dirname "$wt")"
+  if [ -f "$wt" ]; then printf '%s\n' "$wt"; return 0; fi
+  # Árvore sem $ROOT/.forge nenhum nunca adotou o harness — não é uma worktree defasada, é uma
+  # árvore NÃO gerenciada. Devolve o mesmo no-op de antes da #141 (rc 2), sem consultar o tronco,
+  # sem aviso e sem efeito colateral. A delegação ao tronco abaixo vale só para a árvore que TEM
+  # .forge/ mas com este alvo ausente ou defasado.
+  [ -d "$ROOT/.forge" ] || return 2
+  if [ -n "$HOOK_FORGE_DIR" ]; then
+    trunk="$HOOK_FORGE_DIR/$rel"
+    trunk_dir="$(dirname "$trunk")"
+  fi
+  if [ -n "$trunk" ] && [ -f "$trunk" ]; then
+    echo "hook: $label ausente em $ROOT — usando o do tronco ($trunk); rode forge update na worktree" >&2
+    printf '%s\n' "$trunk"
+    return 0
+  fi
+  if [ -d "$wt_dir" ] || { [ -n "$trunk_dir" ] && [ -d "$trunk_dir" ]; }; then
+    # A recusa do CHAMADOR (texto literal, mantido) fala de UMA árvore só. Sem esta linha, uma
+    # worktree que não tem sequer o DIRETÓRIO faria a mensagem afirmar, por omissão, que ele
+    # existe nela — falso quando só o tronco o tem. Nomear as duas buscas não muda o prefixo que
+    # gates e usuários casam, só acrescenta onde se procurou.
+    echo "  (procurado em $wt_dir e em ${trunk_dir:-<tronco indisponível>})" >&2
+    return 1
+  fi
+  return 2
+}
+
+git worktree prune 2>/dev/null || true
+
+# changelog (§20.4): acumula commits convencionais do merge no CHANGELOG.md raiz.
+# Determinista/idempotente; no-op sem CHANGELOG.md raiz ou se HEAD não for um merge.
+#
+# Motor único (add-unify-changelog-skill, TASK-10): o hook deixou de chamar
+# scripts/lib/changelog-from-merge.mjs e passa a delegar para o mesmo motor usado pelo comando
+# /forge:update-changelog — skills/readme-generator/scripts/changelog-engine.mjs, modo
+# --merge-range, sem gates (o hook é informacional; gates de bloqueio só fazem sentido no
+# comando, que roda antes do merge). O hook NUNCA usa resolve-skill.sh (REQ-07/REQ-12/REQ-13):
+# esse resolvedor é mecanismo do COMANDO, que procura também skill de usuário/FORGE_SKILL_DIR_*;
+# o hook resolve só dentro de .forge/skills/readme-generator/ do próprio projeto (ou do tronco,
+# via resolve_delegated), igual a qualquer outro alvo delegado.
+#
+# Regra de delegação (issue #49, instância 4): chamar algo que não existe é ERRO, não no-op.
+# O no-op só é legítimo quando o harness NÃO está instalado — aí não há maquinaria a impor. Se o
+# DIRETÓRIO que hospeda o alvo existe, a ausência do alvo significa harness atualizado pela
+# metade, script apagado ou instalação corrompida, e isso não pode terminar no mesmo desfecho de
+# uma execução bem-sucedida.
+CHANGELOG_GEN="$(resolve_delegated changelog-engine skills/readme-generator/scripts/changelog-engine.mjs)"; _rc=$?
+delegation_failed=0
+if [ "$_rc" -eq 1 ]; then
+  echo "post-merge FALHOU: .forge/skills/readme-generator/scripts/ existe mas changelog-engine.mjs não —" >&2
+  echo "  a delegação aponta para um alvo ausente, e isso não pode sair como sucesso." >&2
+  delegation_failed=1
+  CHANGELOG_GEN=""
+fi
+if [ -n "$CHANGELOG_GEN" ] && [ -f "$CHANGELOG_GEN" ]; then
+  if command -v node >/dev/null 2>&1; then
+    # A saída de erro deixou de ir para /dev/null: `2>/dev/null || true` fazia uma falha do
+    # gerador sair idêntica a um no-op bem-sucedido — o mesmo colapso de estados, um nível abaixo.
+    if ! gen_out="$(node "$CHANGELOG_GEN" --root "$ROOT" --merge-range 2>&1)"; then
+      echo "post-merge FALHOU: changelog-engine.mjs terminou com erro:" >&2
+      printf '%s\n' "$gen_out" | sed 's/^/  /' >&2
+      delegation_failed=1
+    fi
+  fi
+fi
+
+# liaison log integrity (issue #80) — o DETECTOR do único modo de falha do merge=union: dispara no
+# instante em que a duplicata NASCE (é o merge automático que a produz, e é ele que dispara este
+# hook — pre-commit NÃO roda num merge automático). Roda em QUALQUER branch, deliberadamente: um
+# merge que duplica e nunca chega a ser empurrado corrompe o canal do mesmo jeito, e o bloqueio no
+# push (pre-push, mesmo diretório) jamais o veria. Este hook é informacional — o git ignora seu
+# exit status — então o que muda com a falha é o DESFECHO OBSERVÁVEL (delegation_failed), nunca a
+# conclusão do merge em si.
+LOG_INTEGRITY="$(resolve_delegated check-liaison-log-integrity.sh scripts/check-liaison-log-integrity.sh)"; _rc=$?
+if [ "$_rc" -eq 1 ]; then
+  echo "post-merge FALHOU: .forge/scripts/ existe mas check-liaison-log-integrity.sh não —" >&2
+  echo "  a delegação aponta para um alvo ausente, e isso não pode sair como sucesso." >&2
+  delegation_failed=1
+  LOG_INTEGRITY=""
+fi
+if [ -n "$LOG_INTEGRITY" ] && [ -f "$LOG_INTEGRITY" ]; then
+  if ! li_out="$(FORGE_ROOT="$ROOT" bash "$LOG_INTEGRITY" 2>&1)"; then
+    echo "post-merge FALHOU: liaison — log duplicado pelo merge=union (issue #80):" >&2
+    printf '%s\n' "$li_out" | sed 's/^/  /' >&2
+    delegation_failed=1
+  fi
+fi
+
+# ── worktrees mergeadas (issue #72) ──────────────────────────────────────────────────────────────
+# PROPÕE, não remove. O default era remover, e isso destruiu trabalho de verdade: no merge de um PR
+# real, uma worktree e a branch local sumiram sozinhas, levando junto `local.properties` e `build/`.
+#
+# A raiz do defeito está numa frase que parece verdadeira e não é: "worktree limpa". `git status
+# --porcelain` NÃO vê arquivo ignorado, e `git branch -d` não protege o que não está no índice —
+# então uma worktree cheia de estado local irrecuperável satisfaz o critério de "limpa" e é
+# removida. O que o git rastreia e o que existe no disco são conjuntos diferentes, e a remoção
+# destrói a diferença.
+#
+# O default invertido também é o que a comunidade escolheu sozinha: três de quatro consumidores de
+# um mesmo ecossistema desligaram esta limpeza por conta própria, em formulações mutuamente
+# incompatíveis. Como `hooks/` é sobrescrito pelo overlay do `update`, cada upgrade REVERTIA essa
+# decisão em silêncio — e ninguém revisa diff de maquinaria depois de um upgrade.
+#
+# Ligar de volta é `FORGE_WORKTREE_AUTOCLEAN=1`, e mesmo ligado a guarda de arquivo ignorado
+# permanece: é exatamente ali que o dano ocorreu, e ele não é detectável depois.
+autoclean="${FORGE_WORKTREE_AUTOCLEAN:-0}"
+removed=0; proposed=0; proposta=""
+while IFS= read -r wt; do
+  [ -n "$wt" ] || continue
+  case "$wt" in
+    "$ROOT"/.forge/worktrees/*)
+      branch="$(git -C "$wt" rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+      [ -n "$branch" ] && [ "$branch" != "HEAD" ] || continue
+      # `wt/*` é o namespace que o `post-checkout` usa para dar nome a uma worktree que teria
+      # nascido DESTACADA. Antes daquele hook essa worktree devolvia literalmente `HEAD` na linha
+      # acima e caía fora deste laço: ela era estruturalmente imune a esta limpeza. Dar nome a ela
+      # não pode AMPLIAR a população que este hook remove — a onda que criou o `post-checkout`
+      # existe para não perder trabalho, e alargar o alcance da única peça do harness que destrói
+      # seria o efeito líquido oposto ao propósito dela. Renomeada para fora de `wt/` pelo operador,
+      # ela volta à população, que é exatamente o estado de antes: quem quisesse a worktree nesta
+      # limpeza já tinha de nomeá-la à mão.
+      case "$branch" in wt/*) continue ;; esac
+      git merge-base --is-ancestor "$branch" HEAD 2>/dev/null || continue
+      [ -z "$(git -C "$wt" status --porcelain 2>/dev/null)" ] || continue
+      # A guarda que faltava. `git clean -ndX` lista o que está IGNORADO e presente — o estado que
+      # `status --porcelain` não enxerga e que a remoção apagaria sem recuperação possível.
+      ign="$(git -C "$wt" clean -ndX 2>/dev/null | head -3)"
+      if [ -n "$ign" ]; then
+        proposed=$((proposed + 1))
+        proposta="$proposta
+  · $wt (branch $branch, já em HEAD) — NÃO removida: tem arquivo ignorado presente
+    $(printf '%s' "$ign" | sed 's/^/      /')
+      remover mesmo assim: git worktree remove --force '$wt' && git branch -d '$branch'"
+        continue
+      fi
+      if [ "$autoclean" = "1" ]; then
+        if git worktree remove "$wt" 2>/dev/null; then
+          removed=$((removed + 1))
+          git branch -d "$branch" 2>/dev/null || true
+        fi
+      else
+        proposed=$((proposed + 1))
+        proposta="$proposta
+  · $wt (branch $branch, já em HEAD)
+      git worktree remove '$wt' && git branch -d '$branch'"
+      fi
+      ;;
+  esac
+done <<EOF_WT
+$(git worktree list --porcelain 2>/dev/null | awk '/^worktree /{print $2}' | tail -n +2)
+EOF_WT
+if [ "$proposed" -gt 0 ]; then
+  echo "post-merge: $proposed worktree(s) mergeada(s) — proponho remover (nada foi removido):"
+  printf '%s\n' "$proposta"
+  [ "$autoclean" = "1" ] || echo "  (remover automaticamente: FORGE_WORKTREE_AUTOCLEAN=1)"
+fi
+
+current="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+if [ "$delegation_failed" -ne 0 ]; then
+  echo "post-merge INCOMPLETO (worktrees removidas: $removed, propostas: $proposed) — ver a falha de delegação acima." >&2
+  exit 1
+fi
+msg="post-merge OK (worktrees removidas: $removed, propostas: $proposed)"
+[ "$current" = "develop" ] && msg="$msg — considere /forge:promote-staging quando develop estiver estável"
+echo "$msg"
+exit 0

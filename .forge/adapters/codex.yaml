@@ -1,0 +1,16 @@
+# Codex adapter (§15): AGENTS.md IS the canonical interface (industry standard) — Codex
+# discovers it natively. Commands/skills are reachable by path under .forge/ and .agents/.
+adapter: codex
+generates:
+  - AGENTS.md
+supports:
+  symlink: true
+  slash_commands: false
+  skills: false
+  hooks: false
+smoke_tests:
+  - name: agents-md-projection
+    command: "head -1 AGENTS.md | grep -q 'Generated from .forge/FORGE.md'"
+loss_warnings:
+  - "Slash commands nativos nao materializados — Codex le AGENTS.md e segue .forge/commands/ por path"
+  - "Skills nao materializadas em .codex/ — usar o cross-tool .agents/skills/"

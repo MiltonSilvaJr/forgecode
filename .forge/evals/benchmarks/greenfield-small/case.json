@@ -1,0 +1,21 @@
+{
+  "schema": "benchmark-case/v1",
+  "id": "greenfield-small",
+  "category": "greenfield",
+  "prompt": "Design a small greenfield feature with clear requirements, design, tasks and verification evidence.",
+  "artifacts": [
+    {
+      "path": "proposal.md",
+      "content": "Create a small account settings capability with one UI surface and one persistence path."
+    }
+  ],
+  "grading": {
+    "expectations": ["Requirements are testable", "Tasks map back to requirements"],
+    "baseline_pass_rate": 0.5,
+    "variant_pass_rate": 1
+  },
+  "budget": {
+    "profile": "quick",
+    "runs": 1
+  }
+}

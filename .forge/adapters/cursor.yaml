@@ -1,0 +1,15 @@
+# Cursor adapter (§15): a single always-applied rule pointing at the canonical source —
+# kept short on purpose (context economy §17.7; Cursor loads alwaysApply rules every turn).
+adapter: cursor
+generates:
+  - .cursor/rules/forge.mdc
+supports:
+  symlink: false
+  slash_commands: false
+  skills: false
+  hooks: false
+smoke_tests:
+  - name: rule-always-applied
+    command: "grep -q 'alwaysApply: true' .cursor/rules/forge.mdc"
+loss_warnings:
+  - "Hooks nao suportados — gates via .forge/scripts e hooks git"

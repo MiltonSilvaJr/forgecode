@@ -1,0 +1,96 @@
+# Requirement -> design -> tasks -> evidence chain for this change
+# (schema: .forge/schemas/traceability.schema.json). Evidence is filled by /forge:verify.
+# Vazio de propósito: nada foi implementado nem verificado.
+# design_refs e tasks espelham design.md §7 e a tabela de tasks.md §Rastreabilidade.
+traceability:
+  - requirement_id: REQ-01
+    design_refs:
+      - design.md#21-visão-geral-dd-01
+      - design.md#22-modelo-do-board-dd-02
+      - design.md#42-tipos-consumidos-do-change-base
+    tasks:
+      - TASK-01
+      - TASK-05
+    evidence: []
+
+  - requirement_id: REQ-02
+    design_refs:
+      - design.md#21-visão-geral-dd-01
+      - design.md#25-sem-escrita-dd-05
+      - design.md#28-registro-e-descoberta-dd-08
+    tasks:
+      - TASK-06
+      - TASK-10
+    evidence: []
+
+  - requirement_id: REQ-03
+    design_refs:
+      - design.md#22-modelo-do-board-dd-02
+      - design.md#26-allowlist-de-renderização-dd-06
+    tasks:
+      - TASK-07
+    evidence: []
+
+  - requirement_id: REQ-04
+    design_refs:
+      - design.md#23-modelo-de-sessõesliveness-dd-03
+    tasks:
+      - TASK-02
+      - TASK-08
+    evidence: []
+
+  - requirement_id: REQ-05
+    design_refs:
+      - design.md#24-estados-e-frescor-dd-04
+    tasks:
+      - TASK-03
+      - TASK-04
+      - TASK-05
+    evidence: []
+
+  - requirement_id: REQ-06
+    design_refs:
+      - design.md#24-estados-e-frescor-dd-04
+      - design.md#41-endpoints-consumidos-somente-leitura
+    tasks:
+      - TASK-04
+      - TASK-05
+    evidence: []
+
+  - requirement_id: REQ-07
+    design_refs:
+      - design.md#25-sem-escrita-dd-05
+      - design.md#43-modelo-de-dados
+      - design.md#44-compatibilidade
+    tasks:
+      - TASK-06
+      - TASK-11
+    evidence: []
+
+  - requirement_id: REQ-08
+    design_refs:
+      - design.md#26-allowlist-de-renderização-dd-06
+      - design.md#42-tipos-consumidos-do-change-base
+    tasks:
+      - TASK-03
+      - TASK-07
+      - TASK-08
+      - TASK-11
+    evidence: []
+
+  - requirement_id: REQ-09
+    design_refs:
+      - design.md#27-layout-e-tema-dd-07
+    tasks:
+      - TASK-07
+      - TASK-09
+    evidence: []
+
+  - requirement_id: REQ-10
+    design_refs:
+      - design.md#29-story-dd-09
+      - design.md#44-compatibilidade
+      - design.md#5-plano-de-migração--rollout
+    tasks:
+      - TASK-11
+    evidence: []

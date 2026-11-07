@@ -1,0 +1,243 @@
+# Rascunho proposto; aplicar somente no archive após gates e verificação real.
+# IDs REQ-SAM-NNN correspondem aos aliases REQ-NN dos requirements, 1:1.
+operations:
+  - op: add_requirement
+    capability: session-activity-monitor
+    requirement_id: REQ-SAM-001
+    content_ref: requirements.md#req-01
+    requirement:
+      id: REQ-SAM-001
+      title: Identidade explícita sem reescrever legado
+      normative: SHALL
+      scenarios:
+        - id: SCN-SAM-001-A
+          given: Sessão sem título ou sem origem explicitamente atribuída comprovada
+          when: O monitor experimental renderiza identidade
+          then: Exibe UID completo acessível; nome explicitamente atribuído confirmado substitui UID; erro e cancelamento não alteram identidade; legado desconhecido segue política humana Q01 sem inferência nem overwrite
+      contracts: [packages/schema/src/session.ts, packages/schema/src/session-event.ts]
+      tests: [T01, T02, T03]
+  - op: add_requirement
+    capability: session-activity-monitor
+    requirement_id: REQ-SAM-002
+    content_ref: requirements.md#req-02
+    requirement:
+      id: REQ-SAM-002
+      title: Experimento TUI opt-in reversível
+      normative: SHALL
+      scenarios:
+        - id: SCN-SAM-002-A
+          given: Chave experimental TUI ausente ou false
+          when: Usuário liga e desliga pelo registry Experiments
+          then: Painel e resumo habilitam juntos; preferências persistem sem afetar outros experimentos; desligar restaura apresentação anterior e desmonta recursos exclusivos sem remover framework
+      contracts: [packages/tui/src/config/index.tsx]
+      tests: [T20]
+  - op: add_requirement
+    capability: session-activity-monitor
+    requirement_id: REQ-SAM-003
+    content_ref: requirements.md#req-03
+    requirement:
+      id: REQ-SAM-003
+      title: MAIN AGENT preserva contexto custo e extensões
+      normative: SHALL
+      scenarios:
+        - id: SCN-SAM-003-A
+          given: Monitor ativo na lateral direita
+          when: Context é substituído por MAIN AGENT
+          then: Identidade agente estado modelo provider variante contexto uso e tempo ficam acessíveis com loading vazio erro e indisponibilidade distintos; custo MCP todo limites footer e plugins preservados; sidebar oculta mantém acesso via resumo
+      contracts: []
+      tests: [T20, T21, T25]
+  - op: add_requirement
+    capability: session-activity-monitor
+    requirement_id: REQ-SAM-004
+    content_ref: requirements.md#req-04
+    requirement:
+      id: REQ-SAM-004
+      title: Agente e estado com fonte factual
+      normative: SHALL
+      scenarios:
+        - id: SCN-SAM-004-A
+          given: Sessão nova ativa ou terminal com informações possivelmente ausentes
+          when: O monitor calcula agente e estado
+          then: Mostra ativo concluído falhou interrompido ou desconhecido em texto; running reconciliado vence outcome anterior; idle sem outcome e enqueue não são sucesso; agente vem do step ou seleção rotulada ou indisponível sem fallback inventado
+      contracts: [packages/schema/src/session.ts, packages/schema/src/session-event.ts]
+      tests: [T10, T19]
+  - op: add_requirement
+    capability: session-activity-monitor
+    requirement_id: REQ-SAM-005
+    content_ref: requirements.md#req-05
+    requirement:
+      id: REQ-SAM-005
+      title: Modelo provider e variante efetivos
+      normative: SHALL
+      scenarios:
+        - id: SCN-SAM-005-A
+          given: Step em execução e seleção de modelo alterada
+          when: Metadados são apresentados
+          then: Modelo e provider do step permanecem efetivos e seleção futura é distinguida; variante não é effort por nome e esforço fica indisponível sem mapeamento confiável
+      contracts: [packages/schema/src/model.ts, packages/schema/src/session-event.ts]
+      tests: [T10]
+  - op: add_requirement
+    capability: session-activity-monitor
+    requirement_id: REQ-SAM-006
+    content_ref: requirements.md#req-06
+    requirement:
+      id: REQ-SAM-006
+      title: Janela de contexto separada do consumo
+      normative: SHALL
+      scenarios:
+        - id: SCN-SAM-006-A
+          given: Observação de ocupação O e capacidade C do mesmo modelo e contexto
+          when: O monitor apresenta porcentagens
+          then: Prefere ocupação final observada com fonte e instante; proxy é estimado e não acumulado da sessão; U igual a 100 vezes O dividido por C com uma casa decimal e restante max de zero e 100 menos U; overflow explícito; dados inválidos indisponíveis; compaction revert troca de modelo instruções e retomada invalidam atualidade até nova observação
+      contracts: [packages/schema/src/session.ts, packages/schema/src/session-event.ts]
+      tests: [T07, T08, T09]
+  - op: add_requirement
+    capability: session-activity-monitor
+    requirement_id: REQ-SAM-007
+    content_ref: requirements.md#req-07
+    requirement:
+      id: REQ-SAM-007
+      title: Uso cumulativo próprio sem dupla contagem
+      normative: SHALL
+      scenarios:
+        - id: SCN-SAM-007-A
+          given: Uso com categorias disjuntas fresh cacheRead cacheWrite visibleOutput e reasoning
+          when: O monitor calcula uso próprio da sessão
+          then: Entrada soma fresh e caches; saída soma visibleOutput e reasoning; total soma entrada e saída uma vez; inclui title e compaction contabilizados sem duplicar espelhos; navegação paginação fork revert e reconnect não inventam gasto nem reembolso; custo de família tem rótulo separado
+      contracts: [packages/schema/src/token-usage.ts, packages/schema/src/session.ts]
+      tests: [T04, T06, T27]
+  - op: add_requirement
+    capability: session-activity-monitor
+    requirement_id: REQ-SAM-008
+    content_ref: requirements.md#req-08
+    requirement:
+      id: REQ-SAM-008
+      title: Ausência parcialidade qualidade e frescor explícitos
+      normative: SHALL
+      scenarios:
+        - id: SCN-SAM-008-A
+          given: Provider sem uso com uso parcial zero explícito ou legado sem proveniência
+          when: Uso e qualidade são apresentados ou chega streaming
+          then: Ausência e inválido não viram zero conhecido; parcial mostra subtotal e faltantes; confirmado estimado indisponível e frescor desatualizado são distintos; legado permanece desconhecido; streaming mantém último confirmado em atualização sem promessa de billing ou tokens intermediários oficiais
+      contracts: [packages/schema/src/session.ts, packages/schema/src/session-event.ts]
+      tests: [T05, T12, T14, T27]
+  - op: add_requirement
+    capability: session-activity-monitor
+    requirement_id: REQ-SAM-009
+    content_ref: requirements.md#req-09
+    requirement:
+      id: REQ-SAM-009
+      title: Duração desde execução real até terminal
+      normative: SHALL
+      scenarios:
+        - id: SCN-SAM-009-A
+          given: Execução mais recente com busy e possível idle
+          when: Estado está ativo terminal reconectando ou retomado
+          then: Duração vem de busy e relógio ancorado ativo ou idle terminal compatível em segundos inteiros; para no terminal e congela se stale; início ausente ou intervalo inválido não inventa duração; recovery estabelece nova âncora sem contar desligamento como execução
+      contracts: [packages/schema/src/session.ts]
+      tests: [T19, T24]
+  - op: add_requirement
+    capability: session-activity-monitor
+    requirement_id: REQ-SAM-010
+    content_ref: requirements.md#req-10
+    requirement:
+      id: REQ-SAM-010
+      title: Filhos diretos com metadados e navegação segura
+      normative: SHALL
+      scenarios:
+        - id: SCN-SAM-010-A
+          given: Família com raiz filhos netos irmãos e paginação
+          when: Monitor da sessão selecionada lista subagentes
+          then: Lista só parentID igual à sessão atual com cobertura explícita; mostra nome descrição estado modelo provider variante tokens próprios e duração comprovados ou indisponíveis; mouse e teclado navegam ao ID correto e retorno preserva origem sem nova interrupção
+      contracts: [packages/schema/src/session.ts]
+      tests: [T15, T24]
+  - op: add_requirement
+    capability: session-activity-monitor
+    requirement_id: REQ-SAM-011
+    content_ref: requirements.md#req-11
+    requirement:
+      id: REQ-SAM-011
+      title: Shells por sessão e origem sem revelar argumentos
+      normative: SHALL
+      scenarios:
+        - id: SCN-SAM-011-A
+          given: Shells de sessões e locations diferentes com vínculo de origem
+          when: Usuário consulta atividade e abre saída por ação explícita
+          then: Só shells da sessão atual com origem autorizada entram; estado e tempo factuais e resumo sem argumentos env cwd ou output inline; visualizador fixa ID e location originais e trata ausência com erro recuperável; nenhum kill ou inferência de descendência por PID
+      contracts: [packages/schema/src/shell.ts, packages/protocol/src/groups/shell.ts]
+      tests: [T16, T17, T18, T23]
+  - op: add_requirement
+    capability: session-activity-monitor
+    requirement_id: REQ-SAM-012
+    content_ref: requirements.md#req-12
+    requirement:
+      id: REQ-SAM-012
+      title: Resumo compacto de atividade sem reflow
+      normative: SHALL
+      scenarios:
+        - id: SCN-SAM-012-A
+          given: Painel e resumo observando a mesma sessão
+          when: Contagens mudam ou sidebar está oculta
+          then: Uma linha junto ao prompt apresenta filhos diretos e shells ativos da mesma projeção com dedup e cobertura frescor; zero só confirmado completo; não conta principal nem enqueue; mantém altura editável e acesso a detalhes em terminal estreito sem agregar tokens de família não confiáveis
+      contracts: []
+      tests: [T12, T15, T20, T25]
+  - op: add_requirement
+    capability: session-activity-monitor
+    requirement_id: REQ-SAM-013
+    content_ref: requirements.md#req-13
+    requirement:
+      id: REQ-SAM-013
+      title: Reconciliação de snapshot e eventos com isolamento
+      normative: SHALL
+      scenarios:
+        - id: SCN-SAM-013-A
+          given: Snapshot concorrente com eventos troca de sessão ou reconexão
+          when: Respostas chegam em ordem diferente ou há duplicata gap overflow ou falha parcial
+          then: Subscribe precede snapshot e buffer ou revalidação estabelece corte por chave e geração; absolutos substituem sem incrementar e duráveis deduplicam; A não contamina B; gap marca stale e pede resync; fresco somente após fontes necessárias reconciliadas
+      contracts: [packages/schema/src/session-event.ts, packages/client/src/solid/data.ts]
+      tests: [T11, T12, T13, T14, T24]
+  - op: add_requirement
+    capability: session-activity-monitor
+    requirement_id: REQ-SAM-014
+    content_ref: requirements.md#req-14
+    requirement:
+      id: REQ-SAM-014
+      title: Layout navegação acessibilidade e recursos limitados
+      normative: SHALL
+      scenarios:
+        - id: SCN-SAM-014-A
+          given: Terminais 44x12 80x24 e 140x40 com zero um ou mil itens e nomes Unicode mistos
+          when: Resize scrolling navegação mouse teclado ou troca de tema ocorre
+          then: Prompt e foco permanecem acessíveis; seleção por ID e Escape preservados; status não depende de cor; tokens semânticos claro escuro custom; UID legível acessível e ordem mista testada; no máximo cinquenta linhas expandidas montadas por viewport e um ticker visual de um Hz ativo sem polling de inventário nem leaks após desmontagem
+      contracts: []
+      tests: [T24, T25, T26, T28]
+  - op: add_requirement
+    capability: session-activity-monitor
+    requirement_id: REQ-SAM-015
+    content_ref: requirements.md#req-15
+    requirement:
+      id: REQ-SAM-015
+      title: Contratos experimentais e migração compatíveis
+      normative: SHALL
+      scenarios:
+        - id: SCN-SAM-015-A
+          given: Cliente servidor eventos e dados antigos ou novos
+          when: Campos experimentais opcionais de proveniência e contexto são adotados
+          then: Campos antigos e títulos contadores permanecem intactos; ausência experimental degrada honestamente; replay import fork move e migration SQLite real expandida são testados sem backfill inferencial; clientes vêm do gerador oficial; nenhuma troca de store ou serviço implícita
+      contracts: [packages/schema/src/session.ts, packages/schema/src/session-event.ts, packages/protocol/src/groups/session.ts]
+      tests: [T03, T14, T22, T27]
+  - op: add_requirement
+    capability: session-activity-monitor
+    requirement_id: REQ-SAM-016
+    content_ref: requirements.md#req-16
+    requirement:
+      id: REQ-SAM-016
+      title: Privacidade e monitor somente leitura
+      normative: SHALL
+      scenarios:
+        - id: SCN-SAM-016-A
+          given: Título comando ou metadados não confiáveis e ID de sessão location diferente
+          when: Monitor renderiza observa ou navega
+          then: Sanitiza controle ANSI e minimiza texto sem credenciais env prompts providerMetadata ou output desnecessário; nega detalhes de origem não autorizada; não executa prompt command remove ou interrupt nem lê saída antes da ação explícita; flag off não coleta adicional
+      contracts: [packages/protocol/src/groups/session.ts, packages/protocol/src/groups/shell.ts]
+      tests: [T17, T18, T20, T23, T28]

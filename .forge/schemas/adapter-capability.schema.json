@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge.dev/schemas/adapter-capability.schema.json",
+  "title": "Adapter capability declaration (.forge/adapters/<adapter>.yaml)",
+  "type": "object",
+  "required": ["adapter", "generates", "supports"],
+  "additionalProperties": false,
+  "properties": {
+    "adapter": {
+      "enum": ["claude", "codex", "qwen", "kiro", "gemini", "cursor", "agents-skills", "forge-cli"]
+    },
+    "generates": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    },
+    "supports": {
+      "type": "object",
+      "additionalProperties": { "type": "boolean" },
+      "properties": {
+        "symlink": { "type": "boolean" },
+        "slash_commands": { "type": "boolean" },
+        "skills": { "type": "boolean" },
+        "hooks": { "type": "boolean" }
+      }
+    },
+    "rewrite": {
+      "type": "object",
+      "description": "Path mapping rules applied when projecting .forge/** into the adapter target",
+      "additionalProperties": { "type": "string" }
+    },
+    "source_hashes": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "pattern": "^sha256:[0-9a-f]{6,64}$" }
+    },
+    "smoke_tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "command"],
+        "additionalProperties": false,
+        "properties": {
+          "name": { "type": "string" },
+          "command": { "type": "string" }
+        }
+      }
+    },
+    "loss_warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

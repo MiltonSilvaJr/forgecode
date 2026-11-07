@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge/schemas/ledger.schema.json",
+  "title": "ledger.json — ledger durável de projeto (roadmap & tech-debt)",
+  "description": "Store durável e NÃO-BLOQUEANTE de trabalho conhecido que sobrevive entre changes: roadmap, dívida técnica, bugs conhecidos, follow-ups e ideias de feature. Vive em .forge/ledger/ (fora de MACHINERY_DIRS — preservado byte-a-byte pelo forge update). Populado por captura automática (harvest de deferrals/analysis/verification no close/archive) e por curadoria manual (/forge:ledger add). A view humana é LEDGER.md, renderizada deterministicamente daqui.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["entries"],
+  "properties": {
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "type", "title", "status", "source", "created_at", "dedup_key"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^LDG-[0-9]{4}$",
+            "description": "Contador global monotônico (max existente + 1), zero-padded a 4 dígitos."
+          },
+          "type": {
+            "enum": ["roadmap", "tech-debt", "known-bug", "follow-up", "feature-idea"]
+          },
+          "title": { "type": "string", "minLength": 1 },
+          "detail": { "type": "string" },
+          "severity": {
+            "enum": ["BLOCKER", "HIGH", "MEDIUM", "LOW", null],
+            "description": "Reusa o enum de findings do harness (analysis.md/code-evaluator). null quando não aplicável."
+          },
+          "priority": {
+            "enum": ["P0", "P1", "P2", "P3", "EMERGENCIAL", null],
+            "description": "EMERGENCIAL: pedido direto do dono do produto, sempre vence qualquer P0-P3 em andamento (fila de priorização entre sessões do squad)."
+          },
+          "assigned_to": {
+            "type": ["string", "null"],
+            "description": "Sessão/papel a que esta entrada está atribuída agora (ex.: 'CODER', 'VIVO'). Gravado só por 'ledger-ops.sh assign'."
+          },
+          "assigned_at": {
+            "type": ["string", "null"],
+            "description": "Data do commit HEAD no momento do 'assign' mais recente."
+          },
+          "paused_by": {
+            "type": ["string", "null"],
+            "pattern": "^LDG-[0-9]{4}$",
+            "description": "Id da entrada EMERGENCIAL que interrompeu o trabalho nesta entrada (gravado por 'ledger-ops.sh pause --by'). Dimensão ortogonal a 'status': uma entrada pausada continua com o status que já tinha."
+          },
+          "paused_at": {
+            "type": ["string", "null"],
+            "description": "Data do commit HEAD no momento do 'pause'."
+          },
+          "checkpoint": {
+            "type": ["string", "null"],
+            "description": "Checkpoint de 1-2 linhas que a sessão interrompida registrou antes da troca, para retomar depois ('ledger-ops.sh resume' limpa este campo)."
+          },
+          "status": {
+            "enum": ["open", "planned", "in-progress", "resolved", "wont-fix", "promoted", "superseded"],
+            "description": "superseded: encerrado por um sucessor (links.superseded_by), só nasce por 'ledger-ops.sh add --supersedes'."
+          },
+          "source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["origin"],
+            "properties": {
+              "change_id": { "type": ["string", "null"] },
+              "origin": {
+                "enum": ["analyze", "verify", "close", "archive", "manual", "session", "seed"]
+              },
+              "ref": {
+                "type": ["string", "null"],
+                "description": "Referência na fonte: DEFER-NN, SEC-001, linha de tabela de finding, etc."
+              }
+            }
+          },
+          "links": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "adr": { "type": "array", "items": { "type": "string" } },
+              "capability": { "type": "array", "items": { "type": "string" } },
+              "change": { "type": "array", "items": { "type": "string" } },
+              "promoted_to": {
+                "type": ["string", "null"],
+                "description": "change-id criado a partir desta entrada (status: promoted)."
+              },
+              "superseded_by": {
+                "type": ["string", "null"],
+                "pattern": "^LDG-[0-9]{4}$",
+                "description": "Entrada que substituiu esta (status: superseded). Elo inverso de 'supersedes'."
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "description": "Data do commit HEAD (git log -1 --format=%cI) quando registrada — NÃO wall clock, para determinismo. Vazio fora de git."
+          },
+          "updated_at": { "type": ["string", "null"] },
+          "resolved_at": { "type": ["string", "null"] },
+          "last_verified": {
+            "type": ["string", "null"],
+            "description": "Data do commit HEAD da última reverificação contra o código/estado real. Gravada só por 'ledger-ops.sh verify', sempre junto do registro de evidence que a justifica; igual, em instante, ao 'at' do último registro. Ausente = nunca reverificado (a idade parte de created_at)."
+          },
+          "evidence": {
+            "type": "array",
+            "description": "Registros acumulativos de reverificação, na ordem em que foram gravados. O conteúdo mínimo de cada kind é conferido pelo script no momento do verify (arquivo e linha existentes, commit resolvível, teste existente); o schema confere a forma. Declarado inline, não em $defs, porque gates compilam properties.entries.items isoladamente.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["at", "kind", "ref", "observed", "verdict"],
+              "properties": {
+                "at": { "type": "string", "description": "Data do commit HEAD no momento do verify." },
+                "kind": { "enum": ["file", "commit", "test", "command"] },
+                "ref": { "type": "string", "minLength": 1, "description": "file: <caminho>:<linha>[-<linha>] · commit: SHA completo · test: <caminho>[::<nome>] · command: a linha de comando (nunca executada pelo script)." },
+                "observed": { "type": "string", "minLength": 1, "description": "O que foi visto ao conferir." },
+                "verdict": { "enum": ["confirmed", "changed"] }
+              }
+            }
+          },
+          "supersedes": {
+            "type": ["string", "null"],
+            "pattern": "^LDG-[0-9]{4}$",
+            "description": "Entrada anterior que esta substitui (gravada por 'add --supersedes'; a anterior fica superseded)."
+          },
+          "dedup_key": {
+            "type": "string",
+            "description": "Chave de idempotência do harvest: \"${change_id}:${ref}\" (ex.: add-auth:DEFER-02). Manual usa \"manual:${id}\"."
+          }
+        }
+      }
+    }
+  }
+}

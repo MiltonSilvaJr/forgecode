@@ -1,0 +1,700 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge.dev/schemas/forge.schema.json",
+  "title": "Forge core schemas: forge.yaml manifest and FORGE.md frontmatter",
+  "$defs": {
+    "nullableString": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "forgeFrontmatter": {
+      "type": "object",
+      "required": [
+        "forge_version",
+        "project",
+        "sdd",
+        "runtime",
+        "integrations",
+        "quality"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "forge_version": {
+          "const": 1
+        },
+        "project": {
+          "type": "object",
+          "required": [
+            "name",
+            "display"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "display": {
+              "type": "string"
+            },
+            "description": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "repo_slug": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "default_branch": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "owners": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "domains": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "sdd": {
+          "type": "object",
+          "required": [
+            "default_mode",
+            "default_rigor",
+            "default_scale",
+            "archive_policy",
+            "human_gate_required"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "default_mode": {
+              "enum": [
+                "greenfield",
+                "brownfield",
+                "feature",
+                "bugfix",
+                "refactor"
+              ]
+            },
+            "default_rigor": {
+              "enum": [
+                "spec-first",
+                "spec-anchored",
+                "spec-as-source"
+              ]
+            },
+            "default_scale": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4
+            },
+            "archive_policy": {
+              "enum": [
+                "after_verified_implementation",
+                "manual_override"
+              ]
+            },
+            "human_gate_required": {
+              "type": "boolean"
+            }
+          }
+        },
+        "runtime": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "primary_stack": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "package_manager": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "run": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "test": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "typecheck": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "lint": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "gates": {
+              "description": "Gates de artefato deste projeto. TRÊS formas, um leitor só (lib/gate-phase.mjs e forge_runtime_gate_entries): CSV escalar (tudo em phase source), block-sequence de escalares (idem) e block-sequence mapeada com name e phase. A chave do item mapeado é name — gate-phase.mjs:69 exige item.name e DESCARTA em silêncio o item sem ela, por isso o schema também a exige. phase é string livre, e não um enum, porque o leitor aceita qualquer valor: restringir aqui reprovaria declaração que o harness lê, invertendo o defeito que LDG-0159 fechou. Que uma fase declarada possa não ter executor é LDG-0160, e é outro problema.",
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/nullableString"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "name"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "phase": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "pentest": {
+              "description": "Config do /forge:pentest (template/.forge/scripts/pentest-ops.sh). O bloco já era lido pelo engine sem estar declarado aqui — o mesmo defeito que w199/LDG-0159 fechou para runtime.gates, invertido: bloco que o harness lê e o próprio schema rejeitava. 'skill'/'bench_device'/'apk_path'/'tool_dir' são o perfil mobile (inalterado). 'strix' é o perfil novo — nove chaves, ver docs/plans/spikes/strix-pentest-spec.md §3.1/§6. additionalProperties:false nos dois níveis pelo mesmo argumento do w199: chave que o leitor ignora não pode ser publicada como válida.",
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "skill": {
+                  "$ref": "#/$defs/nullableString"
+                },
+                "bench_device": {
+                  "$ref": "#/$defs/nullableString"
+                },
+                "apk_path": {
+                  "$ref": "#/$defs/nullableString"
+                },
+                "tool_dir": {
+                  "$ref": "#/$defs/nullableString"
+                },
+                "strix": {
+                  "description": "Perfil strix — alvo web/API/código-fonte via CLI open-source do Strix. image_digest e cli_version são obrigatórias NA PRÁTICA (ausentes, R4/R9 recusam no pré-voo), mas não são 'required' aqui porque o bloco strix inteiro pode estar ausente (projeto sem o perfil strix habilitado) sem reprovar o FORGE.md.",
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "image_digest": {
+                      "$ref": "#/$defs/nullableString"
+                    },
+                    "cli_version": {
+                      "$ref": "#/$defs/nullableString"
+                    },
+                    "authorized_targets": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "authorization_ref": {
+                      "$ref": "#/$defs/nullableString"
+                    },
+                    "max_budget_usd": {
+                      "$ref": "#/$defs/nullableString"
+                    },
+                    "sandbox_network": {
+                      "$ref": "#/$defs/nullableString"
+                    },
+                    "scan_mode": {
+                      "$ref": "#/$defs/nullableString"
+                    },
+                    "findings_dir": {
+                      "$ref": "#/$defs/nullableString"
+                    },
+                    "timeout_s": {
+                      "$ref": "#/$defs/nullableString"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "authz": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "pep_paths": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "policy_dir": {
+              "$ref": "#/$defs/nullableString"
+            },
+            "allowlist": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "mode": {
+              "enum": [
+                "warn",
+                "enforce"
+              ]
+            },
+            "policy_coverage_threshold": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          }
+        },
+        "observability": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "wrapper_paths": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "allowlist": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "mode": {
+              "enum": [
+                "warn",
+                "enforce"
+              ]
+            }
+          }
+        },
+        "codegraph": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Mapa de camadas DECLARÁVEL do code graph (issue #38). A heurística embutida do engine reconhece convenções de pasta e o sufixo de projeto .NET; layouts que fogem disso — plataforma satélite, pacotes compartilhados, monólito legado pré-Clean-Architecture — passam a ser descritos aqui, pelo próprio repositório, sem mudança no engine. Bloco ausente = heurística embutida pura, e o grafo é idêntico ao de antes desta chave existir.",
+          "properties": {
+            "layers": {
+              "type": "array",
+              "description": "Pares padrão-de-path → camada, avaliados na ORDEM DECLARADA (o primeiro match vence) e ANTES da heurística embutida. Glob no dialeto de authz.pep_paths (`*` casa dentro de um segmento; o padrão cobre o próprio path e tudo abaixo dele) mais `**` como segmento inteiro, que atravessa zero ou mais segmentos.",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "path",
+                  "layer"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "Glob relativo à raiz do repositório. Ex.: `platform/src/services/*/*.Api`, `packages/dotnet/*.Abstractions`, `src/*.DAL`, `platform/**/*.Kernel`."
+                  },
+                  "layer": {
+                    "enum": [
+                      "api",
+                      "application",
+                      "domain",
+                      "infrastructure",
+                      "contracts",
+                      "test",
+                      "config",
+                      "unknown"
+                    ],
+                    "description": "`unknown` aqui é DECLARAÇÃO, não lacuna: afirma que a taxonomia domain/application/infrastructure/api/contracts não descreve este path (frontend, tooling, conteúdo estático, MDX de doc). Esses nós ganham `taxonomy: \"out\"` no grafo e saem do denominador da cobertura de camada."
+                  }
+                }
+              }
+            },
+            "orphans_by_design": {
+              "type": "array",
+              "description": "Globs de arquivos cuja ausência de aresta é o estado CORRETO — marcador de assembly resolvido por reflexão, plugin carregado por DI, entrypoint descoberto por convenção. `forge validate graph` não os reporta como achado. Spec de E2E (layer test), configuração (layer config), migrations e o que estiver declarado fora da taxonomia já são reconhecidos sem declaração.",
+              "items": {
+                "type": "string"
+              }
+            },
+            "include_paths": {
+              "type": "array",
+              "description": "Globs (mesmo dialeto de `layers`) de caminhos que são código-fonte de verdade mesmo quando o nome bateria com o default de \"pular\" — prefixo de ponto (`.forge/`, `.config/`) ou a lista fixa SKIP_DIRS (LDG-0027). Existe para o repositório que PRODUZ um harness/scaffold cujo próprio produto vive sob um diretório assim (ex.: `template/.forge/scripts/**`), sem precisar de exceção com nome de projeto embutida no engine. Bloco ausente = nenhum caminho forçado = o walk de hoje, byte a byte.",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "integrations": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "jira": {
+              "type": [
+                "object",
+                "string",
+                "null"
+              ]
+            },
+            "github": {
+              "type": [
+                "object",
+                "string",
+                "null"
+              ]
+            },
+            "graph": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "path": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "quality": {
+          "type": "object",
+          "required": [
+            "evals_enabled"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "evals_enabled": {
+              "type": "boolean"
+            },
+            "runners_config": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "forgeManifest": {
+      "type": "object",
+      "required": [
+        "version",
+        "harness",
+        "specs"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "harness": {
+          "type": "object",
+          "required": [
+            "name",
+            "installed_at",
+            "template_version",
+            "adapters"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "const": "forge"
+            },
+            "installed_at": {
+              "type": "string"
+            },
+            "template_version": {
+              "type": "string"
+            },
+            "adapters": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "claude",
+                  "codex",
+                  "qwen",
+                  "kiro",
+                  "gemini",
+                  "cursor",
+                  "agents-skills",
+                  "forge-cli"
+                ]
+              }
+            }
+          }
+        },
+        "specs": {
+          "type": "object",
+          "required": [
+            "root",
+            "active",
+            "archived",
+            "baseline"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "root": {
+              "type": "string"
+            },
+            "active": {
+              "type": "string"
+            },
+            "archived": {
+              "type": "string"
+            },
+            "baseline": {
+              "type": "string"
+            }
+          }
+        },
+        "graph": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "root": {
+              "type": "string"
+            }
+          }
+        },
+        "capabilities": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "active": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "quality": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "evals_root": {
+              "type": "string"
+            },
+            "runners": {
+              "type": "string"
+            },
+            "require_tests_before_archive": {
+              "type": "boolean"
+            },
+            "require_traceability_before_archive": {
+              "type": "boolean"
+            }
+          }
+        },
+        "rules": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Ativação de rule-packs de domínio (LDG-0003). Simetria explícita com capabilities.active: pack listado aqui passa a ser CONTRATO do projeto; rule de pack não listado continua disponível como referência, nunca gate imposto.",
+          "properties": {
+            "packs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "handoff": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "auto": {
+              "type": "boolean"
+            }
+          }
+        },
+        "ledger": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "auto": {
+              "type": "boolean"
+            },
+            "stale_days": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Limiar de envelhecimento (dias) de item ativo do ledger sem reverificação. Advisory; default 30."
+            }
+          }
+        },
+        "kb": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Config da busca unificada (/forge:kb, change extend-kb-corpus-sources). extra_paths declara fontes extras indexadas, uma por doc.",
+          "properties": {
+            "extra_paths": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Globs extras indexados por /forge:kb, formato <prefixo>/** ou <prefixo>/**/*.<md|yaml|yml> (prefixo sem caractere de glob, sem segmento '.'/'..', fora de .forge/), cada um exigindo entrada em .forge/kb-extra-paths-allowlist.txt com # motivo:."
+            }
+          }
+        },
+        "liaison": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Canal ordenado entre repositórios (.forge/liaison/). auto liga o resumo de inbox no SessionStart — contagem e assunto, nunca o corpo, que é conteúdo de outro repositório e entra como dado, jamais como instrução. enforce decide o que fazer com contract-change inbound sem ack: warn avisa, block reprova (faz sentido nos consumidores de contrato, não no dono).",
+          "properties": {
+            "auto": {
+              "type": "boolean",
+              "description": "SessionStart resume o inbox do liaison. Default false."
+            },
+            "enforce": {
+              "enum": [
+                "warn",
+                "block"
+              ],
+              "description": "Ack pendente de contract-change inbound: avisa (warn, default) ou reprova (block)."
+            }
+          }
+        },
+        "secrets": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Gate mecânico contra segredo hardcoded em arquivo VERSIONADO (check-secrets.sh, rule conventions/no-hardcoded-secrets.md). Roda no pre-commit sobre o índice, no CI sobre o diff do PR e, se declarado em runtime.gates, no pre-push sobre o repositório inteiro. Falha de INTEGRIDADE (conjunto varrido vazio, allowlist malformada) reprova em qualquer modo: um gate que não rodou não pode se reportar verde. Exceções em .forge/secrets-allowlist.txt, com justificativa obrigatória na própria linha.",
+          "properties": {
+            "enforce": {
+              "enum": [
+                "warn",
+                "block"
+              ],
+              "description": "Achado de segredo: avisa (warn) ou reprova (block). A AUSÊNCIA deste bloco resolve para warn, porque o gate não é opt-in — está fiado no pre-commit e no CI — e um repositório existente com passivo herdaria trava no dia da atualização do harness. O forge.yaml do template entrega block explícito: projeto que nasce com o harness nasce sem passivo."
+            }
+          }
+        },
+        "autonomy": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mode": {
+              "enum": [
+                "hitl",
+                "yolo"
+              ]
+            },
+            "gate_agent": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "model": {
+                  "type": "string"
+                },
+                "effort": {
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high"
+                  ]
+                }
+              }
+            },
+            "human_hard_stops": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "requirements_reviewed",
+                  "design_reviewed",
+                  "tasks_reviewed",
+                  "implementation_verified",
+                  "human_archive_approval",
+                  "close"
+                ]
+              }
+            },
+            "irreversible_hard_stops": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "deploy_prd",
+                  "promote_staging",
+                  "adapter_removal",
+                  "branch_cleanup"
+                ]
+              }
+            }
+          }
+        },
+        "heavy_mutex": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Serialização de carga pesada entre repositórios da MESMA máquina (issue #52). Default de root: /tmp por caminho fixo. O token literal ${TMPDIR:-/tmp} também é aceito em root, nunca avaliado — existe só para convergir com um protocolo legado durante a migração de um host inteiro; usado fora desse fim ele volta a particionar a exclusão, porque no macOS o TMPDIR é por usuário E por contexto de invocação. Default desligado: o harness é publicado no npm e chegar serializando o pre-push de repositórios não relacionados é como um gate vira --no-verify de hábito.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Engaja o mutex em volta do que é caro no pre-push (typecheck, test, gates), nunca em volta dos checks baratos. Default false."
+            },
+            "resource": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Nome do recurso disputado. Repositórios que disputam a MESMA máquina precisam do mesmo nome para serializar entre si; nomes distintos são conjuntos de exclusão distintos, de propósito. Default forge-heavy-suite."
+            },
+            "root": {
+              "type": "string",
+              "pattern": "^(?:|\\$\\{TMPDIR:-/tmp\\}|/.*)$",
+              "description": "Raiz ABSOLUTA onde o lock é criado. Default /tmp; \"\" tem o mesmo efeito de omitir a chave — o leitor trata os dois como \"usar o default\". Precedência: FORGE_HEAVY_MUTEX_ROOT > este campo > /tmp. A variável de ambiente é a via de ISOLAMENTO deliberado; esta chave é a via de CONVERGÊNCIA, para um host onde vários repositórios já se serializam por um protocolo legado poder migrar UM de cada vez. Sem ela a migração é atômica sobre o conjunto: o primeiro a migrar parte a exclusão de todos os outros, e cada lado adquire o próprio lock com sucesso acreditando estar protegido."
+            },
+            "timeout_s": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Teto de espera na fila, em SEGUNDOS. Precedência: FORGE_HEAVY_MUTEX_TIMEOUT_S > este campo > 1800. 0 é válido e significa recusa de imediato — não é erro. A unidade importa: o alias de compatibilidade AXIS_HEAVY_SUITE_WAIT é em minutos, e escrever aqui um valor pensado em minutos dá um teto 60 vezes menor que o pretendido."
+            },
+            "stale_after_s": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Teto de POSSE, em SEGUNDOS (issue #137) — OPT-IN. Ausente significa DESLIGADO: sem esta chave (e sem FORGE_HEAVY_MUTEX_STALE_AFTER_S), a recuperação de posse continua agindo só sobre dono morto e sobre beneficiário morto (issue #144), nunca sobre dono vivo por idade. Precedência: FORGE_HEAVY_MUTEX_STALE_AFTER_S > este campo > desligado. 0 é válido nos dois degraus e também desliga. O valor declarado é RESPEITADO como está, mesmo que ultrapasse o teto de espera menos a reserva de encerramento (graça + poll) — nesse caso o efeito é só um AVISO com os três números (declarado, teto de espera, reserva), nunca um rebaixamento silencioso: encerrar antes do que o consumidor declarou poder durar seria mudança de semântica em dado declarado."
+            }
+          }
+        },
+        "push_ahead": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Mede e INFORMA, no pre-push, quando o tronco local está à frente do remoto real (issue #67). A leitura vem de `git ls-remote`, nunca de refs/remotes/*, que é réplica local e pode estar desatualizada nas duas direções. Nunca bloqueia, e não há chave para bloquear: travar um push de feature pelo estado do tronco seria bloquear pela ref alheia e, com tronco divergido ou branch protegida, seria deadlock.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Default true. false NÃO silencia — imprime a classe NÃO MEDIDO com o motivo, para que 'desligado' não vire indistinguível de 'quebrado'."
+            },
+            "timeout_s": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 60,
+              "description": "Teto da leitura de rede, em segundos. Default 5. Medido em 2026-08-21 (GitHub HTTPS, 108 refs): ls-remote custa 0,55 a 0,73s em rede quente e 9,0s quando o DNS falha, daí o teto."
+            }
+          }
+        },
+        "worktree_reconcile": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Reconciliação de worktrees contra o remoto REAL. A medição por `@{u}` lê `refs/remotes/*`, que é réplica local e pode estar desatualizada nas duas direções — sem `fetch` recente ignora o que o servidor já tem, e depois de um `fetch` alheio pode estar à frente do que este worktree conhece. É o mesmo defeito que o `check-push-ahead` corrigiu usando `ls-remote`, e que sobrevivia aqui (LDG-0056).",
+          "properties": {
+            "timeout_s": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Teto em SEGUNDOS para consultar o remoto. Esgotado o teto, a medição degrada para NÃO MEDIDO explícito — nunca finge sincronia, porque 'não consegui perguntar' e 'perguntei e está em dia' não podem terminar no mesmo lugar. Default 5."
+            }
+          }
+        }
+      }
+    }
+  }
+}

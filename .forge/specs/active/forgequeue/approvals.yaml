@@ -1,0 +1,76 @@
+approvals:
+  - gate: requirements_reviewed
+    decision: approve
+    autonomous: true
+    reason: "15 REQs cobrem os itens 1-12 do PRD secao 3.5 e as seis premissas registradas na proposal; cada criterio de aceite e verificavel por teste nomeado ou comando, com checklist de superficie, mapa de endpoints, classificacao de dados e mapa de eventos preenchidos. Validador estrutural OK sem WARN."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-04T23:53:56-03:00"
+    commit: "63a8aefd98"
+    scope: "requirements.md"
+  - gate: design_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Design cobre os 15 REQs na tabela de rastreabilidade, reusa a rota de prompt com delivery sem endpoint novo, tem alternativas com trade-offs, estrategia de compatibilidade para o schema de config e plano de rollout reversivel pela flag. Nove DD registram as decisoes e cada risco tem mitigacao e deteccao; spec-delta preenchido com uma operacao e cenarios por REQ."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-04T23:54:03-03:00"
+    commit: "63a8aefd98"
+    scope: "design.md"
+  - gate: tasks_reviewed
+    decision: approve
+    autonomous: true
+    reason: "15 TASKs em 5 waves sem dependencia para wave posterior, cada uma com Teste ou declaracao explicita de ausencia de par vermelho e verde, e a tabela final cobre os 15 REQs e os 4 NFRs. Grafo de tarefas e cobertura de superficie passam no validador sem achados."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-04T23:54:06-03:00"
+    commit: "63a8aefd98"
+    scope: "tasks.md"
+  - gate: requirements_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Pré-aprovação adversarial iteração 2: ground-truth confirmado no código (session.prompt delivery ?? steer em prompt.ts:52, inbox idempotente por id, OPENCODE_SESSION_ID em shell.ts:203, ConfigExperimental.Info). Correções: A7 (binário é opencode, não forgecode); REQ-02 exclusividade --thread/--to; REQ-10 falha de escrita de auditoria não-bloqueante; REQ-11 forma --json; REQ-15 normalizado para opencode session list."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-05T09:17:34-03:00"
+    iteration: 2
+    commit: "63a8aefd98"
+    scope: "requirements.md"
+  - gate: design_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Pré-aprovação adversarial iteração 2: §4.3 ganha nota do binário opencode; DD-06 ganha comportamento de falha de escrita de auditoria. Rastreabilidade REQ→seção e DD-01..DD-10 mantidas; nenhuma alegação sobre o código refutada."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-05T09:17:40-03:00"
+    iteration: 2
+    commit: "63a8aefd98"
+    scope: "design.md"
+  - gate: tasks_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Pré-aprovação adversarial iteração 2: TASK-03 assere falha de escrita de auditoria não-bloqueante; TASK-07 assere exclusividade --thread/--to/--all; TASK-14 usa opencode session list. Grafo de tasks preservado."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-05T09:18:01-03:00"
+    iteration: 2
+    commit: "63a8aefd98"
+    scope: "tasks.md"
+  - gate: requirements_reviewed
+    decision: approve
+    reason: "Aprovacao humana: requirements.md aprovado com a ressalva de idempotencia; REQ-12 passou de opcional a obrigatoria (chave exigida em toda escrita, codigo 2 sem chave, retry sem duplicata), propagada a design 2.2/4.3, TASK-06/07/11, spec-delta SCN-FQ-012-C/D e NFR-05; validate-spec OK."
+    decided_by: "Milton Antonio da Silva Jr"
+    decided_at: "2026-11-05T13:29:07-03:00"
+    iteration: 3
+    commit: "63a8aefd98"
+    scope: "requirements.md"
+  - gate: design_reviewed
+    decision: approve
+    reason: "Aprovacao humana: design.md aprovado apos a propagacao da idempotencia obrigatoria (DD-01/2.2, contrato CLI 4.3, rollout e risco), mantendo reuso de session.prompt sem endpoint novo; validate-spec OK."
+    decided_by: "Milton Antonio da Silva Jr"
+    decided_at: "2026-11-05T13:29:21-03:00"
+    iteration: 3
+    commit: "63a8aefd98"
+    scope: "design.md"
+  - gate: tasks_reviewed
+    decision: approve
+    reason: "Aprovacao humana: tasks.md revisado contra REQ-12 obrigatoria; ajustados TASK-03 (idempotencyKey nunca null), TASK-07/11/12/15 (rastreiam REQ-12), TASK-12 (retry com mesma chave = um item e um evento) e tabela de rastreabilidade + NFR-05; validate-spec OK."
+    decided_by: "Milton Antonio da Silva Jr"
+    decided_at: "2026-11-05T13:31:21-03:00"
+    iteration: 3
+    commit: "63a8aefd98"
+    scope: "tasks.md"

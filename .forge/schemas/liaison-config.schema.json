@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge/schemas/liaison-config.schema.json",
+  "title": "liaison.yaml — identidade local e registro de canais do subsistema liaison",
+  "description": "Config em .forge/liaison/liaison.yaml. self.id é a identidade fixa desta réplica (repositório) dentro do liaison; channels registra, por canal, o conjunto de participantes conhecidos (quem tem um log/<sender>.jsonl esperado). NÃO define composição de thread — isso é mensagem (kind: thread-open/join), não configuração. .forge/liaison/ vive FORA de MACHINERY_DIRS: é dado durável, preservado byte-a-byte pelo `forge update`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "self",
+    "channels"
+  ],
+  "properties": {
+    "self": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "description": "Identidade desta réplica, fixa desde a primeira `liaison-ops.sh open`. Usada como sender em toda mensagem escrita localmente."
+        }
+      }
+    },
+    "channels": {
+      "type": "object",
+      "additionalProperties": false,
+      "propertyNames": {
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      },
+      "patternProperties": {
+        "^[a-z0-9][a-z0-9-]*$": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "participants"
+          ],
+          "properties": {
+            "participants": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9._-]*$"
+              },
+              "description": "Participantes conhecidos do CANAL (repositórios que têm log/<sender>.jsonl esperado). Confina quem o import aceita como sender legítimo — não confunde com a lista de participantes de uma thread individual, que vive nas mensagens thread-open/join."
+            },
+            "transport": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind"
+              ],
+              "description": "Ponto de encontro do canal, consumido por `liaison-ops.sh sync`. Ausente = sync REPROVA com mensagem explícita: pré-requisito faltando nunca desliga a sincronização em silêncio contra um default inventado. Topologia de hub único por canal — cada participante publica o próprio log e puxa os N-1 restantes, de modo que a configuração cresce como N e não como N². CONFIDENCIALIDADE: quem alcança o transporte lê o canal inteiro, todas as threads; separação real exige canal separado com transporte separado.",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "manual",
+                    "fs",
+                    "fs-union",
+                    "git",
+                    "gh"
+                  ],
+                  "description": "Backend em scripts/lib/transports/<kind>.sh, com o contrato t_probe/t_push/t_pull. `manual` é a primitiva (diretório de troca no mesmo layout de export/import, jamais criado pelo script); `fs` é o default do piloto (hub multi-canal criado sob demanda); `fs-union` é opt-in, com o mesmo hub de `fs` e o `_common.sh` carregado do checkout principal, com falha fechada quando ele falta — uma árvore anterior ao kind recusa o `liaison.yaml` do tronco com `kind inválido` antes de tocar o hub (issue #123); `git` usa branch órfã dedicada num remote, com clone de trabalho descartável em .forge/cache/liaison/<channel>; `gh` é declarado e NÃO implementável por script — o harness proíbe invocar o CLI do GitHub em .sh, então o backend reprova por construção."
+                },
+                "path": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Diretório do ponto de encontro. Obrigatório em `manual` (layout <path>/{log,blobs}) e em `fs` e `fs-union` (layout <path>/<channel>/{log,blobs})."
+                },
+                "remote": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "URL do repositório remoto (`git`) ou owner/repo (`gh`)."
+                },
+                "branch": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Branch dedicada do canal no transporte `git`. Default: liaison/<channel>. Órfã por construção — sem ancestral comum com o código, para nunca virar candidata a merge nem disparar CI."
+                }
+              }
+            },
+            "peers": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string",
+                "minLength": 1
+              },
+              "propertyNames": {
+                "pattern": "^[a-z0-9][a-z0-9._-]*$"
+              },
+              "description": "Caminho LOCAL do repositório de cada participante, consumido apenas pelo subcomando síncrono `liaison ask`. É informação de máquina, não do canal: o mesmo participante mora em diretórios diferentes em cada estação, e por isso nunca viaja numa mensagem. Quem não tem o peer clonado simplesmente usa o fluxo assíncrono."
+            }
+          }
+        }
+      }
+    }
+  }
+}

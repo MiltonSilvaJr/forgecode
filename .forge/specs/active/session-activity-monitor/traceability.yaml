@@ -1,0 +1,66 @@
+# Casos TNN definidos em tasks.md. Evidence vazio: nenhum aceite funcional executado.
+traceability:
+  - requirement_id: REQ-SAM-001
+    design_refs: [design.md#22-dd-02]
+    tasks: [TASK-01, TASK-02, TASK-04, TASK-07, TASK-09, TASK-15]
+    evidence: []
+  - requirement_id: REQ-SAM-002
+    design_refs: [design.md#21-dd-01]
+    tasks: [TASK-08, TASK-11, TASK-13, TASK-15]
+    evidence: []
+  - requirement_id: REQ-SAM-003
+    design_refs: [design.md#21-dd-01, design.md#28-dd-08]
+    tasks: [TASK-09, TASK-11, TASK-13]
+    evidence: []
+  - requirement_id: REQ-SAM-004
+    design_refs: [design.md#25-dd-05]
+    tasks: [TASK-07, TASK-09]
+    evidence: []
+  - requirement_id: REQ-SAM-005
+    design_refs: [design.md#25-dd-05]
+    tasks: [TASK-03, TASK-07, TASK-09]
+    evidence: []
+  - requirement_id: REQ-SAM-006
+    design_refs: [design.md#24-dd-04]
+    tasks: [TASK-03, TASK-04, TASK-07, TASK-09, TASK-14, TASK-15]
+    evidence: []
+  - requirement_id: REQ-SAM-007
+    design_refs: [design.md#23-dd-03]
+    tasks: [TASK-03, TASK-04, TASK-07, TASK-09, TASK-14, TASK-15]
+    evidence: []
+  - requirement_id: REQ-SAM-008
+    design_refs: [design.md#23-dd-03, design.md#27-dd-07]
+    tasks: [TASK-03, TASK-04, TASK-05, TASK-07, TASK-09, TASK-14, TASK-15]
+    evidence: []
+  - requirement_id: REQ-SAM-009
+    design_refs: [design.md#25-dd-05]
+    tasks: [TASK-07, TASK-09, TASK-14, TASK-15]
+    evidence: []
+  - requirement_id: REQ-SAM-010
+    design_refs: [design.md#26-dd-06]
+    tasks: [TASK-06, TASK-10, TASK-15]
+    evidence: []
+  - requirement_id: REQ-SAM-011
+    design_refs: [design.md#26-dd-06]
+    tasks: [TASK-06, TASK-10, TASK-15]
+    evidence: []
+  - requirement_id: REQ-SAM-012
+    design_refs: [design.md#21-dd-01, design.md#28-dd-08]
+    tasks: [TASK-06, TASK-07, TASK-11, TASK-15]
+    evidence: []
+  - requirement_id: REQ-SAM-013
+    design_refs: [design.md#27-dd-07]
+    tasks: [TASK-04, TASK-05, TASK-11, TASK-12, TASK-14]
+    evidence: []
+  - requirement_id: REQ-SAM-014
+    design_refs: [design.md#28-dd-08]
+    tasks: [TASK-09, TASK-10, TASK-11, TASK-12, TASK-13]
+    evidence: []
+  - requirement_id: REQ-SAM-015
+    design_refs: [design.md#contracts, design.md#rollout]
+    tasks: [TASK-01, TASK-02, TASK-03, TASK-04, TASK-08, TASK-14, TASK-15]
+    evidence: []
+  - requirement_id: REQ-SAM-016
+    design_refs: [design.md#26-dd-06, design.md#risks]
+    tasks: [TASK-04, TASK-06, TASK-10, TASK-12, TASK-14]
+    evidence: []

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge/schemas/grading.schema.json",
+  "title": "grading.json — resultado de avaliação A/B de skill (§17.8)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["skill", "baseline", "variant", "test_cases", "aggregate"],
+  "properties": {
+    "skill": { "type": "string", "maxLength": 64 },
+    "runner": { "type": "string" },
+    "graded_at": { "type": "string" },
+    "baseline": { "$ref": "#/$defs/run_summary" },
+    "variant": { "$ref": "#/$defs/run_summary" },
+    "test_cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "prompt", "baseline_result", "variant_result", "expectations"],
+        "properties": {
+          "id": { "type": "string" },
+          "prompt": { "type": "string" },
+          "baseline_result": { "$ref": "#/$defs/eval_result" },
+          "variant_result": { "$ref": "#/$defs/eval_result" },
+          "expectations": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["text", "passed", "evidence"],
+              "properties": {
+                "text": { "type": "string", "minLength": 1 },
+                "passed": { "type": "boolean" },
+                "evidence": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "aggregate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseline_pass_rate", "variant_pass_rate", "delta_pass_rate", "baseline_duration_mean_ms", "variant_duration_mean_ms"],
+      "properties": {
+        "baseline_pass_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "variant_pass_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+        "delta_pass_rate": { "type": "number" },
+        "baseline_tokens_mean": { "type": ["number", "null"] },
+        "variant_tokens_mean": { "type": ["number", "null"] },
+        "delta_tokens": { "type": ["number", "null"] },
+        "baseline_duration_mean_ms": { "type": "number", "minimum": 0 },
+        "variant_duration_mean_ms": { "type": "number", "minimum": 0 },
+        "delta_duration_ms": { "type": "number" },
+        "baseline_stddev": { "type": ["number", "null"] },
+        "variant_stddev": { "type": ["number", "null"] }
+      }
+    }
+  },
+  "$defs": {
+    "run_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["description"],
+      "properties": {
+        "description": { "type": "string", "maxLength": 1024 },
+        "notes": { "type": ["string", "null"] }
+      }
+    },
+    "eval_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["output", "duration_ms"],
+      "properties": {
+        "output": { "type": "string" },
+        "duration_ms": { "type": "number", "minimum": 0 },
+        "tokens": { "type": ["integer", "null"] },
+        "exit_code": { "type": ["integer", "null"] }
+      }
+    }
+  }
+}

@@ -1,0 +1,63 @@
+id: squad-orchestration
+type: feature
+mode: brownfield
+rigor: spec-anchored
+scale: 2
+status: implemented
+created_at: "2026-11-04"
+updated_at: "2026-11-06"
+owner: "Milton Antonio da Silva Jr"
+parent:
+  baseline: .forge/product/current
+affects_surfaces:
+  - api
+  - data
+affected_capabilities:
+  - squad-orchestration
+affected_paths:
+  - packages/schema/src/squad.ts
+  - packages/schema/src/config/squad.ts
+  - packages/schema/src/config.ts
+  - packages/core/src/config/normalize.ts
+  - packages/core/src/squad
+  - packages/core/src/database/migration
+  - packages/core/src/database/migration.gen.ts
+  - packages/core/src/git.ts
+  - packages/protocol/src/groups/squad.ts
+  - packages/protocol/src/api.ts
+  - packages/server/src/handlers/squad.ts
+  - packages/server/src/handlers.ts
+  - packages/cli/src/commands/squad.ts
+  - packages/cli/src/commands/commands.ts
+  - packages/cli/src/commands/handlers/squad.ts
+  - packages/cli/README.md
+  - packages/cli/script/demo-squad.ts
+  - packages/client
+  - packages/schema/test/squad.test.ts
+  - packages/core/test/squad
+  - packages/core/test/fixture/squad-channel.ts
+  - packages/protocol/test/squad.test.ts
+  - packages/server/test/squad.test.ts
+  - packages/cli/test/squad.test.ts
+dependencies:
+  specs:
+    - forgequeue
+    - subscription-auth
+  code: []
+gates:
+  requirements_reviewed: true
+  design_reviewed: true
+  tasks_reviewed: true
+  implementation_verified: false
+  human_archive_approval: false
+dev_loop:
+  sharded: false
+  stories_path: stories/
+  epic_context_compiled: false
+quick_plan:
+  enabled: false
+  skipped_phases: []
+  justification:
+archive:
+  eligible: false
+  reason: "tasks not implemented"

@@ -1,0 +1,55 @@
+<Project>
+
+  <!-- Baseline de qualidade da stack .NET. O MSBuild importa este arquivo automaticamente em todo projeto abaixo dele na árvore, e só o primeiro encontrado subindo a partir do .csproj é importado — para combinar níveis, importe o superior explicitamente com <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />. A localização do .sln é irrelevante. -->
+  <!-- Materializado por `bash .forge/scripts/dotnet-baseline.sh` no modo apply. Editar aqui é legítimo: o script nunca sobrescreve um arquivo existente sem o modo force, e a checagem cobra apenas as propriedades load-bearing abaixo. -->
+
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+
+    <!-- AnalysisLevel escolhe o CONJUNTO de analisadores; AnalysisMode escolhe a agressividade (None, Default, Minimum, Recommended, All). `All` numa base existente costuma produzir centenas de erros no primeiro build — comece em `Recommended` e suba quando o inventário estiver limpo. -->
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+
+    <!-- O ponto de virada: sem isto, o agente lê o warning e segue em frente. Com isto, o build para e ele precisa corrigir antes de devolver a tarefa. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
+
+    <!-- Sem EnforceCodeStyleInBuild as regras IDExxxx do .editorconfig valem apenas dentro da IDE e o build passa verde por cima delas. -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- Analisadores de terceiros. IncludeAssets restringe ao tempo de compilação: eles não entram no pacote publicado nem viram dependência transitiva de quem consome a biblioteca. -->
+  <ItemGroup>
+    <PackageReference Include="Meziantou.Analyzer">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="SonarAnalyzer.CSharp">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Roslynator.Analyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- Projeto de teste não publica pacote e não deve carregar GenerateDocumentationFile; xunit.analyzers cobre o que é específico de teste (asserção invertida, teoria sem dado, async mal formado). Ajuste o critério de detecção se a convenção de nome do repositório for outra. -->
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('Tests'))">
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$(MSBuildProjectName.EndsWith('Tests'))">
+    <PackageReference Include="xunit.analyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

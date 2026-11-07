@@ -1,0 +1,9 @@
+# Requirement -> design -> tasks -> evidence chain for this change
+# (schema: .forge/schemas/traceability.schema.json). Evidence is filled by /forge:verify.
+traceability:
+  - requirement_id: REQ-XXX-001
+    design_refs:
+      - design.md#2-decisao-tecnica
+    tasks:
+      - TASK-01
+    evidence: []

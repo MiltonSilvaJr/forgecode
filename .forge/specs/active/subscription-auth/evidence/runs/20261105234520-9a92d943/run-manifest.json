@@ -1,0 +1,90 @@
+{
+  "schema": "run-manifest/v1",
+  "run_id": "20261105234520-9a92d943",
+  "stage": "verify",
+  "status": "failed",
+  "started_at": "2026-11-05T23:44:02Z",
+  "finished_at": "2026-11-05T23:45:20.861Z",
+  "duration_ms": 78861,
+  "git": {
+    "repo": true,
+    "branch": "feature/subscription-auth",
+    "head_sha": "9c98dbb609b7ef7d8e20bf2679d25244876f8870",
+    "dirty": true,
+    "changed_files": [
+      ".claude/",
+      ".forge/",
+      ".gitattributes",
+      ".github/workflows/red-first.yml",
+      ".github/workflows/staging.yml",
+      ".gitignore",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "packages/cli/src/commands/handlers/auth/login.ts",
+      "packages/cli/src/commands/handlers/auth/logout.ts",
+      "packages/cli/src/commands/handlers/auth/refresh.ts",
+      "packages/cli/src/commands/handlers/auth/status.ts",
+      "packages/cli/src/commands/handlers/auth/test.ts",
+      "packages/client/script/generate.ts",
+      "packages/client/src/effect/api/api.ts",
+      "packages/client/src/effect/generated/client.ts",
+      "packages/client/src/promise/generated/client.ts",
+      "packages/client/src/promise/generated/types.ts",
+      "packages/client/test/promise.test.ts",
+      "packages/protocol/src/client.ts",
+      "prompts/"
+    ],
+    "diff_stat": ".gitattributes                                     |  23 ++++\n .gitignore                                         |  34 ++++++\n AGENTS.md                                          |  70 +++++++++++\n packages/cli/src/commands/handlers/auth/login.ts   |   2 +-\n packages/cli/src/commands/handlers/auth/logout.ts  |   2 +-\n packages/cli/src/commands/handlers/auth/refresh.ts |   2 +-\n packages/cli/src/commands/handlers/auth/status.ts  |   2 +-\n packages/cli/src/commands/handlers/auth/test.ts    |   2 +-\n packages/client/script/generate.ts                 |   7 +-\n packages/client/src/effect/api/api.ts              | 130 +++++----------------\n packages/client/src/effect/generated/client.ts     |  77 +++++-------\n packages/client/src/promise/generated/client.ts    |  55 ++++-----\n packages/client/src/promise/generated/types.ts     |  53 ++-------\n packages/client/test/promise.test.ts               |   2 +\n packages/protocol/src/client.ts                    |   1 +\n 15 files changed, 235 insertions(+), 227 deletions(-)",
+    "diff_sha256": "5cc981eea0a809832887ab6b19f7c33831cee7f596aa58b3731b885dd2b74ee9"
+  },
+  "inputs": [
+    {
+      "path": "manifest.yaml",
+      "exists": true,
+      "sha256": "c5258105904d7b890b93b5b09ea13644107b363c73bae9f1b2aeb706020ede58",
+      "bytes": 2837,
+      "kind": "file"
+    },
+    {
+      "path": "tasks.md",
+      "exists": true,
+      "sha256": "a806d8b2739acca2882994477fa740aa86f29519a62a6f62d71d75fbbba0d4af",
+      "bytes": 17326,
+      "kind": "file"
+    },
+    {
+      "path": "traceability.yaml",
+      "exists": false,
+      "sha256": null,
+      "bytes": null
+    }
+  ],
+  "commands": [
+    {
+      "name": "spec-verify",
+      "command": "spec-verify.sh subscription-auth",
+      "status": "failed"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "verification.yaml",
+      "exists": true,
+      "sha256": "80e2ccbb85b66a70d6afeaa2da6a6523160f3f79e551eb1c738d13f5f70d9a89",
+      "bytes": 356,
+      "kind": "file"
+    }
+  ],
+  "runner": {
+    "name": "local",
+    "profile": "standard"
+  },
+  "budgets": {
+    "profile": "standard",
+    "budget_class": "medium",
+    "expected_runs": 1,
+    "estimated_timeout_s": 300,
+    "uses_llm": false,
+    "uses_subagent": false
+  }
+}

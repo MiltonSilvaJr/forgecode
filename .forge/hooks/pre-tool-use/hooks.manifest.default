@@ -1,0 +1,33 @@
+# hooks.manifest.default — declaração canônica (produtor) do matcher, contrato e estado padrão de
+# cada gancho de `.forge/hooks/pre-tool-use/` distribuído pelo template (issue #125).
+#
+# POR QUE ESTE ARQUIVO EXISTE. `sync-adapters.mjs` deriva o array `PreToolUse` de
+# `.claude/settings.json` a partir do CONTEÚDO deste diretório, não mais de um literal fixo no
+# código — hook novo entra na fiação sozinho, hook removido sai sozinho. Este arquivo diz apenas
+# COMO e SE cada um deve ser chamado por padrão; o universo (quais `.sh` existem) sai do próprio
+# diretório. Ele é lido pelo leitor canônico compartilhado com o consumidor
+# (`template/.forge/scripts/lib/hooks-manifest.mjs`, LDG-0178/w208) — o mesmo formato que um
+# `hooks.manifest` de consumidor pode declarar ao lado, para sobrepor matcher/contrato/estado.
+#
+# ESTADO PADRÃO — decisão registrada (plano 2026-09-15, seção da #125). `prevent-secrets-leak.sh` e
+# `enforce-worktree-location.sh` nascem ARMADOS: são checagens de segurança/convenção universais,
+# sem recorte de stack. `check-language-policy.sh` e `validate-naming-conventions.sh` nascem
+# RETIDOS: são específicas de projetos .NET (procuram identificadores PT-BR e prefixos de
+# tecnologia em `.cs`) e armá-las para todo consumidor novo, independente de stack, seria
+# bloqueio não anunciado sobre um universo que não se aplica. Um consumidor .NET arma as duas à
+# mão no seu próprio `hooks.manifest` (mesmo leitor, mesmo formato).
+#
+# ESTE ARQUIVO NÃO DECIDE A ATIVAÇÃO DE UM CONSUMIDOR JÁ EXISTENTE. Quando o consumidor não tem
+# `hooks.manifest` próprio, o gerador semeia a partir do que JÁ ESTÁ FIADO em
+# `.claude/settings.json`: gancho hoje fiado nasce ativo, gancho não fiado nasce inativo e
+# NOMEADO — nenhum consumidor ganha bloqueio novo sem saber. O estado abaixo só vale para um
+# consumidor SEM `.claude/settings.json` ainda (instalação nova).
+#
+# forge-manifest-format: 1
+#hook	matcher	contrato	estado	[chave=valor …]
+enforce-worktree-location.sh	^Bash$	stdin-json	armado
+prevent-secrets-leak.sh	^(Write|Edit|MultiEdit|NotebookEdit)$	stdin-json	armado	razao=AWS/JWT/PEM/senha antes do byte tocar o disco
+prevent-aws-credentials-read.sh	^(Bash|Read)$	stdin-json	armado	razao=ORQ-20261027-105, nunca ler credencial/config/cache da AWS
+check-language-policy.sh	^(Write|Edit|MultiEdit)$	argv	retido:especifico-dotnet-arme-via-hooks-manifest-do-consumidor	universo=.cs
+validate-naming-conventions.sh	^(Write|Edit|MultiEdit)$	argv	retido:especifico-dotnet-arme-via-hooks-manifest-do-consumidor	universo=.cs
+guard-cross-session-send.sh	^SendMessage$	stdin-json	armado	razao=segredo, destino declarado e contenção por workspace antes de a mensagem sair para outra sessão

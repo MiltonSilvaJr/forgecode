@@ -1,0 +1,100 @@
+approvals:
+  - gate: requirements_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Analise adversarial dos 21 REQ contra proposal §2 (13 itens) e §4: cobertura completa (registro, resolucao, canal, check/plan, launch, status/liveness, checkpoint, close/transition/activate, dispatch, dono de arvore, painel, auditoria, dependencias, docs, regressao). Cada REQ tem criterios observaveis; exemplos numericos computados (digest sha256 786d7eb4... conferido com node:crypto; limiares de liveness 10:59/11:01 coerentes com a formula). Conflitos resolvidos: idempotencia explicita em send/broadcast (dedupe por conteudo engoliria mensagem repetida), liveness sem time.updated (renomear nao e atividade), claim de shutdown reconciliado por interrupt, prova de dispatch verificavel por stoplist. Fora de escopo reafirmado sem requisito conflitante."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-04T23:58:51-03:00"
+    commit: "63a8aefd98"
+    scope: "requirements.md"
+  - gate: design_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Design cobre os 21 REQ por secao real na tabela §7 e resolve as decisoes estruturais: servico de controle no core + grupo HTTP experimental + CLI com estado relacional (DD-01/DD-02, justificado por machinery-propagation: estado de execucao nao nasce na branch); resolucao escopada a geracao ativa e digest canonico com exemplo computado (DD-03/DD-04); canal como porta unica sobre a inbox que o ForgeQueue expoe, prova apenas de enfileiramento e idempotencia explicita (DD-05); launch write-ahead com quatro evidencias duraveis (DD-06); checkpoint/fechamento/transicao por comprovante e amarração por digest com ordem operacional coerente com o indice unico de geracao ativa (DD-07); liveness derivada de eventos e relogio (DD-08); despacho fechado com base/head medidos e dono por arvore com escopo configuravel (DD-09/DD-10); painel com evidencia por estagio e unknown obrigatorio (DD-11); flag default desligado e erros por reuso do contrato existente (DD-12). Alternativas registradas (A-G) com trade-offs. Contratos tem estrategia aditiva e portas isoladas para forgequeue/subscription-auth, com o que depende e o que nao depende do contrato estabilizado. Riscos com deteccao. Varredura de normas: api-and-contracts (/api/v1) registrada como drift da rule frente ao contrato vigente do repo; demais compativeis com motivo. Identificadores novos varridos com controle positivo (git log -S)."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-04T23:58:57-03:00"
+    commit: "63a8aefd98"
+    scope: "design.md"
+  - gate: tasks_reviewed
+    decision: approve
+    autonomous: true
+    reason: "31 TASK em 7 waves, dependencias so para waves anteriores (TSK-01/02/03 verificados por lib/tasks-graph.mjs na transicao), toda TASK com rastreia/paths/depende, Teste (comando) e Padrao de falha no formato de diff do runner (Expected/Received e Expected to contain), e expoe: nas 15 tasks que produzem rota para o SRF-01 fechar sem WARN. Cobertura de rastreabilidade por criterio de aceite: os 21 REQ e 6 NFR aparecem na tabela com ordinais; REQ-02 e REQ-14 atualizados para os criterios 5 e 6. Prova vermelha/verde delegada ao /forge:implement via red-evidence.sh task; nenhum gate novo em runtime.gates (canal = suite de testes do pacote no CI real). TASK-30 declara a parte documental sem par vermelho/verde, com motivo, e mantem assercao executavel de ajuda. Nenhuma task escreve em estado compartilhado sem declarar dependencia; nenhuma depende de contrato nao estabilizado fora dos adapters das TASK-10/TASK-12."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-04T23:59:02-03:00"
+    commit: "63a8aefd98"
+    scope: "tasks.md"
+  - gate: requirements_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Ratificacao pos-gate: REQ-17 passou a exigir exigidos[] por card (done sobre o escopo declarado, unknown nunca vira progresso) e o resto dos 21 REQ ficou inalterado; nenhuma decisao do gate anterior foi revertida. Criterios de aceite adicionados em REQ-02 (prompt_sha256/checkpoint_sha256) e REQ-14 (dispatch list --json) cobrem os itens 1 e 12 da proposal §2; rastreabilidade por criterio revisada."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-04T23:59:38-03:00"
+    commit: "63a8aefd98"
+    scope: "requirements.md"
+  - gate: design_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Ratificacao pos-gate por medicao nova: os manifests de forgequeue e subscription-auth passaram a declarar affected_paths e a sobreposicao com este change e de arquivos de registro (config.ts, api.ts, handlers.ts, commands.ts, client gerado), medida e tabelada em §1.2 com hard-stop de merge por ordem do PRD §6. Tambem incorporados: exigidos[] no painel (§2.9), P7 (squad nao cria worktree), export de checkpoint no CLI e nao no servidor (§2.6), launch --only. Nenhuma DD anterior foi revertida."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-04T23:59:39-03:00"
+    commit: "63a8aefd98"
+    scope: "design.md"
+  - gate: tasks_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Ratificacao pos-gate: TASK-27 alinhada a exigidos[] do painel e TASK-01/08/09 declaram o rebase obrigatorio sobre forgequeue/subscription-auth antes de editar registros compartilhados (design §1.2). Grafo de tasks, metadados e cobertura por criterio inalterados; validate-spec segue OK sem WARN."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-04T23:59:39-03:00"
+    commit: "63a8aefd98"
+    scope: "tasks.md"
+  - gate: requirements_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Pre-aprovacao adversarial (red team): corrigido contrato de dependencia — forgequeue e CLI (nao publica enqueue de servidor; o SquadChannel liga em Session.prompt do core) e subscription-auth publica Source.report()/status, nao status(providerID) (REQ-19/REQ-04). Adicionado working_stale no liveness (REQ-13), panel show + ausencia de tela propria documentada (REQ-17/REQ-20). Digest 786d7eb4... reconferido com node:crypto. Sem BLOCKER."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-05T09:15:00-03:00"
+    iteration: 2
+    commit: "63a8aefd98"
+    scope: "requirements.md"
+  - gate: design_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Pre-aprovacao adversarial (red team): design §4.5 corrigido para contratos reais (SquadChannel sobre Session.prompt do core; CredentialPresence sobre Source.report()/status), §1.3 com as duas precisoes de contrato medidas nas specs irmas, §2.7 com working_stale e decisao registrada do default 60min vs 2h do referencial, §2.9 com superficie panel build/show e sem tela propria. Indice parcial unico via drizzle-orm 1.0.0-rc5 confirmado por uso em-repo de index().where() (session/sql.ts:80-82)."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-05T09:15:06-03:00"
+    iteration: 2
+    commit: "63a8aefd98"
+    scope: "design.md"
+  - gate: tasks_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Pre-aprovacao adversarial (red team): TASK-12 nota reforca que channel chama Session.prompt (nao importa forgequeue); TASK-18 adiciona caso working_stale; TASK-29 ja cobre panel show. Grafo e cobertura por criterio inalterados; validate-spec OK sem WARN."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-05T09:15:11-03:00"
+    iteration: 2
+    commit: "63a8aefd98"
+    scope: "tasks.md"
+  - gate: requirements_reviewed
+    decision: approve
+    reason: "Aprovacao humana: requirements.md aprovado apos o parecer (B1-B3, H1-H9, M/L); implementacao autorizada."
+    decided_by: "Milton Antonio da Silva Jr"
+    decided_at: "2026-11-05T16:54:10-03:00"
+    iteration: 3
+    commit: "75a3c78474"
+    scope: "requirements.md"
+  - gate: design_reviewed
+    decision: approve
+    reason: "Aprovacao humana: design.md aprovado apos o parecer (posse global, accept, liveness, auditoria, §2.12-2.14); implementacao autorizada."
+    decided_by: "Milton Antonio da Silva Jr"
+    decided_at: "2026-11-05T16:54:10-03:00"
+    iteration: 3
+    commit: "75a3c78474"
+    scope: "design.md"
+  - gate: tasks_reviewed
+    decision: approve
+    reason: "Aprovacao humana: tasks.md aprovado (25 REQ, 40 tasks, 8 waves; TASK-00 ADR); implementacao autorizada."
+    decided_by: "Milton Antonio da Silva Jr"
+    decided_at: "2026-11-05T16:54:10-03:00"
+    iteration: 3
+    commit: "75a3c78474"
+    scope: "tasks.md"

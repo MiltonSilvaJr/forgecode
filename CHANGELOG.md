@@ -2,6 +2,18 @@
 
 Release notes for ForgeCode, a fork of OpenCode V2, newest first.
 
+## Unreleased
+
+### Added
+
+- Multi-session squad orchestration (`squad` CLI, HTTP API and durable registry): launch, send, broadcast, checkpoint, close, dispatch and audit trail for coordinating several sessions on a shared tree.
+- `forgequeue` experimental command queue for session activity and enqueueing.
+- A read-only squad board in the TUI (`squad-board` route, behind `experimental.squad_board`): kanban columns, card detail and session liveness for the active generation, sourced from the server with zero writes.
+
+### Changed
+
+- The published CLI package is now `@forgecode/cli` (binaries `forgecode`/`forgecode2`). The npm name `forgecode` itself is taken by an unrelated, actively maintained project; `@opencode/cli`, the scope this package used before, belongs to the real OpenCode maintainer. Workspace-internal packages keep their `@opencode/*` names, since they are never published standalone.
+
 ## v0.1.0 — 2026-11-06
 
 ### Rebrand

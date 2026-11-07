@@ -1,0 +1,881 @@
+#!/usr/bin/env bash
+# Forge pre-push (§20.4) — runs the project's own typecheck + tests (as declared in the
+# FORGE.md frontmatter `runtime:` block) before pushing a work branch. Empty commands are
+# skipped (greenfield). Raw output goes to /tmp (context-overflow discipline §17.6).
+set -u
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+
+# Consume stdin (git feeds "<local ref> <local sha> <remote ref> <remote sha>" lines)
+# before anything else touches it, and run the docs-reviewed gate. This check is
+# independent of .forge/FORGE.md — it applies to any repo using this hook.
+INPUT="$(cat)"
+# Re-export the raw refs for gates declared in runtime.gates. Without this, a gate that needs to
+# know WHAT is being published only sees what's in checkout — and the two diverge on
+# `git push origin other-branch:main` and on multi-ref pushes, where a gate resolving its target
+# via `git rev-parse HEAD` would validate the wrong commit. The hook's stdin can only be consumed
+# once; this is the only way what arrived on it reaches gate scripts downstream.
+#
+# Via a FILE, never the payload itself in the environment. The payload is unbounded (`git push
+# --all` on a repo with thousands of refs) and the kernel caps a SINGLE environment string at
+# 128 KB on Linux (MAX_ARG_STRLEN). Past that every exec inside this hook fails with E2BIG —
+# including the awk that reads FORGE.md — so the hook finds no typecheck, no test and no gates,
+# prints "pre-push OK" and exits 0 having verified nothing. Fail-open on the largest pushes is
+# the worst possible failure mode for a gate. A path is a few dozen bytes and never gets near
+# the cap. Covered by tests/w135-push-refs-export-gate.sh, scenarios [3] and [4].
+FORGE_PUSH_REFS_FILE="$(mktemp "${TMPDIR:-/tmp}/forge-pushrefs-XXXXXX")"
+export FORGE_PUSH_REFS_FILE
+trap 'rm -f "$FORGE_PUSH_REFS_FILE"' EXIT
+# An empty stdin (nothing being pushed) writes an EMPTY file, not a blank line: a gate must be
+# able to tell "zero refs" from "one ref I failed to parse".
+if [ -n "$INPUT" ]; then printf '%s\n' "$INPUT" > "$FORGE_PUSH_REFS_FILE"; else : > "$FORGE_PUSH_REFS_FILE"; fi
+# Regra de delegação (issue #49, instância 4): chamar algo que não existe é ERRO, não no-op.
+# O no-op só é legítimo quando o harness NÃO está instalado — aí não há maquinaria a impor. Se o
+# DIRETÓRIO que hospeda o alvo existe, a ausência do alvo significa harness atualizado pela
+# metade, script apagado ou instalação corrompida, e isso não pode terminar no mesmo desfecho de
+# uma execução bem-sucedida.
+#
+# Resolução do alvo delegado (issue #141): core.hooksPath é gravado ABSOLUTO para o tronco
+# (#41/#54, LDG-0042), mas cada worktree carrega sua PRÓPRIA cópia de .forge/scripts/ e
+# .forge/hooks/git/lib/ (issue #41). Este hook, vindo do tronco via hooksPath, encontrava
+# scripts/libs antigos na worktree que o executa e bloqueava por causa alheia. Precedência: a
+# árvore que executa primeiro; se o alvo faltar lá E a árvore do hook (o tronco, quando
+# hooksPath é absoluto) o tiver, usa o do tronco com uma linha nomeando-o; bloqueio só quando
+# falta nas duas. $0 é o caminho deste próprio script, gravado por hooksPath —
+# dirname($0)/../.. é o .forge de onde ele foi executado.
+HOOK_FORGE_DIR="$(cd "$(dirname "$0")/../.." 2>/dev/null && pwd)" || HOOK_FORGE_DIR=""
+# Só serve de fallback quando termina em .forge E carrega a maquinaria deste hook — caso
+# contrário (symlink solto, HOME, checkout parcial) o tronco fica indisponível, como antes da #141.
+case "$HOOK_FORGE_DIR" in
+  */.forge) [ -f "$HOOK_FORGE_DIR/hooks/git/${0##*/}" ] || HOOK_FORGE_DIR="" ;;
+  *) HOOK_FORGE_DIR="" ;;
+esac
+resolve_delegated() {  # resolve_delegated <label> <rel-sob-.forge/> — ecoa o caminho resolvido em
+  # stdout; rc 0 = achado (própria árvore, ou do tronco com aviso em stderr nomeando-o); rc 1 =
+  # ausente nas duas com o diretório-lar presente em ao menos uma (bloqueio é do chamador); rc 2 =
+  # diretório-lar ausente nas duas (no-op legítimo — harness não instalado).
+  local label="$1" rel="$2"
+  local wt="$ROOT/.forge/$rel" trunk="" wt_dir trunk_dir=""
+  wt_dir="$(dirname "$wt")"
+  if [ -f "$wt" ]; then printf '%s\n' "$wt"; return 0; fi
+  # Árvore sem $ROOT/.forge nenhum nunca adotou o harness — não é uma worktree defasada, é uma
+  # árvore NÃO gerenciada. Devolve o mesmo no-op de antes da #141 (rc 2), sem consultar o tronco,
+  # sem aviso e sem efeito colateral. A delegação ao tronco abaixo vale só para a árvore que TEM
+  # .forge/ mas com este alvo ausente ou defasado.
+  [ -d "$ROOT/.forge" ] || return 2
+  if [ -n "$HOOK_FORGE_DIR" ]; then
+    trunk="$HOOK_FORGE_DIR/$rel"
+    trunk_dir="$(dirname "$trunk")"
+  fi
+  if [ -n "$trunk" ] && [ -f "$trunk" ]; then
+    echo "hook: $label ausente em $ROOT — usando o do tronco ($trunk); rode forge update na worktree" >&2
+    printf '%s\n' "$trunk"
+    return 0
+  fi
+  if [ -d "$wt_dir" ] || { [ -n "$trunk_dir" ] && [ -d "$trunk_dir" ]; }; then
+    # A recusa do CHAMADOR (texto literal, mantido) fala de UMA árvore só. Sem esta linha, uma
+    # worktree que não tem sequer o DIRETÓRIO faria a mensagem afirmar, por omissão, que ele
+    # existe nela — falso quando só o tronco o tem. Nomear as duas buscas não muda o prefixo que
+    # gates e usuários casam, só acrescenta onde se procurou.
+    echo "  (procurado em $wt_dir e em ${trunk_dir:-<tronco indisponível>})" >&2
+    return 1
+  fi
+  return 2
+}
+
+require_hook_lib() {  # require_hook_lib <name> — ecoa o caminho a sourcear em stdout; rc 0 =
+  # achado (ou no-op legítimo, stdout vazio); rc 1 = bloqueio — o CHAMADOR sai, porque esta
+  # função é sempre invocada dentro de `$(...)` (subshell) e um `exit` aqui dentro só encerraria
+  # o subshell, deixando o script pai seguir como se nada tivesse bloqueado.
+  local name="$1" resolved rc
+  resolved="$(resolve_delegated "$name" "hooks/git/lib/$name")"; rc=$?
+  if [ "$rc" -eq 0 ]; then printf '%s\n' "$resolved"; return 0; fi
+  if [ "$rc" -eq 1 ]; then
+    # Recusa literal e relativa, como as irmãs (".forge/scripts/ existe mas X não"): não nomeia
+    # uma árvore específica, porque o `lib/` local é sempre o da WORKTREE e a falta pode
+    # estar em qualquer lado da delegação.
+    echo "pre-push BLOQUEADO: .forge/hooks/git/lib/ existe mas $name não —" >&2
+    echo "  a delegação aponta para um alvo ausente. Rode /forge:upgrade ou restaure a lib." >&2
+    return 1
+  fi
+  return 0
+}
+
+DOCS_LIB="$(require_hook_lib check-docs-reviewed.sh)"; _rc=$?
+[ "$_rc" -eq 0 ] || exit 1
+if [ -n "$DOCS_LIB" ]; then
+  # shellcheck disable=SC1090
+  . "$DOCS_LIB"
+  if ! printf '%s\n' "$INPUT" | REPO="$ROOT" check_docs_reviewed; then
+    exit 1
+  fi
+fi
+
+# red-first (rule testing/regression-red-first.md) — check ESTÁTICO só (nunca roda teste; o
+# replay caro fica para /forge:red replay e para /forge:verify).
+RED_LIB="$(require_hook_lib check-red-first.sh)"; _rc=$?
+[ "$_rc" -eq 0 ] || exit 1
+if [ -n "$RED_LIB" ]; then
+  # shellcheck disable=SC1090
+  . "$RED_LIB"
+  if ! printf '%s\n' "$INPUT" | REPO="$ROOT" check_red_first; then
+    exit 1
+  fi
+
+  # >>> suppression-reference BEGIN (âncora de extração do gate adopt-ub-mode-practices-gate.sh)
+  # suppression-reference (REQ-03/REQ-04) — reusa _redfirst_resolve_base, já sourceada acima
+  # (remote_sha se não for zero → origin/develop → origin/HEAD → origin/main → commit raiz),
+  # sobre o range efetivamente publicado por este push, uma ref por vez.
+  SUPPRESSION_CHECK="$(resolve_delegated check-suppression-reference.sh scripts/check-suppression-reference.sh)"; _rc=$?
+  if [ "$_rc" -eq 1 ]; then
+    echo "pre-push BLOQUEADO: .forge/scripts/ existe mas check-suppression-reference.sh não — delegação em alvo ausente" >&2
+    exit 1
+  fi
+  if [ -n "$SUPPRESSION_CHECK" ]; then
+    while read -r _sr_lref _sr_lsha _sr_rref _sr_rsha; do
+      [ -n "${_sr_lsha:-}" ] || continue
+      case "$_sr_lsha" in *[!0]*) : ;; *) continue ;; esac   # deleção de ref: nada a varrer
+      _sr_base="$(_redfirst_resolve_base "$_sr_lsha" "${_sr_rsha:-0000000000000000000000000000000000000000}")"
+      if [ -z "$_sr_base" ]; then
+        echo "pre-push BLOQUEADO: check-suppression-reference — base não resolvida (sem origin/develop, origin/HEAD, origin/main nem commit raiz)" >&2
+        exit 1
+      fi
+      if ! bash "$SUPPRESSION_CHECK" --range "$_sr_base...$_sr_lsha" >/dev/null; then
+        echo "pre-push BLOQUEADO: supressão sem referência rastreável (REQ-03/REQ-04)" >&2
+        bash "$SUPPRESSION_CHECK" --range "$_sr_base...$_sr_lsha" || true
+        exit 1
+      fi
+    done <<EOF_SUP
+$INPUT
+EOF_SUP
+  fi
+  # <<< suppression-reference END
+fi
+
+# no-ai-attribution (rule conventions/no-ai-attribution.md) — varre os commits que estão sendo
+# publicados. Defesa em profundidade sobre o hook commit-msg: aqui pega o que nasceu com
+# --no-verify, o que veio de outra ferramenta, e o que foi importado por cherry-pick de um branch
+# marcado. É a última fronteira antes de a marca virar histórico público, onde removê-la deixa de
+# ser problema de quem commitou e passa a ser problema de todo mundo que tem clone.
+AI_CHECK="$(resolve_delegated check-ai-attribution.sh scripts/check-ai-attribution.sh)"; _rc=$?
+if [ "$_rc" -eq 1 ]; then
+  echo "pre-push BLOQUEADO: .forge/scripts/ existe mas check-ai-attribution.sh não — delegação em alvo ausente" >&2
+  exit 1
+fi
+if [ -n "$AI_CHECK" ]; then
+  while read -r _lref lsha _rref rsha; do
+    [ -n "${lsha:-}" ] || continue
+    case "$lsha" in *[!0]*) : ;; *) continue ;; esac   # deleção de ref: nada a varrer
+    if [ -z "${rsha:-}" ] || [ "$rsha" = "0000000000000000000000000000000000000000" ]; then
+      # ref nova no remoto: limita ao que este branch traz além dos demais refs conhecidos.
+      #
+      # `<oldest>~1` NÃO existe quando o commit mais antigo do branch é o commit RAIZ — o caso de
+      # todo repositório recém-criado. O range ficava inválido, `git rev-list` devolvia vazio, e o
+      # gate reportava-se verde tendo varrido zero commit: exatamente o "não executei e executei
+      # limpo terminam no mesmo exit 0" da issue #49, que só apareceu quando o contador de
+      # controle passou a reprovar conjunto vazio. Quando o pai não existe, o range correto é o
+      # próprio sha (todos os commits alcançáveis).
+      oldest="$(git rev-list "$lsha" --not --remotes 2>/dev/null | tail -1)"
+      if [ -n "$oldest" ] && git rev-parse --verify --quiet "$oldest~1" >/dev/null 2>&1; then
+        range="$oldest~1..$lsha"
+      else
+        range="$lsha"
+      fi
+    else
+      range="$rsha..$lsha"
+    fi
+    if ! bash "$AI_CHECK" range "$range" >/dev/null; then
+      echo "pre-push BLOQUEADO: no-ai-attribution (rule conventions/no-ai-attribution.md)" >&2
+      bash "$AI_CHECK" range "$range" || true
+      exit 1
+    fi
+  done <<EOF_AI
+$INPUT
+EOF_AI
+fi
+
+# migration-review (rule data/migration-review.md, REQ-05 §"Integração no ciclo") — varre, por
+# ref deste push, se algum arquivo de migration tocado tem evidência de parecer de revisão
+# especializada (data-engineer/data-relational). Mesmo padrão do bloco AI_CHECK acima: range por
+# ref via `resolve_delegated`, NUNCA via `runtime.gates` (esse mecanismo sempre chama o gate com
+# `--path "$ROOT"`, sem range — ver design §2.4; rodaria toda migration já existente no
+# histórico como pendente em todo push, inviável em repositório brownfield).
+MIGRATION_REVIEW_CHECK="$(resolve_delegated check-migration-review.sh scripts/check-migration-review.sh)"; _rc=$?
+if [ "$_rc" -eq 1 ]; then
+  echo "pre-push BLOQUEADO: .forge/scripts/ existe mas check-migration-review.sh não — delegação em alvo ausente" >&2
+  exit 1
+fi
+if [ -n "$MIGRATION_REVIEW_CHECK" ]; then
+  while read -r _lref lsha _rref rsha; do
+    [ -n "${lsha:-}" ] || continue
+    case "$lsha" in *[!0]*) : ;; *) continue ;; esac   # deleção de ref: nada a varrer
+    if [ -z "${rsha:-}" ] || [ "$rsha" = "0000000000000000000000000000000000000000" ]; then
+      # Ref nova no remoto. O fallback `range="$lsha"` do bloco AI_CHECK acima NÃO serve aqui: lá o
+      # range alimenta `git rev-list` (sha único = todos os commits alcançáveis); aqui alimenta
+      # `git diff-tree` (sha único = só o diff do commit tip). Copiado literalmente, ele deixava
+      # passar migration de qualquer commit anterior ao tip quando o commit novo mais antigo é o
+      # raiz (fail-open), e cobrava o diff do tip quando a ref nova não traz commit novo nenhum
+      # (bloqueio de push que não toca migration). Os dois casos são tratados abaixo.
+      if ! _mr_revs="$(git rev-list "$lsha" --not --remotes 2>/dev/null)"; then
+        range="$lsha"   # rev-list falhou: o .mjs recebe o sha e decide (range inválido ⇒ FAIL)
+      else
+        oldest="$(printf '%s\n' "$_mr_revs" | tail -1)"
+        # Nenhum commit novo: tudo o que esta ref publica já está em algum remoto e já passou (ou
+        # antecede) este gate — nada a varrer.
+        [ -n "$oldest" ] || continue
+        if git rev-parse --verify --quiet "$oldest~1" >/dev/null 2>&1; then
+          range="$oldest~1..$lsha"
+        else
+          # Commit novo mais antigo é o raiz (primeiro push do repositório): o push publica a
+          # história inteira, então o diff é contra a árvore vazia — cobre todos os commits, não
+          # só o tip.
+          range="$(git hash-object -t tree /dev/null)..$lsha"
+        fi
+      fi
+    else
+      range="$rsha..$lsha"
+    fi
+    # Uma execução só: a saída é capturada e reimpressa no bloqueio, em vez de rodar o gate de novo.
+    if ! _mr_out="$(bash "$MIGRATION_REVIEW_CHECK" range "$range")"; then
+      echo "pre-push BLOQUEADO: migration sem parecer de revisão (rule data/migration-review.md)" >&2
+      printf '%s\n' "$_mr_out"
+      exit 1
+    fi
+  done <<EOF_MR
+$INPUT
+EOF_MR
+fi
+
+# liaison acks (rule conventions/liaison-protocol.md) — cobra só os acks que ESTE repositório deve.
+# Roda antes do gate de FORGE.md porque não depende dele: um repositório pode ter canal de liaison
+# sem ter o bloco runtime configurado, e a cobrança de contrato vale igual.
+ACKS="$(resolve_delegated check-liaison-acks.sh scripts/check-liaison-acks.sh)"; _rc=$?
+if [ "$_rc" -eq 1 ]; then
+  echo "pre-push BLOQUEADO: .forge/scripts/ existe mas check-liaison-acks.sh não — delegação em alvo ausente" >&2
+  exit 1
+fi
+if [ -n "$ACKS" ]; then
+  if ! FORGE_ROOT="$ROOT" bash "$ACKS"; then
+    echo "pre-push BLOQUEADO: liaison — ack pendente (rule conventions/liaison-protocol.md)" >&2
+    exit 1
+  fi
+fi
+
+# liaison log integrity (issue #80) — o BLOQUEIO do único modo de falha do merge=union: nada
+# duplicado sai da máquina QUANDO o check roda e acha duplicata. post-merge (abaixo, neste mesmo
+# diretório) já DETECTA no instante em que a duplicata nasce e roda em qualquer branch; este é o
+# segundo dos dois pontos de fiação que a issue pede — nenhum dos dois basta sozinho.
+#
+# Alvo AUSENTE aqui NÃO bloqueia (mesma classe de check-worktree-prereqs.sh acima, issue #81, e
+# pelo MESMO motivo: `core.hooksPath` absoluto compartilha este hook entre TODOS os worktrees, mas
+# `.forge/scripts/` é conteúdo PRÓPRIO de cada um (issue #41) — uma worktree que ainda não trouxe
+# o commit deste script, mas herda o hook novo de outra, bloquearia por causa alheia, e é
+# exatamente a classe que a issue #73 corrigiu. `warn`, não `block`: nomeia a lacuna em voz alta
+# (o "não verifiquei" de #49 continua visível, nunca silêncio), mas não trava quem não tem como
+# resolvê-la só empurrando de novo. Quando o script EXISTE e RODA, a política é enforçada de
+# verdade — é só a ausência do alvo que degrada para aviso. Resolvido pelo mesmo mecanismo dos
+# sítios de bloqueio (resolve_delegated), mantendo a severidade de AVISO — nunca bloqueio — quando
+# faltar nas duas árvores.
+LOG_INTEGRITY="$(resolve_delegated check-liaison-log-integrity.sh scripts/check-liaison-log-integrity.sh)"; _rc_li=$?
+if [ -n "$LOG_INTEGRITY" ]; then
+  if ! FORGE_ROOT="$ROOT" bash "$LOG_INTEGRITY"; then
+    echo "pre-push BLOQUEADO: liaison — log duplicado pelo merge=union (issue #80)" >&2
+    exit 1
+  fi
+elif [ "$_rc_li" -eq 1 ]; then
+  echo "pre-push: liaison-log-integrity (issue #80) NÃO VERIFICADO — check-liaison-log-integrity.sh ausente em .forge/scripts/ (rode 'npx forge-harness update' para instalar). merge=union nunca perde mensagem, só duplica, e post-merge (quando presente) já teria sinalizado — mas esta checagem específica não rodou agora."
+fi
+
+FORGE_MD="$ROOT/.forge/FORGE.md"
+[ -f "$FORGE_MD" ] || { echo "pre-push OK (sem harness)"; exit 0; }
+
+# ── push de deleção pura (issues #132, #134) ──────────────────────────────────────────────────
+# `local_sha` zero é o contrato do próprio git para deleção de ref (githooks(5)): a ref deixou de
+# existir, e uma deleção não pode INTRODUZIR conteúdo — não há árvore nova a medir. Calculado AQUI,
+# antes do preflight de pré-condições de worktree (issue #81, logo abaixo) e do mutex de carga
+# pesada (issue #52, mais abaixo): sem isso, `git push origin --delete <branch>` continuava pagando
+# os dois — fila do mutex e exigência de `pnpm install` — para uma operação que não publica árvore
+# nenhuma, que é justamente o custo que a #132 mede (suíte sob mutex compartilhado por quatro
+# repositórios, >28min de contenção) e a #134 (25 deleções autorizadas, minutos cada uma). O
+# curto-circuito original só pulava typecheck/test/gates/harness-tests e chegava tarde demais: o
+# mutex já tinha sido disputado e o preflight já tinha bloqueado por dependência ausente antes de a
+# classificação abaixo sequer rodar.
+#
+# Três estados de INPUT, nunca dois: vazio (nada publicado — não é o mesmo que "publicado e
+# seguro", issue #49), só deleções (viu refs, nenhuma tem conteúdo — nada a provar, de fato) e
+# misto (ao menos uma ref publica conteúdo — os checks valem por inteiro, mesmo que outras linhas
+# do mesmo push sejam deleções). Um CONTADOR por estado, nunca um booleano só: um booleano que só
+# liga DENTRO do laço colapsa "não vi ref nenhuma" com "vi refs e nenhuma tinha conteúdo" no mesmo
+# valor — a classe que a issue #132 mediu num patch de consumidor (a sentinela `_viu_ref`, que não
+# existe neste template). Entrada vazia (`_pp_refs_vistas` == 0) não cai no curto-circuito, de
+# propósito: "não vi ref nenhuma" não pode virar "todas as refs são seguras" (DA-10) — os checks
+# abaixo continuam rodando por inteiro, como sempre rodaram.
+#
+# Nenhum gate de `runtime.gates` roda num push de deleção pura — inclusive um gate de consumidor
+# que dependa de ver a deleção para policiar ref protegida deixa de rodar. A política de ref
+# protegida é server-side (`develop` com `strict: true` e o check `gates`; DA-10, roadmap na Onda 8
+# para uma política própria dentro do hook) — o que este bloco decide é só se há árvore a medir,
+# nunca se a deleção deveria ser aceita.
+_pp_refs_vistas=0
+_pp_refs_com_conteudo=0
+while read -r _pp_lref _pp_lsha _pp_rref _pp_rsha; do
+  [ -n "${_pp_lsha:-}" ] || continue
+  _pp_refs_vistas=$((_pp_refs_vistas + 1))
+  case "$_pp_lsha" in *[!0]*) : ;; *) continue ;; esac   # local_sha zero: deleção, nada a provar
+  _pp_refs_com_conteudo=$((_pp_refs_com_conteudo + 1))
+done <<EOF_PP_DEL
+$INPUT
+EOF_PP_DEL
+
+_pp_so_delecao=0
+if [ "$_pp_refs_vistas" -gt 0 ] && [ "$_pp_refs_com_conteudo" -eq 0 ]; then
+  _pp_so_delecao=1
+  echo "pre-push: push de deleção pura ($_pp_refs_vistas ref(s)) — checks de árvore não se aplicam"
+fi
+
+# ── pré-condições de worktree (issue #81) ────────────────────────────────────────────────────
+# ANTES de qualquer suíte, e ANTES do mutex de carga pesada: enumera de uma vez todo artefato de
+# árvore (deps instaladas, build declarado) que os gates abaixo vão precisar e este hook não
+# produz. Medido em campanha real: sem isto, cada pendência só aparece depois que a anterior é
+# corrigida e um NOVO ciclo de push é gasto para descobri-la — 9 tentativas, 0 por defeito de
+# código. Três saídas foram comparadas (produzir o artefato; degradar para aviso; revelar todas
+# de uma vez) — revelar todas é a única que corta o custo medido sem herdar o risco de rodar
+# install/build como efeito colateral de um push. Só `existsSync`/`readFileSync` — nunca install,
+# nunca build — para não ficar mais caro que o hook que substitui no caminho feliz.
+#
+# Alvo ausente aqui NÃO bloqueia (diferente de DOCS_LIB/RED_LIB/AI_CHECK/ACKS/HARNESS_SUITE acima
+# e abaixo). A diferença não é capricho: aqueles enforçam POLÍTICA — se o alvo sumir, uma checagem
+# real deixa de rodar e algo passaria que não devia (issue #49: silêncio ali é dano). Este preflight
+# não enforça política nenhuma própria — só antecipa, de forma consolidada, o que os gates ABAIXO
+# (typecheck/test/gates/harness-tests) já reprovariam um de cada vez se algo faltar. Ausente, a
+# cobertura de correção não muda: só se perde a conveniência de ver tudo junto — voltar ao
+# comportamento pré-#81, nunca pior que ele. E bloquear aqui reintroduziria a #73 por outro
+# caminho: `check-worktree-prereqs.sh` chega junto com este hook num `forge update` completo (os
+# dois moram em MACHINERY_DIRS e são copiados no mesmo passo), mas hooks podem ser compartilhados
+# entre worktrees por `core.hooksPath` absoluto enquanto `.forge/scripts/` é conteúdo PRÓPRIO de
+# cada worktree (issue #41) — uma worktree que ainda não trouxe o commit com o script novo, mas
+# herda o hook novo de outra, bloquearia por causa alheia. `warn`, não `block`: nomeia a lacuna em
+# voz alta (nunca silêncio — o "não verifiquei" de #49 continua visível), mas não trava quem não
+# tem como resolvê-la só empurrando de novo. Resolvido pelo mesmo mecanismo dos sítios de
+# bloqueio (resolve_delegated), mantendo a severidade de AVISO quando faltar nas duas árvores.
+#
+# Pulado por inteiro em push de deleção pura (issues #132, #134): este preflight só antecipa o que
+# typecheck/test/gates/harness-tests exigiriam, e nenhum deles roda numa deleção — exigir
+# `pnpm install` para apagar uma branch é bloqueio por causa alheia à operação.
+if [ "$_pp_so_delecao" != 1 ]; then
+  PREREQS="$(resolve_delegated check-worktree-prereqs.sh scripts/check-worktree-prereqs.sh)"; _rc_pq=$?
+  if [ -n "$PREREQS" ]; then
+    if ! PREREQS_OUT="$(bash "$PREREQS" --path "$ROOT" 2>&1)"; then
+      echo "pre-push BLOQUEADO: pré-condições de worktree ausentes (issue #81) —"
+      echo "$PREREQS_OUT"
+      exit 1
+    fi
+  elif [ "$_rc_pq" -eq 1 ]; then
+    echo "pre-push: worktree-prereqs (issue #81) NÃO VERIFICADO — check-worktree-prereqs.sh ausente em .forge/scripts/ (rode 'npx forge-harness update' para instalar). Os gates abaixo ainda reprovam se algo faltar — só não juntos."
+  fi
+fi
+
+fm_field() {  # fm_field <key> — value of "  <key>:" inside the runtime: block
+  awk -v key="$1" '
+    /^runtime:/ { inblk=1; next }
+    inblk && /^[a-z_]+:/ { exit }
+    inblk && $0 ~ "^  "key":" { sub("^  "key":[[:space:]]*", ""); print; exit }
+  ' "$FORGE_MD"
+}
+
+gate_deps_ready() {  # gate_deps_ready <cmd> — false quando o gate depende de deps Node ainda não instaladas
+  # Um gate JS (pnpm/npm/npx/yarn) num clone recém-feito falha porque `node_modules` não existe —
+  # isso não é um erro de código, é infra ausente (§20.4). Degradar com elegância: avisar + pular,
+  # deixando o typecheck pesado para /forge:verify. Toolchains não-JS seguem inalterados.
+  case "$1" in
+    *pnpm*|*npm*|*npx*|*yarn*)
+      [ -d "$ROOT/node_modules" ] && return 0
+      return 1 ;;
+  esac
+  return 0
+}
+
+# ── teto opt-in de tempo (issue #135) ────────────────────────────────────────────────────────
+# `forge_run_gate` (lib/forge-runtime.sh) já tinha teto — 300s via `perl -e "alarm ...; exec
+# @ARGV"` — mas só para os gates de runtime.gates. `run_check`, usado para typecheck/test/
+# harness-tests (o caminho MAIS caro do hook), não tinha nenhum: um consumidor mediu ~8min
+# acumulados em quatro testes pesados sem uma única linha de saída (a saída vai para um log e só
+# é impressa no fim), e cinco tentativas de diagnóstico concluíram "deadlock" quando era custo
+# acumulado.
+#
+# NÃO reusa os 300s de `forge_run_gate` como default (DA-11): a própria #135 mediu suíte legítima
+# de consumidor em ~470s só em quatro testes, e suítes de mais de dez minutos existem em campo —
+# um default mataria pushes hoje verdes. `FORGE_PREPUSH_CHECK_TIMEOUT_S` não tem valor de fábrica:
+# AUSENTE significa DESLIGADO, e o comportamento é byte a byte o de antes da #135.
+FORGE_PREPUSH_CHECK_TIMEOUT_S="${FORGE_PREPUSH_CHECK_TIMEOUT_S:-}"
+
+run_check() {  # run_check <label> <cmd>
+  local label="$1" cmd="$2" log rc
+  [ -n "$cmd" ] || { echo "pre-push: $label não definido — skip"; return 0; }
+  if ! gate_deps_ready "$cmd"; then
+    echo "pre-push: $label PULADO — node_modules/ ausente (rode 'pnpm install' ou deixe para /forge:verify)"
+    return 0
+  fi
+  # NB: o template do mktemp precisa TERMINAR nos X (BSD/macOS falha com sufixo após o X, ex.:
+  # `-XXXXXX.log`). Sem sufixo de extensão — é um arquivo de log temporário efêmero.
+  log="$(mktemp "${TMPDIR:-/tmp}/forge-prepush-XXXXXX")"
+  if [ -n "$FORGE_PREPUSH_CHECK_TIMEOUT_S" ] && command -v perl >/dev/null 2>&1; then
+    # Mesmo mecanismo de forge_run_gate (L3 §3.4) — `exec` substitui o `bash -c` no lugar do
+    # `perl`, então o alarme chega ao processo que de fato roda `$cmd`, nunca ao `perl` já saído.
+    perl -e "alarm $FORGE_PREPUSH_CHECK_TIMEOUT_S; exec @ARGV" -- bash -c "cd '$ROOT' && $cmd" >"$log" 2>&1
+    rc=$?
+  else
+    (cd "$ROOT" && eval "$cmd") >"$log" 2>&1
+    rc=$?
+  fi
+  if [ "$rc" -eq 0 ]; then
+    echo "pre-push: $label OK"
+  elif [ "$rc" -eq 142 ] && [ -n "$FORGE_PREPUSH_CHECK_TIMEOUT_S" ]; then
+    # 142 = 128 + SIGALRM(14): o próprio contrato do `perl -e "alarm ...; exec @ARGV"` acima.
+    # Nomeia QUAL check e QUANTO — nunca morre calado (issue #135). "não reprovado" no texto é
+    # deliberado: um teto estourado não é o mesmo desfecho que uma asserção reprovada (LDG-0181
+    # dará ao runner interno um terceiro estado equivalente; aqui o hook só tem rc≠0 para expressar
+    # os dois, e a mensagem é o que evita colapsá-los na cabeça de quem lê).
+    echo "pre-push BLOQUEADO: $label excedeu o teto de ${FORGE_PREPUSH_CHECK_TIMEOUT_S}s (morto por teto, não reprovado)"
+    exit 1
+  else
+    echo "pre-push BLOQUEADO: $label falhou — tail:"
+    tail -20 "$log"
+    exit 1
+  fi
+}
+
+# ── mutex de carga pesada (issue #52) ─────────────────────────────────────────────────────────
+# Adquirido em volta do que é CARO (typecheck, test, gates), nunca em volta dos checks baratos
+# acima: docs-reviewed, red-first estático e ai-attribution devem falhar rápido SEM ocupar a
+# máquina. A ordem do hook é a disciplina "build verde antes de entrar na fila" imposta por
+# construção — medido em campo, 1305 segundos de fila para descobrir um erro de 8 segundos.
+#
+# Só engaja com `heavy_mutex.enabled: true` no forge.yaml. O default é desligado porque o harness
+# é publicado no npm e instalado por terceiros: chegar serializando o pre-push de repositórios não
+# relacionados é como um gate vira `--no-verify` de hábito.
+#
+# NOTA (#132/#134): esta resolução sai por `exit 1` ANTES de consultar `_pp_so_delecao` — uma instalação pela metade (`.forge/scripts/lib/` existe sem `heavy-mutex.sh`) continua bloqueando até uma deleção pura, que nunca chegaria a adquirir o mutex. É a mesma classe de "bloqueio por causa alheia" que o curto-circuito de deleção pura remove do preflight #81, mas só se manifesta com instalação corrompida, e estendê-lo aqui é decisão de produto sobre até onde o curto-circuito deve alcançar erros de instalação, não só checks de árvore — fora do escopo de DA-10. A correção, se vier, é condicionar o `exit 1` a `_pp_so_delecao != 1` e trocar a saída por um aviso na deleção pura.
+HEAVY_LIB="$(resolve_delegated heavy-mutex.sh scripts/lib/heavy-mutex.sh)"; _rc=$?
+if [ "$_rc" -eq 1 ]; then
+  echo "pre-push BLOQUEADO: .forge/scripts/lib/ existe mas heavy-mutex.sh não — delegação em alvo ausente." >&2
+  exit 1
+fi
+_heavy_enabled() {
+  [ -f "$ROOT/.forge/forge.yaml" ] || return 1
+  awk '/^heavy_mutex:/{f=1;next} f&&/^[a-z]/{f=0} f&&/^[[:space:]]*enabled:[[:space:]]*true/{print "y";exit}' \
+    "$ROOT/.forge/forge.yaml" 2>/dev/null | grep -q y
+}
+# Não adquirido em push de deleção pura (issues #132, #134): o mutex só faz sentido em volta do que
+# é CARO, e uma deleção não roda typecheck/test/gates nenhum — entrar na fila do mutex por uma
+# operação que não vai usar o que ele protege é exatamente o custo que a #132 mede (>28min de
+# contenção por quatro repositórios) sem nenhum ganho de correção.
+if [ "$_pp_so_delecao" != 1 ] && [ -n "$HEAVY_LIB" ] && _heavy_enabled; then
+  # shellcheck disable=SC1090
+  . "$HEAVY_LIB"
+  # Beneficiário (issue #144): o `git push` que invocou este hook é o processo pai dele no momento
+  # desta chamada (medido em bancada, §2.4 da onda L2). Declarado por VARIÁVEL DE AMBIENTE, nunca
+  # por flag nova: este hook, vindo do tronco via hooksPath, pode carregar a biblioteca de uma
+  # WORKTREE com versão anterior (#141), e uma lib de v0.15.0 recusa flag desconhecida com rc 64
+  # (heavy-mutex.sh:745 daquela versão) — o que mataria o push. A lib antiga simplesmente ignora a
+  # variável, então o caminho por ambiente é seguro nos dois sentidos.
+  FORGE_HEAVY_MUTEX_BENEFICIARY="$PPID" forge_heavy_mutex_acquire --label "pre-push de $(basename "$ROOT")" || exit $?
+  forge_heavy_mutex_arm_trap
+fi
+
+# ── lints de shell, por DIFF (LDG-0069) ──────────────────────────────────────────────────────
+# `check-shell-pipeline.sh` e `check-heredoc-hash.sh` já rodavam no CI contra o corpus real —
+# `w145[8]`, `w159[8]` e o passo dedicado do `ci.yml`. O que faltava não era cobertura, era
+# LATÊNCIA: o autor descobria a violação depois de empurrar. Aqui a descoberta passa a ser antes.
+#
+# Por DIFF, nunca pela árvore: os próprios gates `w145`/`w159` montam fixtures que CONTÊM de
+# propósito a forma proibida (construídas por concatenação, para não se autodetectarem), e um
+# hook que varresse tudo indiscriminadamente bloquearia o push da própria entrega. Só os `.sh`
+# que este push publica são varridos.
+#
+# NÃO entra no `pre-commit`: varrer o corpus a cada commit não se justifica para uma classe que o
+# CI já pega, e um hook lento é um hook desativado.
+SHELL_LINTS="check-shell-pipeline check-heredoc-hash"
+if [ -d "$ROOT/.forge/scripts" ]; then
+  _sh_list="$(mktemp "${TMPDIR:-/tmp}/forge-shlint-XXXXXX")"
+  # UMA chamada de git para o push inteiro, nunca uma por ref. `git log` aceita vários intervalos
+  # de revisão de uma vez e devolve a união — e o custo por ref é justamente o que `w152[31]`
+  # guarda por RAZÃO (medido: um `git` a mais por ref levou a suíte daquele gate de dentro do
+  # orçamento para 313s de um teto de 240s). Um `git push --all` com centenas de refs continua
+  # custando uma invocação.
+  _revs=()
+  while read -r _lref lsha _rref rsha; do
+    [ -n "${lsha:-}" ] || continue
+    case "$lsha" in *[!0]*) : ;; *) continue ;; esac   # deleção de ref: nada a varrer
+    if [ -z "${rsha:-}" ] || [ "$rsha" = "0000000000000000000000000000000000000000" ]; then
+      _revs+=("$lsha")            # ref nova: tudo que ela alcança
+    else
+      _revs+=("$rsha..$lsha")     # ref existente: só o que este push acrescenta
+    fi
+  done <<EOF_SHL
+$INPUT
+EOF_SHL
+  if [ "${#_revs[@]}" -gt 0 ]; then
+    git -C "$ROOT" log --format= --name-only "${_revs[@]}" -- '*.sh' '*.bash' > "$_sh_list" 2>/dev/null || : > "$_sh_list"
+  fi
+  _sh_n=0
+  _sh_args=()
+  while IFS= read -r _f; do
+    [ -n "$_f" ] || continue
+    [ -f "$ROOT/$_f" ] || continue          # arquivo apagado pelo push não tem o que linTar
+    case " ${_sh_args[*]:-} " in *" $ROOT/$_f "*) continue ;; esac
+    _sh_args+=("--path" "$ROOT/$_f")
+    _sh_n=$((_sh_n + 1))
+  done < "$_sh_list"
+  rm -f "$_sh_list"
+  if [ "$_sh_n" -eq 0 ]; then
+    # Sinal POSITIVO do caminho "não havia o que varrer": "não rodei" e "rodei e estava limpo"
+    # não podem terminar no mesmo silêncio (issue #49).
+    echo "pre-push: shell-lints — 0 arquivo(s) .sh no diff publicado; nada a varrer"
+  else
+    echo "pre-push: shell-lints — $_sh_n arquivo(s) .sh no diff publicado"
+    # Delegação em alvo ausente é ERRO — mas só quando há o que varrer. A guarda vive AQUI, e não
+    # no topo do bloco, de propósito: um push que não publica `.sh` nenhum não tem cobertura a
+    # perder por o lint estar ausente, e bloqueá-lo transformaria a instalação parcial de uma
+    # worktree (issue #73: hooks compartilhados por `core.hooksPath` absoluto, `.forge/scripts/`
+    # conteúdo próprio de cada uma) em push travado por causa alheia. Com `.sh` no diff, a
+    # ausência do lint é cobertura que some em silêncio, e aí bloqueia.
+    for _l in $SHELL_LINTS; do
+      _s="$(resolve_delegated "$_l.sh" "scripts/$_l.sh")"
+      if [ -z "$_s" ]; then
+        echo "pre-push BLOQUEADO: este push publica $_sh_n arquivo(s) .sh e .forge/scripts/$_l.sh não existe." >&2
+        echo "  Delegação em alvo ausente: o lint que varreria esses arquivos sumiu, e seguir devolveria" >&2
+        echo "  push verde sem varredura nenhuma. Rode 'npx forge-harness update' ou restaure o lint." >&2
+        exit 1
+      fi
+      if ! _lint_out="$(FORGE_ROOT="$ROOT" bash "$_s" "${_sh_args[@]}" 2>&1)"; then
+        echo "pre-push BLOQUEADO: $_l reprovou nos .sh que este push publica —" >&2
+        printf '%s\n' "$_lint_out" >&2
+        exit 1
+      fi
+    done
+    echo "pre-push: shell-lints OK — $_sh_n arquivo(s) .sh varrido(s) por $SHELL_LINTS"
+  fi
+fi
+
+# A classificação de push de deleção pura (issues #132, #134) já rodou logo depois do check de
+# FORGE_MD, antes do preflight #81 e do mutex de carga pesada — `_pp_so_delecao` e a linha nominal
+# vêm de lá. Aqui só falta pular typecheck/test/gates/harness-tests, exatamente como antes.
+if [ "$_pp_so_delecao" != 1 ]; then
+  run_check "typecheck" "$(fm_field typecheck)"
+  run_check "test" "$(fm_field test)"
+
+  # ── aviso de cobertura .NET (issue #106) ────────────────────────────────────────────────────
+  # `run_check "test"` acima executa `runtime.test` como TEXTO LIVRE; nada confronta esse comando
+  # com as superfícies de build REAIS da árvore. Uma árvore com `.sln`/`.csproj` RASTREADO cujo
+  # `runtime.test` não menciona `dotnet` faz a suíte .NET nunca rodar, sem aviso nenhum — medido no
+  # axis-go-cloud (24 `.sln`, `test: pnpm test`). AVISO, nunca bloqueio (DA-12): bloquear
+  # reprovaria todo push de consumidor cujo `runtime.test` chama um SCRIPT que por sua vez chama
+  # `dotnet` — a heurística por comando não vê através de script, e não há como saber o que um
+  # script faz sem executá-lo. Reconhecimento restrito à stack .NET: é a medida que o plano tem
+  # (docs/plans/2026-09-15-plano-issues-abertas.md, seção #106); bloqueio opt-in e outras stacks
+  # ficam para a Onda 8.
+  #
+  # SÓ RASTREADO (`git ls-files`), nunca a árvore de trabalho inteira: um `.sln` gerado por build
+  # e ignorado via `.gitignore` não é uma superfície que o consumidor versiona, e avisar sobre ele
+  # seria ruído — a condição de "rastreado" é o que distingue os dois cenários do gate w260.
+  _pp_dotnet_cmd="$(fm_field test)"
+  _pp_dotnet_n="$(git -C "$ROOT" ls-files -- '*.sln' '*.csproj' 2>/dev/null | wc -l | tr -d ' ')"
+  if [ "${_pp_dotnet_n:-0}" -gt 0 ]; then
+    case "$_pp_dotnet_cmd" in
+      *dotnet*) : ;;
+      *) echo "pre-push: AVISO — $_pp_dotnet_n solution(s) .NET rastreada(s) e runtime.test ('$_pp_dotnet_cmd') não invoca dotnet; a suíte .NET não roda neste gate" ;;
+    esac
+  fi
+
+  # ── gates declarados em FORGE.md runtime.gates (issue #82; LDG-0150) ─────────────────────────
+  # DUAS formas declaráveis, UM leitor só:
+  #
+  #   gates: check-authz,check-observability          # CSV escalar (forma histórica)
+  #   gates:                                          # block-sequence com fase (0.11.0+)
+  #     - check-authz                                 #   item escalar ⇒ phase: source
+  #     - name: check-image-digest
+  #       phase: pre-deploy
+  #
+  # Este bloco tinha um leitor PRÓPRIO — um `awk` bespoke que só extraía o valor escalar da linha
+  # `  gates:`. Com a forma mapeada, o valor inline é vazio: `GATES_CSV` ficava vazio, o laço não
+  # rodava, e o hook não imprimia uma linha sobre isso. Um consumidor que adotasse `phase:` —
+  # inclusive declarando tudo como `phase: source`, que é a fase que o push executa — deixava de
+  # rodar TODOS os gates no push, com o push verde. Adotar a fase DESLIGAVA a cobrança que existia
+  # antes. E era o terceiro clone do mesmo leitor no repositório (a classe de LDG-0014, duas
+  # implementações do mesmo contrato divergindo em silêncio, já materializada três vezes).
+  #
+  # Agora o hook usa `lib/forge-runtime.sh`, o mesmo leitor de `run-gates.sh` e de `spec-verify.sh`.
+  # "chave gates: presente" != "gates: com valor inline". A distinção é o que separa "nada
+  # declarado" (nenhuma linha `  gates:` — o hook não tem o que ler, e é o estado de todo projeto
+  # que nunca declarou gate) de "declarado numa forma que eu não consegui ler". Este awk NÃO lê os
+  # NOMES dos gates — isso é do leitor canônico e só dele; ele responde uma pergunta que o leitor
+  # canônico não expõe: a chave existe?
+  gates_key_present() {
+    awk '
+      /^runtime:/ { inblk=1; next }
+      inblk && /^[a-z_]+:/ { exit }
+      inblk && $0 ~ "^  gates:" { print "y"; exit }
+    ' "$FORGE_MD"
+  }
+
+  # Valor INLINE da chave, quando há um. Usado SÓ no caminho degradado abaixo, onde o leitor
+  # canônico é, por definição, indisponível — não é um segundo leitor do contrato concorrendo com
+  # ele, é o que resta quando ele não está lá.
+  gates_inline_raw() {
+    awk '
+      /^runtime:/ { inblk=1; next }
+      inblk && /^[a-z_]+:/ { exit }
+      inblk && $0 ~ "^  gates:" { sub("^  gates:[[:space:]]*", ""); print; exit }
+    ' "$FORGE_MD"
+  }
+
+  if [ -n "$(gates_key_present)" ]; then
+    # Alvo resolvido por resolve_delegated, como os demais irmãos deste arquivo (AI_CHECK, ACKS,
+    # HEAVY_LIB, require_hook_lib, HARNESS_SUITE) — nunca por `$ROOT` literal. rc 0 = achado (própria
+    # árvore ou tronco, com aviso nomeando-o); rc 1 = ausente nas duas árvores mas o diretório-lar
+    # existe em ao menos uma — harness atualizado pela metade, bloqueio mantido; rc 2 = diretório-lar
+    # ausente nas duas — sem `.forge/scripts/` não há harness instalado em NENHUMA das duas árvores,
+    # e o caminho degradado abaixo decide se ainda assim há contrato a cobrar (gates declarados
+    # inline).
+    RUNTIME_LIB="$(resolve_delegated forge-runtime.sh scripts/lib/forge-runtime.sh)"; _rc_runtime=$?
+    if [ -z "$RUNTIME_LIB" ]; then
+      if [ "$_rc_runtime" -eq 1 ]; then
+        echo "pre-push BLOQUEADO: .forge/scripts/ existe e .forge/scripts/lib/forge-runtime.sh não." >&2
+        echo "  É o leitor ÚNICO de runtime.gates (o mesmo de run-gates.sh e spec-verify.sh); sem ele" >&2
+        echo "  o hook não sabe o que foi declarado, e seguir devolveria zero gates com push verde." >&2
+        echo "  Rode 'npx forge-harness update' ou restaure a lib." >&2
+        exit 1
+      fi
+      # rc 2: ausente nas duas árvores. Alinhar não é afrouxar: com gates declarados INLINE, nenhum
+      # dos scripts declarados pode existir em lugar nenhum, e o push é recusado do mesmo jeito — é
+      # o que o hook anterior já fazia por outro caminho (o `[ -f "$gate_script" ]` do laço), e
+      # perder isso seria uma regressão de cobertura disfarçada de consistência.
+      _gates_inline_degraded="$(gates_inline_raw)"
+      if [ -n "$_gates_inline_degraded" ]; then
+        echo "pre-push BLOQUEADO: runtime.gates declara '$_gates_inline_degraded' e .forge/scripts/ não existe neste checkout." >&2
+        echo "  Nenhum dos gates declarados pode estar instalado, então declarar e seguir seria" >&2
+        echo "  silêncio verde sobre gate nenhum. Corrija runtime.gates ou instale o harness." >&2
+        exit 1
+      fi
+      # NO-GATES honesto, dito em voz alta: nada declarado inline e nenhum script onde um gate
+      # pudesse morar. "Não examinei" continua visível (issue #49) sem travar quem não instalou.
+      echo "pre-push: runtime.gates NO-GATES — .forge/scripts/ ausente nas duas árvores e nenhum gate declarado inline"
+    else   # leitor presente (própria árvore ou tronco): caminho normal, com o leitor canônico
+    # shellcheck disable=SC1090
+    . "$RUNTIME_LIB"
+    # Pelo leitor canônico, nunca por um awk local: é justamente a segunda implementação do mesmo
+    # contrato que este item existe para eliminar.
+    _gates_inline="$(forge_get_runtime gates "$ROOT" || true)"
+
+    # RUNTIME_LIB pode ter sido resolvido para a PRÓPRIA árvore só porque o arquivo existe lá —
+    # mesmo quando é uma versão anterior a #82, sem `forge_runtime_gate_entries`. Sourced assim, a
+    # chamada mais abaixo seria "command not found" sob `set -u`, engolida em silêncio pelo `|| true`
+    # e indistinguível de zero gate declarado (issue #49). Confere a API antes de confiar nela, e
+    # troca para a lib do tronco quando ela for compatível e a local não for.
+    #
+    # Este `declare -F` roda incondicionalmente aqui — ANTES de olhar se `gates:` é CSV escalar ou
+    # forma mapeada — e é o que fecha a issue #119 (árvore com lib anterior à função + `gates:` em
+    # CSV imprimia "NO-GATES — 0 gate(s)" com rc 0, porque a guarda de leitor mais abaixo só olhava
+    # a forma mapeada). tests/w190-pre-push-gate-reader-gate.sh[6c] prova a combinação {função
+    # ausente} × {CSV} por mutação: removendo este bloco, o cenário volta a reproduzir a saída
+    # exata do #119.
+    if ! declare -F forge_runtime_gate_entries >/dev/null 2>&1; then
+      _rt_trunk="${HOOK_FORGE_DIR:+$HOOK_FORGE_DIR/scripts/lib/forge-runtime.sh}"
+      if [ -n "$_rt_trunk" ] && [ "$_rt_trunk" != "$RUNTIME_LIB" ] && [ -f "$_rt_trunk" ] \
+         && ( . "$_rt_trunk" 2>/dev/null; declare -F forge_runtime_gate_entries >/dev/null 2>&1 ); then
+        echo "hook: forge-runtime.sh em $ROOT não tem forge_runtime_gate_entries (versão anterior a #82) — usando o do tronco ($_rt_trunk); rode forge update na worktree" >&2
+        RUNTIME_LIB="$_rt_trunk"
+        # shellcheck disable=SC1090
+        . "$RUNTIME_LIB"
+      else
+        echo "pre-push BLOQUEADO: 'runtime.gates' está declarado e a lib em $RUNTIME_LIB não tem forge_runtime_gate_entries (versão anterior a #82); o tronco não oferece uma versão compatível." >&2
+        echo "  Não bloquear aqui devolveria ZERO gates e um push verde, indistinguível de um projeto" >&2
+        echo "  sem gate algum. Rode 'npx forge-harness update' ou restaure lib/forge-runtime.sh." >&2
+        exit 1
+      fi
+    fi
+
+    # Guarda do leitor indisponível. `forge_runtime_gate_entries` delega a forma mapeada a
+    # `node lib/gate-phase.mjs` e devolve VAZIO, calada, quando node não existe — e vazio é
+    # indistinguível de "nenhum gate declarado". O gatilho do bloqueio é a INDISPONIBILIDADE DO
+    # LEITOR, nunca a forma do frontmatter: `  gates:` sem valor inline é o estado de FÁBRICA de
+    # todo projeto novo (templates/FORGE.md), e bloquear por essa forma recusaria o primeiro push
+    # de todo adotante.
+    #
+    # Esta guarda CONTRARIA POR DESENHO o contrato escrito de lib/forge-runtime.sh ("ausência de
+    # node ⇒ a forma mapeada simplesmente não é lida … nunca trava o script"). A severidade é do
+    # CHAMADOR, e o hook é o chamador que bloqueia: `run-gates.sh` e `spec-verify.sh` seguem
+    # silenciosos no mesmo estado. Duas severidades para o mesmo fato, declaradas — o inaceitável
+    # seria ficarem implícitas.
+    #
+    # Alvo resolvido por resolve_delegated, como os demais irmãos deste arquivo (AI_CHECK, ACKS,
+    # HEAVY_LIB, require_hook_lib, HARNESS_SUITE, RUNTIME_LIB) — nunca por `$ROOT` literal. Mantém
+    # coerência de par: `forge_runtime_gate_entries` busca o gate-phase.mjs irmão pelo `script_dir`
+    # da PRÓPRIA lib sourced (`dirname "${BASH_SOURCE[0]}"` em forge-runtime.sh); se o resolvido vier
+    # de uma árvore diferente da de RUNTIME_LIB, troca as duas juntas para a árvore de gate-phase.mjs
+    # — senão o `script_dir` interno procuraria no lugar errado e devolveria vazio em silêncio.
+    if [ -z "$_gates_inline" ]; then
+      GATE_PHASE_MJS="$(resolve_delegated gate-phase.mjs scripts/lib/gate-phase.mjs)"
+      if [ -n "$GATE_PHASE_MJS" ]; then
+        _gp_dir="$(dirname "$GATE_PHASE_MJS")"
+        if [ "$_gp_dir" != "$(dirname "$RUNTIME_LIB")" ] && [ -f "$_gp_dir/forge-runtime.sh" ]; then
+          RUNTIME_LIB="$_gp_dir/forge-runtime.sh"
+          # shellcheck disable=SC1090
+          . "$RUNTIME_LIB"
+        fi
+      fi
+      if ! command -v node >/dev/null 2>&1 || [ -z "$GATE_PHASE_MJS" ]; then
+        echo "pre-push BLOQUEADO: 'runtime.gates' está declarado sem valor inline (forma mapeada) e a declaração NÃO PÔDE SER LIDA." >&2
+        command -v node >/dev/null 2>&1 \
+          || echo "  Causa: 'node' não está no PATH — a forma mapeada é lida por lib/gate-phase.mjs." >&2
+        [ -n "$GATE_PHASE_MJS" ] \
+          || echo "  Causa: .forge/scripts/lib/gate-phase.mjs ausente nas árvores disponíveis — rode 'npx forge-harness update'." >&2
+        echo "  Não bloquear aqui devolveria ZERO gates e um push verde, indistinguível de um projeto" >&2
+        echo "  sem gate algum. Instale o leitor, ou declare os gates na forma CSV escalar." >&2
+        exit 1
+      fi
+    fi
+
+    _gate_entries="$(forge_runtime_gate_entries "$ROOT" || true)"
+    _src_gates="$(printf '%s\n' "$_gate_entries" | awk -F'\t' '$2=="source" && $1!=""{print $1}')"
+    _n_all=0; _n_src=0
+    [ -z "$_gate_entries" ] || _n_all="$(printf '%s\n' "$_gate_entries" | grep -c . || true)"
+    [ -z "$_src_gates" ] || _n_src="$(printf '%s\n' "$_src_gates" | grep -c . || true)"
+
+    if [ "$_n_all" -eq 0 ]; then
+      # NO-GATES declarado em voz alta: "não examinei" e "examinei e estava limpo" não podem
+      # terminar no mesmo silêncio (issue #49).
+      echo "pre-push: runtime.gates NO-GATES — 0 gate(s) declarado(s) no FORGE.md"
+    elif [ "$_n_src" -eq 0 ]; then
+      _other_phases="$(printf '%s\n' "$_gate_entries" | awk -F'\t' '$1!=""{print $2}' | sort -u | tr '\n' ' ')"
+      echo "pre-push: runtime.gates — $_n_all gate(s) declarado(s), 0 de fase 'source'; o push não executa fase(s): ${_other_phases% }"
+    else
+      echo "pre-push: runtime.gates — $_n_src gate(s) de fase 'source' de $_n_all declarado(s)"
+      while IFS= read -r gate; do
+        [ -n "$gate" ] || continue
+        gate_script="$ROOT/.forge/scripts/${gate}.sh"
+        if [ -f "$gate_script" ]; then
+          run_check "$gate" "bash '$gate_script' --path '$ROOT'"
+        else
+          # Era `skip` com exit 0 — declarar um gate e ele não existir virava silêncio verde, a forma
+          # exata do risco que a issue #49 descreve. `run-gates.sh` já tratava isso como MISSING e
+          # reprovava; o hook estava fora de sincronia com o próprio harness.
+          echo "pre-push BLOQUEADO: gate '$gate' declarado em runtime.gates e $gate_script não existe." >&2
+          echo "  Declarar e não existir é delegação em alvo ausente — corrija runtime.gates ou instale o gate." >&2
+          exit 1
+        fi
+      done <<EOF_GATES
+$_src_gates
+EOF_GATES
+      fi
+    fi
+  fi
+
+  # ── rede de suítes do harness (issue #49, instância 2) ───────────────────────────────────────
+  # Um gate entregue e nunca chamado conta como cobertura nos relatórios e não cobre nada: no
+  # axis-device-platform, `grep -rn "run-all.sh" .github .forge/hooks .forge/FORGE.md` devolvia
+  # vazio, e doze suítes de guarda só rodavam por invocação manual. O template não fiava a rede em
+  # ponto de entrada algum — todo projeto que instalava o harness herdava hooks que nunca a
+  # invocavam, e o consumidor axis-fare-validator teve de descobrir e consertar sozinho.
+  #
+  # O `elif` é o ponto central, e é a instância 4 aplicada à própria fiação: `[ -f ]` sozinho
+  # degrada em silêncio — apagar o runner deixaria o hook verde sem uma linha. A existência do
+  # DIRETÓRIO de suítes torna a ausência do runner um ERRO.
+  #
+  # O ALVO (`run-all.sh`) pode vir emprestado do tronco, mas o `run_check` abaixo o EXECUTA sempre
+  # com `set -uo pipefail` e
+  # `DIR="$(dirname "${BASH_SOURCE[0]}")"` por padrão — sem `--path`, um runner emprestado do
+  # tronco examina o DIRETÓRIO DO TRONCO, nunca `$ROOT`. Duas falhas simétricas do mesmo silêncio:
+  # (a) a worktree tem `.forge/scripts/tests/` com um teste que falha e nenhum `run-all.sh`
+  # próprio — sem `--path`, o runner emprestado varre o tronco (tipicamente vazio) e devolve
+  # "harness-tests OK" tendo examinado zero teste do que a worktree publica; (b) a worktree não
+  # tem `.forge/scripts/tests/` nenhum (harness anterior à #73) e o tronco tem um teste que falha
+  # por razão alheia à worktree — sem a guarda de diretório abaixo, o fallback rodaria a suíte do
+  # tronco e bloquearia o push por causa alheia, a MESMA classe que esta issue existe para fechar,
+  # só invertida. A guarda de diretório e o `--path` resolvem as duas: só tenta resolver quando
+  # `$ROOT/.forge/scripts/tests` existe NA WORKTREE (senão seria correto ficar em silêncio, como
+  # antes da #73), e sempre aponta a execução para essa mesma árvore, venha o runner de onde vier.
+  #
+  # `--path` só faz sentido quando o runner foi EMPRESTADO do tronco — é o argumento que aponta a
+  # execução para a árvore certa quando o binário que roda não é o dela. Um runner PRÓPRIO da
+  # worktree sempre soube examinar a própria árvore sem precisar de argumento nenhum, e um runner de
+  # consumidor mais estrito, que rejeita opção desconhecida, bloquearia o push por receber um
+  # argumento que não é seu. `--path` só é passado quando `$HARNESS_SUITE` resolveu para fora da
+  # própria worktree.
+  if [ -d "$ROOT/.forge/scripts/tests" ]; then
+    HARNESS_SUITE="$(resolve_delegated run-all.sh scripts/tests/run-all.sh)"; _rc=$?
+    if [ -n "$HARNESS_SUITE" ]; then
+      if [ "$HARNESS_SUITE" = "$ROOT/.forge/scripts/tests/run-all.sh" ]; then
+        run_check "harness-tests" "bash '$HARNESS_SUITE'"
+      else
+        run_check "harness-tests" "bash '$HARNESS_SUITE' --path '$ROOT/.forge/scripts/tests'"
+      fi
+    elif [ "$_rc" -eq 1 ]; then
+      echo "pre-push BLOQUEADO: .forge/scripts/tests/ existe mas run-all.sh não — a suíte do harness sumiu." >&2
+      echo "  Guarda que ninguém roda não cobre nada; restaure o runner ou remova o diretório." >&2
+      exit 1
+    fi
+  fi
+fi
+
+# ── tronco à frente do remoto (issue #67) ────────────────────────────────────────────────────────
+# POR ÚLTIMO, de propósito, e não no bloco de checks baratos. Este check INFORMA, nunca bloqueia —
+# então uma linha soterrada sob minutos de typecheck e test é a linha que ninguém lê. Aqui ela é a
+# última coisa antes de o push prosseguir. Bônus: push já reprovado acima custa rede zero.
+#
+# EXECUTADO, nunca sourceado: o script usa `set -m` para dar grupo de processos próprio ao filho
+# de rede, e sourceá-lo faria o job control vazar para o shell do hook.
+#
+# Recebe o remoto em "$1"/"$2" (que este hook não usava até agora) e o mesmo stdin de refs, porque
+# medir sempre `origin` erraria em `git push outro-remote` e em fluxo de fork.
+PUSH_AHEAD="$ROOT/.forge/scripts/check-push-ahead.sh"
+if [ -f "$PUSH_AHEAD" ]; then
+  printf '%s\n' "$INPUT" | bash "$PUSH_AHEAD" "${1:-}" "${2:-}" || true
+fi
+
+# ── mudanças de contenção da mensageria nativa (REQ-12, design §2.7) ────────────────────────────
+# O detector único (`native-containment.mjs`, chamado aqui pelo CLI `liaison-ops.sh native
+# containment`) avisa, nunca bloqueia — a decisão é do humano no merge (`/forge:ship`,
+# `yolo-gate`), não no push. Por isso nenhum caminho abaixo usa `exit`; o rc do próprio detector
+# (0 sempre que mediu, 2 quando não conseguiu medir) só decide o TEXTO da linha impressa. Intervalo
+# por ref: `<remote_sha>..<local_sha>` para ref existente; para ref NOVA (sem remote_sha), a base
+# de merge com o tronco (`develop`, design §5/§2.7) — sem um `develop` local para comparar, a ref
+# é pulada (nada a medir), nunca tratada como "sem mudança".
+if [ "$_pp_so_delecao" != 1 ] && [ -f "$ROOT/.forge/scripts/liaison-ops.sh" ] && [ -f "$ROOT/.forge/scripts/lib/native-containment.mjs" ]; then
+  while read -r _nc_lref _nc_lsha _nc_rref _nc_rsha; do
+    [ -n "${_nc_lsha:-}" ] || continue
+    case "$_nc_lsha" in *[!0]*) : ;; *) continue ;; esac   # deleção de ref: nada a medir
+    if [ -z "${_nc_rsha:-}" ] || [ "$_nc_rsha" = "0000000000000000000000000000000000000000" ]; then
+      _nc_base="$(git -C "$ROOT" merge-base "$_nc_lsha" develop 2>/dev/null || true)"
+      [ -n "$_nc_base" ] || continue
+    else
+      _nc_base="$_nc_rsha"
+    fi
+    _nc_range="${_nc_base}..${_nc_lsha}"
+    _nc_out="$(FORGE_ROOT="$ROOT" bash "$ROOT/.forge/scripts/liaison-ops.sh" native containment --range "$_nc_range" --format text 2>&1)"
+    _nc_rc=$?
+    if [ "$_nc_rc" -eq 2 ]; then
+      echo "pre-push: CONTENÇÃO — detector indisponível para $_nc_lref ($_nc_range): $_nc_out"
+    elif [ "$_nc_out" != "nenhuma mudança de contenção detectada" ]; then
+      echo "pre-push: CONTENÇÃO — $_nc_lref ($_nc_range):"
+      printf '%s\n' "$_nc_out" | sed 's/^/  /'
+    fi
+  done <<EOF_NC
+$INPUT
+EOF_NC
+fi
+
+# ── husky pre-push (encadeado) ─────────────────────────────────────────────────────────────────
+# O hook do Husky valida a versão do Bun e roda `bun run check` (lint + typecheck) — o gate que já
+# existia neste repositório antes da instalação do Forge. Como `core.hooksPath` passou a apontar
+# para .forge/hooks/git, o .husky/pre-push deixou de rodar sozinho; encadeamos aqui para preservá-lo
+# em todo push. rc != 0 bloqueia o push (o próprio hook do Husky redireciona a saída que importa).
+if [ -x "$ROOT/.husky/pre-push" ]; then
+  if ! "$ROOT/.husky/pre-push"; then
+    echo "pre-push BLOQUEADO: .husky/pre-push (bun run check)" >&2
+    exit 1
+  fi
+fi
+
+echo "pre-push OK"

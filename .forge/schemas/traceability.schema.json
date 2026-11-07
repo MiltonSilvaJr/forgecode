@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge.dev/schemas/traceability.schema.json",
+  "title": "Forge traceability matrix (.forge/specs/active/<change-id>/traceability.yaml)",
+  "description": "Requirement → design → tasks → evidence chain for a change. Every requirement the change introduces/modifies must trace to at least one task; evidence is filled by /forge:verify.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["traceability"],
+  "properties": {
+    "traceability": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["requirement_id", "tasks"],
+        "properties": {
+          "requirement_id": { "type": "string", "minLength": 3 },
+          "design_refs": { "type": "array", "items": { "type": "string" } },
+          "tasks": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^TASK-[0-9]+$" } },
+          "evidence": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

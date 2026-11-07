@@ -1,0 +1,8 @@
+# Baseline capability unit (.forge/product/current/capabilities/<capability>/spec.yaml)
+# Schema: .forge/schemas/baseline-capability.schema.json (doc §10.5).
+# Normally created/updated by /forge:archive (delta apply) — hand edits only for bootstrap/ingestion.
+capability_id: <capability-kebab>
+version: 0.1.0
+status: current
+requirements: []
+history: []

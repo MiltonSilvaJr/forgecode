@@ -1,0 +1,73 @@
+approvals:
+  - gate: requirements_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Requisitos REQ-01..16 e NFR-01..04 cobrem proposal 2.1-2.8 com criterios objetivos e codigos de erro fechados; conflitos resolvidos na revisao: status com flag off lista adapters disabled, Claude detectado apenas por presenca para cumprir specs/v2/claude-agent-provider.md, login cobra ToS no servidor por rota experimental; mapas endpoint/policy, classificacao de dados e eventos auditaveis preenchidos; validate-spec OK inclusive em copia tasks-ready"
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-05T00:01:17-03:00"
+    commit: "63a8aefd98"
+    scope: "requirements.md"
+  - gate: design_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Design reutiliza Integration/Credential e transports existentes (claude-agent, OAuth ChatGPT, moonshot messages para kimi-for-coding); 15 DDs com alternativas descartadas por evidencia (Keychain Claude direto veta por specs/v2/claude-agent-provider.md, Codex app-server fora de escopo, store paralelo rejeitado); token nunca em settings/headers nem persistido; contratos aditivos e experimentais com regen do client; riscos com deteccao e rastreabilidade REQ para secao mais spec-delta REQ-SA-01..20"
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-05T00:01:23-03:00"
+    commit: "63a8aefd98"
+    scope: "design.md"
+  - gate: tasks_reviewed
+    decision: approve
+    autonomous: true
+    reason: "24 tasks em 4 waves com dependencias aciclicas e sem aresta para wave posterior; cada task declara rastreia/paths/depende, Teste (comando) e Padrao de falha compativel com a saida do bun e com red-classify; tasks de rota declaram expoe para o SRF-01; cobertura por criterio de aceite e tabela final REQ para tasks sem orfaos; tasks documental e de gate declaram a ausencia de par vermelho/verde com motivo"
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-05T00:01:26-03:00"
+    commit: "63a8aefd98"
+    scope: "tasks.md"
+  - gate: requirements_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Pré-aprovação adversarial (iter 2): REQ-15 e REQ-16 emendados para impor política (integration.connect/use/provider.use) no handler e cobrar consentimento em login/consent/refresh/test; spec-delta ganha SCN-SA-15-C. validate-spec OK."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-05T09:15:59-03:00"
+    iteration: 2
+    commit: "63a8aefd98"
+  - gate: design_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Pré-aprovação adversarial (iter 2): corrigida alegação falsa sobre specs irmãs (overlap aditivo real em config.ts/api.ts/handlers.ts/commands.ts/client documentado em §1.2); alternativa Kimi ACP adicionada a §3 como fallback documentado; DD-12 explicita PDP via ManagedPolicy (integration.ts:31) e DD-06 fecha fiação do fallback KIMI_API_KEY. validate-spec OK."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-05T09:16:04-03:00"
+    iteration: 2
+    commit: "63a8aefd98"
+  - gate: tasks_reviewed
+    decision: approve
+    autonomous: true
+    reason: "Pré-aprovação adversarial (iter 2): TASK-13 expande expôe (login/consent/refresh/test) e Nota de imposição de política via ManagedPolicy; rastreia ganha DD-12. validate-spec OK."
+    decided_by: "forge-yolo (opus, high)"
+    decided_at: "2026-11-05T09:16:07-03:00"
+    iteration: 2
+    commit: "63a8aefd98"
+  - gate: requirements_reviewed
+    decision: approve
+    reason: "Aprovacao humana: requirements.md aprovado; implementacao autorizada."
+    decided_by: "Milton Antonio da Silva Jr"
+    decided_at: "2026-11-05T14:43:39-03:00"
+    iteration: 3
+    commit: "3cdb8a7bb1"
+    scope: "requirements.md"
+  - gate: design_reviewed
+    decision: approve
+    reason: "Aprovacao humana: design.md aprovado; implementacao autorizada."
+    decided_by: "Milton Antonio da Silva Jr"
+    decided_at: "2026-11-05T14:43:40-03:00"
+    iteration: 3
+    commit: "3cdb8a7bb1"
+    scope: "design.md"
+  - gate: tasks_reviewed
+    decision: approve
+    reason: "Aprovacao humana: tasks.md aprovado; implementacao autorizada."
+    decided_by: "Milton Antonio da Silva Jr"
+    decided_at: "2026-11-05T14:43:40-03:00"
+    iteration: 3
+    commit: "3cdb8a7bb1"
+    scope: "tasks.md"

@@ -1,0 +1,380 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge/schemas/liaison-message.schema.json",
+  "title": "liaison message — uma linha de <channel>/log/<sender>.jsonl",
+  "description": "Envelope de uma mensagem do subsistema liaison (canal de mensagens ORDENADAS entre agentes de repositórios distintos). Store: um JSONL append-only POR REMETENTE — cada mensagem é uma linha em .forge/liaison/<channel>/log/<sender>.jsonl, escrita SÓ pelo dono desse arquivo. Thread é campo (thread_id), não arquivo. Lamport é por thread, não por canal. Ordem dentro da thread: (lamport, sender, seq). Reimplementado à mão em lib/liaison-merge.mjs::validateEnvelope (sem ajv em runtime).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "msg_id",
+    "channel",
+    "thread_id",
+    "sender",
+    "seq",
+    "lamport",
+    "kind",
+    "requires_ack",
+    "subject",
+    "created_at",
+    "content_sha",
+    "trust"
+  ],
+  "properties": {
+    "msg_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*-[0-9]{4}$",
+      "description": "`<sender>-<seq:4>`, ex.: axis-go-cloud-0001. Único dentro do canal."
+    },
+    "channel": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "thread_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "sender": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$",
+      "description": "Identidade do remetente (self.id de algum participante). Conferido no import contra o nome do arquivo em que a mensagem chegou (log/<X>.jsonl só pode conter sender: X) — mata spoofing."
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Monotônico e sem buracos POR REMETENTE — detector de mensagem perdida."
+    },
+    "lamport": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Relógio de Lamport POR THREAD (não por canal). Ordem dentro da thread: (lamport, sender, seq). Entre threads não há ordem definida."
+    },
+    "kind": {
+      "enum": [
+        "note",
+        "question",
+        "answer",
+        "contract-change",
+        "ack",
+        "thread-open",
+        "join"
+      ]
+    },
+    "in_reply_to": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "msg_id da mensagem respondida (ex.: ack aponta para a mensagem confirmada)."
+    },
+    "requires_ack": {
+      "type": "boolean",
+      "description": "Proibido (deve ser false) em kind=ack e kind=answer — trava anti-eco (uma resposta/ack não pode por sua vez exigir ack)."
+    },
+    "subject": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "body": {
+      "type": "string",
+      "maxLength": 2048,
+      "description": "Corpo inline, ≤2 KB. Mutuamente exclusivo com body_ref: no máximo um dos dois está presente, e AMBOS podem estar ausentes — um recibo puro (ack sem justificativa) é mensagem legítima. A descrição anterior afirmava que exatamente um dos dois era obrigatório; o schema nunca o exigiu (nenhum dos dois está em `required`) e `validateEnvelope` implementa 'ambos opcionais, mutuamente exclusivos quando presentes'. Ali quem mentia era a descrição."
+    },
+    "body_ref": {
+      "type": "string",
+      "pattern": "^blobs/[A-Za-z0-9._-]+$",
+      "description": "Referência a <channel>/blobs/<arquivo> para corpos grandes (≤64 KB). Padrão sem separador de diretório além do prefixo fixo blobs/ — recusa path traversal por construção."
+    },
+    "refs": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "change_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "contract_files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "commit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "participants": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]*$"
+      },
+      "minItems": 1,
+      "description": "Só em kind=thread-open: composição inicial da thread (deve incluir o sender). kind=join não usa este campo — quem entra é o próprio sender da mensagem join."
+    },
+    "created_at": {
+      "type": "string",
+      "description": "Data do commit HEAD (git log -1 --format=%cI) no momento do envio — NUNCA usado para ordenar (ordem é lamport/sender/seq). A exceção declarada é `baton.stamped_at` (relógio de parede de quem grava, usado só para vencimento de lease, nunca para ordenar)."
+    },
+    "content_sha": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "sha256 hex do envelope canônico (chaves ordenadas) MENOS content_sha e MENOS trust. Confere integridade e detecta duplicata (msg_id repetido com content_sha igual = no-op; diferente = conflito)."
+    },
+    "trust": {
+      "enum": [
+        "self",
+        "untrusted-peer"
+      ],
+      "description": "Carimbado no IMPORT — NUNCA pelo remetente. self = escrita local própria; untrusted-peer = tudo que chegou de fora, mesmo depois de passar nas validações de import. NÃO é declaração acreditada: o valor é função de dois fatos observáveis — qual arquivo de remetente carrega a linha (log/<self>.jsonl é escrita local; log/<outro>.jsonl é do import) e a presença de authored_by (autoria externa nunca é self) — e essa derivação é conferida a cada pre-push por check-liaison-acks.sh (lib/liaison-trust.mjs). A conferência existe porque content_sha exclui trust por desenho, e verificação por hash é estruturalmente cega ao campo."
+    },
+    "authored_by": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]*$",
+      "description": "Autoria REAL do conteúdo, quando ele veio de outro repositório (caso do subcomando `liaison ask`). O `sender` continua sendo o repositório que escreveu a linha — é o invariante de um escritor por arquivo, sem o qual o merge deixa de ser livre de conflito. Presença de authored_by força trust: untrusted-peer."
+    },
+    "via": {
+      "type": "string",
+      "enum": [
+        "ask-peer",
+        "divergence-resolve",
+        "cross-session"
+      ],
+      "description": "Como o conteúdo de terceiro chegou até aqui. Registrado para que a procedência seja auditável no log, e não inferida. O valor nomeia o MECANISMO (perguntou-se ao peer; recuperou-se uma posição retida por divergência; chegou por mensageria nativa entre sessões do Claude Code), não o comando que o disparou."
+    },
+    "cross_session": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "from_addr",
+        "from_name",
+        "from_mode",
+        "native_ref",
+        "origin_verified"
+      ],
+      "description": "Só em via=cross-session: dados extraídos do transcript da sessão receptora para uma mensagem nativa recebida (REQ-02). from_addr/from_name/from_mode são AUTODECLARADOS pela sessão de origem — não provam repositório nem empresa (rules/conventions/liaison-untrusted-input.md). native_ref é o fingerprint (sha256 hex) calculado pelo mesmo leitor do REQ-08. origin_verified é o resultado da conferência contra o registro de sessões (design §2.4 passo 6).",
+      "properties": {
+        "from_addr": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]*$",
+          "description": "Endereço declarado pela sessão de origem (forma medida: uds:/tmp/cc-socks/<pid>.sock). Autodeclarado."
+        },
+        "from_name": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]*$",
+          "description": "Nome declarado pela sessão de origem. Autodeclarado: não prova repositório nem empresa."
+        },
+        "from_mode": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]*$"
+        },
+        "native_ref": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "origin_verified": {
+          "type": "boolean"
+        }
+      }
+    },
+    "baton": {
+      "type": "object",
+      "required": [
+        "op"
+      ],
+      "description": "Operação de bastão de dono único (add-liaison-handoff-baton, REQ-01): uma das seis operações `offer | claim | renew | release | complete | withdraw`, sempre em `kind: note` com `requires_ack: false`. Camada de ENVELOPE (a única que este schema impõe): `op` precisa casar `^[a-z][a-z-]{0,31}$`, sem enum fechado e sem `additionalProperties: false` — uma operação de versão futura do harness entra na réplica sem virar conflito nem buraco de `seq`. A validação COMPLETA (subcampos obrigatórios/proibidos por `op`, limites, aritmética do lease, `in_reply_to`) é a de `validateBaton` (lib/liaison-baton.mjs); mensagem que falha nela entra na réplica e recebe `malformed` na dobra, nunca conflito no import. `stamped_at`, abaixo, é a exceção declarada ao invariante de que nada no envelope usa relógio de parede (`created_at` é a data do HEAD).",
+      "properties": {
+        "op": {
+          "type": "string",
+          "pattern": "^[a-z][a-z-]{0,31}$",
+          "description": "offer | claim | renew | release | complete | withdraw. Padrão aberto (camada de envelope); o conjunto fechado das seis operações é conferido por `validateBaton`."
+        },
+        "session": {
+          "type": "string",
+          "description": "Identificador da sessão titular que age (REQ-10): `--session` ou `CLAUDE_CODE_SESSION_ID`. Autodeclarado — não autentica."
+        },
+        "stamped_at": {
+          "type": "string",
+          "description": "Instante de relógio de parede de quem grava, ISO 8601 UTC com sufixo Z. Exceção declarada: `created_at` (acima) é a data do HEAD e nunca usado para ordenar; `stamped_at` decide vencimento de lease e NUNCA entra na ordem da thread."
+        },
+        "eligible": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]*$"
+          },
+          "description": "Só em offer: repositórios que podem reivindicar, gravados na oferta (nunca recalculados)."
+        },
+        "max_lease_seconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "Só em offer: prazo máximo de lease que esta oferta aceita."
+        },
+        "skew_tolerance_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3600,
+          "description": "Só em offer: folga de relógio antes de outra sessão poder tomar por vencimento."
+        },
+        "lease_seconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 86400,
+          "description": "Só em claim/renew: duração do lease a partir de stamped_at."
+        },
+        "lease_until": {
+          "type": "string",
+          "description": "Só em claim/renew: stamped_at + lease_seconds, ISO 8601 UTC com sufixo Z."
+        }
+      }
+    },
+    "resolves": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sender",
+        "seq"
+      ],
+      "description": "Só em mensagens produzidas por `liaison-ops.sh conflicts resolve`: a POSIÇÃO retida por divergência cujo conteúdo esta mensagem republica em sequência nova. Republicar é o único caminho legítimo num log append-only — reescrever a posição de origem seria a própria história reescrita que o import recusa, e escrever no log alheio quebraria o invariante de um escritor por arquivo. O `kind` original fica registrado aqui e NÃO é reemitido: a mensagem republicada é sempre `note`, porque reemitir um `ack` ou um `contract-change` como se fosse nosso falsificaria autoria de decisão.",
+      "properties": {
+        "sender": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]*$"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "msg_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "content_sha": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kind": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "thread-open"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "participants"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "ack",
+              "answer"
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "requires_ack": {
+            "const": false
+          }
+        }
+      }
+    },
+    {
+      "$comment": "Exclusão mútua body/body_ref (LDG-0101). validateEnvelope já a cobrava e o schema não a codificava de forma alguma: uma mensagem com os DOIS campos passava no schema e reprovava no validador — divergência de direção oposta à registrada, e a que tem consequência real para quem valida por ajv antes de enviar.",
+      "not": {
+        "required": [
+          "body",
+          "body_ref"
+        ]
+      }
+    },
+    {
+      "$comment": "REQ-02/design §4.1: via=cross-session exige authored_by e cross_session com os cinco subcampos.",
+      "if": {
+        "properties": {
+          "via": {
+            "const": "cross-session"
+          }
+        },
+        "required": [
+          "via"
+        ]
+      },
+      "then": {
+        "required": [
+          "authored_by",
+          "cross_session"
+        ]
+      }
+    },
+    {
+      "$comment": "REQ-02/design §4.1: cross_session só é aceito com via=cross-session (mão dupla da condição acima).",
+      "if": {
+        "required": [
+          "cross_session"
+        ]
+      },
+      "then": {
+        "required": [
+          "via"
+        ],
+        "properties": {
+          "via": {
+            "const": "cross-session"
+          }
+        }
+      }
+    },
+    {
+      "$comment": "add-liaison-handoff-baton, REQ-01: baton presente exige kind: note e requires_ack: false — a mesma regra que validateEnvelope impõe na camada de envelope.",
+      "if": {
+        "required": [
+          "baton"
+        ]
+      },
+      "then": {
+        "properties": {
+          "kind": {
+            "const": "note"
+          },
+          "requires_ack": {
+            "const": false
+          }
+        }
+      }
+    }
+  ]
+}

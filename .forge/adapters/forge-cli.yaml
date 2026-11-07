@@ -1,0 +1,16 @@
+# Forge CLI adapter (§15) — Milton's runtime (Qwen Code derivative). Shares the .agents/
+# tree with the qwen and agents-skills adapters (same targets, same deterministic content).
+adapter: forge-cli
+generates:
+  - .agents/commands/forge/
+  - .agents/skills/
+supports:
+  symlink: true
+  slash_commands: true
+  skills: true
+  hooks: false
+smoke_tests:
+  - name: agents-tree-complete
+    command: "ls .agents/commands/forge/*.md >/dev/null && ls .agents/skills/*/SKILL.md >/dev/null"
+loss_warnings:
+  - "Hooks nativos do runtime ainda nao definidos — gates via .forge/scripts e hooks git"

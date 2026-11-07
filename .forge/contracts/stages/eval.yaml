@@ -1,0 +1,12 @@
+stage: eval
+required_inputs:
+  - case.json?
+required_outputs:
+  - meta-aggregate.json?
+  - aggregate.json?
+  - evidence/runs/*/run-manifest.json
+validators:
+  - meta-count
+  - meta-aggregate
+budget_class: high
+evidence_required: true

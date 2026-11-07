@@ -1,0 +1,14 @@
+# Gemini CLI adapter (§15): GEMINI.md -> AGENTS.md (symlink; materialized copy fallback).
+adapter: gemini
+generates:
+  - GEMINI.md
+supports:
+  symlink: true
+  slash_commands: false
+  skills: false
+  hooks: false
+smoke_tests:
+  - name: gemini-md-resolves
+    command: "[ \"$(readlink GEMINI.md)\" = 'AGENTS.md' ] || head -1 GEMINI.md | grep -q 'Generated from .forge/FORGE.md'"
+loss_warnings:
+  - "Commands/skills nativos nao materializados — interface via AGENTS.md"

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge/schemas/waves.schema.json",
+  "title": "waves.json — plano de execução por waves de um change",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["change_id", "waves"],
+  "properties": {
+    "change_id": { "type": "string" },
+    "created_at": { "type": "string" },
+    "waves": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "stories", "status"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^W[0-9]+" },
+          "name": { "type": "string" },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "stories": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "status": {
+            "enum": ["pending", "open", "closed", "blocked"]
+          },
+          "opened_at": { "type": ["string", "null"] },
+          "closed_at": { "type": ["string", "null"] },
+          "gate_result": {
+            "type": ["string", "null"],
+            "enum": ["OK", "FAIL", null]
+          }
+        }
+      }
+    }
+  }
+}

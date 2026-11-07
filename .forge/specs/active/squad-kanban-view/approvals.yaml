@@ -1,0 +1,27 @@
+# HITL decision log (schema: .forge/schemas/approvals.schema.json; doc §12.1).
+# Mantido por .forge/scripts/approval-log.sh — prefira o script a editar à mão.
+# Nenhuma aprovação foi registrada: o change está em `proposed` e os gates
+# requirements_reviewed, design_reviewed, tasks_reviewed e human_archive_approval
+# dependem de decisão humana. Não há aprovação autônoma neste arquivo.
+approvals:
+  - gate: requirements_reviewed
+    decision: approve
+    reason: "Aprovacao humana do operador: documentacao aprovada para execucao em worktree isolado; decisoes DA-01..DA-09 registradas em design.md §8.1; ressalvas do pre-approval.md absorvidas como decisoes."
+    decided_by: "Milton Antonio da Silva Jr"
+    decided_at: "2026-11-06T15:30:01-03:00"
+    commit: "09b33e51f6"
+    scope: "requirements.md"
+  - gate: design_reviewed
+    decision: approve
+    reason: "Aprovacao humana do operador: documentacao aprovada para execucao em worktree isolado; decisoes DA-01..DA-09 registradas em design.md §8.1; ressalvas do pre-approval.md absorvidas como decisoes."
+    decided_by: "Milton Antonio da Silva Jr"
+    decided_at: "2026-11-06T15:30:02-03:00"
+    commit: "09b33e51f6"
+    scope: "design.md"
+  - gate: tasks_reviewed
+    decision: approve
+    reason: "Aprovacao humana do operador: documentacao aprovada para execucao em worktree isolado; decisoes DA-01..DA-09 registradas em design.md §8.1; ressalvas do pre-approval.md absorvidas como decisoes."
+    decided_by: "Milton Antonio da Silva Jr"
+    decided_at: "2026-11-06T15:30:02-03:00"
+    commit: "09b33e51f6"
+    scope: "tasks.md"

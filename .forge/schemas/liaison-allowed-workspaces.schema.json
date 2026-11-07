@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "allowed_workspaces"],
+  "properties": {
+    "version": { "const": 1 },
+    "self_identity": { "type": "string", "minLength": 1 },
+    "allowed_workspaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "reason", "granted_by", "granted_at"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 },
+          "granted_by": { "type": "string", "minLength": 1 },
+          "granted_at": { "type": "string", "format": "date-time" },
+          "revoked_at": { "type": "string", "format": "date-time" },
+          "revoked_by": { "type": "string" },
+          "revoke_reason": { "type": "string", "minLength": 1 }
+        },
+        "dependentRequired": { "revoked_at": ["revoked_by", "revoke_reason"] }
+      }
+    }
+  }
+}

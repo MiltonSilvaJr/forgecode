@@ -1,0 +1,74 @@
+{
+  "schema": "run-manifest/v1",
+  "run_id": "20261106160257-2c73a1f0",
+  "stage": "verify",
+  "status": "failed",
+  "started_at": "2026-11-06T15:57:30Z",
+  "finished_at": "2026-11-06T16:02:57.592Z",
+  "duration_ms": 327592,
+  "git": {
+    "repo": true,
+    "branch": "feature/squad-orchestration",
+    "head_sha": "772783e01398b9a58461efa07a78a1e5b269eb8c",
+    "dirty": true,
+    "changed_files": [
+      ".forge/",
+      ".gitattributes",
+      ".gitignore",
+      "AGENTS.md",
+      "CHANGELOG.md"
+    ],
+    "diff_stat": ".gitattributes | 23 +++++++++++++++++++\n .gitignore     | 34 ++++++++++++++++++++++++++++\n AGENTS.md      | 70 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n CHANGELOG.md   | 29 ++++++++++++++++++++++++\n 4 files changed, 156 insertions(+)",
+    "diff_sha256": "46e431f9ec900835f4f492f6f3fdca5e1179a88b6140b3adea42221443be9f12"
+  },
+  "inputs": [
+    {
+      "path": "manifest.yaml",
+      "exists": true,
+      "sha256": "9011fbc8f278c4e794a39229770149d0d5dad9fe7099eb8f55fe8b6334dc0752",
+      "bytes": 1661,
+      "kind": "file"
+    },
+    {
+      "path": "tasks.md",
+      "exists": true,
+      "sha256": "d4689f6008058bef3c2e346cb494e8617f6ef9a48e0079c87a4bb3be4507fa00",
+      "bytes": 41128,
+      "kind": "file"
+    },
+    {
+      "path": "traceability.yaml",
+      "exists": false,
+      "sha256": null,
+      "bytes": null
+    }
+  ],
+  "commands": [
+    {
+      "name": "spec-verify",
+      "command": "spec-verify.sh squad-orchestration",
+      "status": "failed"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "verification.yaml",
+      "exists": true,
+      "sha256": "b7cfb8523bfe52e97e338634c82a2f413996e43bc3ffc9d59a4099c2e0e34dc6",
+      "bytes": 356,
+      "kind": "file"
+    }
+  ],
+  "runner": {
+    "name": "local",
+    "profile": "standard"
+  },
+  "budgets": {
+    "profile": "standard",
+    "budget_class": "medium",
+    "expected_runs": 1,
+    "estimated_timeout_s": 300,
+    "uses_llm": false,
+    "uses_subagent": false
+  }
+}

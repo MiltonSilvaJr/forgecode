@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge/schemas/run-manifest.schema.json",
+  "title": "run-manifest/v1 — safe execution provenance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "run_id",
+    "stage",
+    "status",
+    "started_at",
+    "finished_at",
+    "duration_ms",
+    "git",
+    "inputs",
+    "commands",
+    "outputs",
+    "runner",
+    "budgets"
+  ],
+  "properties": {
+    "schema": { "const": "run-manifest/v1" },
+    "run_id": { "type": "string", "minLength": 8 },
+    "stage": { "type": "string", "minLength": 1 },
+    "status": { "type": "string", "enum": ["running", "passed", "failed", "skipped"] },
+    "started_at": { "type": "string", "minLength": 10 },
+    "finished_at": { "type": "string", "minLength": 10 },
+    "duration_ms": { "type": "number", "minimum": 0 },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo", "branch", "head_sha", "dirty", "changed_files", "diff_stat", "diff_sha256"],
+      "properties": {
+        "repo": { "type": "boolean" },
+        "branch": { "type": ["string", "null"] },
+        "head_sha": { "type": ["string", "null"] },
+        "dirty": { "type": "boolean" },
+        "changed_files": { "type": "array", "items": { "type": "string" } },
+        "diff_stat": { "type": "string" },
+        "diff_sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" }
+      }
+    },
+    "inputs": { "$ref": "#/$defs/artifacts" },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "command", "status"],
+        "properties": {
+          "name": { "type": "string" },
+          "command": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    },
+    "outputs": { "$ref": "#/$defs/artifacts" },
+    "runner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "profile"],
+      "properties": {
+        "name": { "type": "string" },
+        "profile": { "type": "string" }
+      }
+    },
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["profile", "budget_class", "expected_runs", "estimated_timeout_s", "uses_llm", "uses_subagent"],
+      "properties": {
+        "profile": { "type": "string" },
+        "budget_class": { "type": "string", "enum": ["low", "medium", "high"] },
+        "expected_runs": { "type": "integer", "minimum": 0 },
+        "estimated_timeout_s": { "type": "integer", "minimum": 0 },
+        "uses_llm": { "type": "boolean" },
+        "uses_subagent": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "exists", "sha256", "bytes"],
+        "properties": {
+          "path": { "type": "string" },
+          "exists": { "type": "boolean" },
+          "sha256": { "type": ["string", "null"], "pattern": "^[a-f0-9]{64}$" },
+          "bytes": { "type": ["integer", "null"], "minimum": 0 },
+          "kind": { "type": "string", "enum": ["file", "directory"] }
+        }
+      }
+    }
+  }
+}

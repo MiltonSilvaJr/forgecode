@@ -1,0 +1,212 @@
+# Spec delta — operações que este change aplica ao baseline no archive
+# (schema: .forge/schemas/spec-delta.schema.json; doc §10.4).
+# modify_requirement é SUBSTITUIÇÃO TOTAL — nunca patch parcial.
+# Capability nova: squad-kanban-view. IDs do spec-delta são REQ-KANBAN-NNN; o mapeamento
+# 1:1 com os REQ-NN de requirements.md está em design.md §7.
+# Pendente (DA-08, design.md §8): o baseline do squad-orchestration (REQ-SQUAD-017) afirma
+# ausência de superfície de TUI; um modify_requirement sobre ele depende de decisão humana.
+# Nada foi implementado; este delta só é aplicado por /forge:archive depois de verificação.
+operations:
+  - op: add_requirement
+    capability: squad-kanban-view
+    requirement_id: REQ-KANBAN-001
+    content_ref: requirements.md#req-01--board-renderizado-a-partir-do-documento-do-painel
+    requirement:
+      id: REQ-KANBAN-001
+      title: Board renderizado a partir do documento do painel
+      normative: SHALL
+      scenarios:
+        - id: SCN-KANBAN-001-A
+          given: "um PanelDocument com cinco colunas e três cards em colunas distintas"
+          when: "a rota do board é aberta com squad.enabled ligado"
+          then: "cinco cabeçalhos e três cards são renderizados, cada card na coluna declarada por card.coluna"
+        - id: SCN-KANBAN-001-B
+          given: "um PanelDocument com cards vazio"
+          when: "a rota do board é aberta"
+          then: "o estado vazio é exibido, sem coluna inventada e sem card fantasma"
+      contracts: []
+      tests: []
+
+  - op: add_requirement
+    capability: squad-kanban-view
+    requirement_id: REQ-KANBAN-002
+    content_ref: requirements.md#req-02--navegação-sem-mutação
+    requirement:
+      id: REQ-KANBAN-002
+      title: Navegação sem mutação
+      normative: SHALL NOT
+      scenarios:
+        - id: SCN-KANBAN-002-A
+          given: "o board em foco"
+          when: "o operador usa j k h l enter esc r ou ?"
+          then: "apenas foco, rota ou refresh mudam e nenhuma chamada de escrita é feita"
+        - id: SCN-KANBAN-002-B
+          given: "o board fora de foco"
+          when: "o operador usa j ou k em outra rota"
+          then: "o comportamento global permanece o atual, porque as teclas só existem na camada de rota"
+      contracts: []
+      tests: []
+
+  - op: add_requirement
+    capability: squad-kanban-view
+    requirement_id: REQ-KANBAN-003
+    content_ref: requirements.md#req-03--drill-down-com-evidência-por-estágio
+    requirement:
+      id: REQ-KANBAN-003
+      title: Drill-down com evidência por estágio
+      normative: SHALL
+      scenarios:
+        - id: SCN-KANBAN-003-A
+          given: "um card com ci verified, merge unknown exigido e acceptance verified"
+          when: "o detalhe do card é aberto"
+          then: "merge aparece como unknown e sem evidência, e nenhuma barra de progresso é desenhada quando progressa é false"
+        - id: SCN-KANBAN-003-B
+          given: "um estágio não exigido com status unknown e source none"
+          when: "o detalhe do card é aberto"
+          then: "o estágio é rotulado como não exigido com o source verbatim, sem ser convertido em verified"
+      contracts: []
+      tests: []
+
+  - op: add_requirement
+    capability: squad-kanban-view
+    requirement_id: REQ-KANBAN-004
+    content_ref: requirements.md#req-04--sessões-e-liveness-medidos-no-mesmo-board
+    requirement:
+      id: REQ-KANBAN-004
+      title: Sessões e liveness medidos no mesmo board
+      normative: SHALL
+      scenarios:
+        - id: SCN-KANBAN-004-A
+          given: "um LivenessReport com uma sessão presumed_dead com cause e uma stalled"
+          when: "o painel de sessões é renderizado"
+          then: "os dois vereditos aparecem distintos, com a cause da primeira e inboxPending sinalizado"
+        - id: SCN-KANBAN-004-B
+          given: "uma geração anterior presente no relatório"
+          when: "o painel de sessões é renderizado"
+          then: "a geração anterior aparece em bloco separado, sem se misturar com as sessões ativas"
+      contracts: []
+      tests: []
+
+  - op: add_requirement
+    capability: squad-kanban-view
+    requirement_id: REQ-KANBAN-005
+    content_ref: requirements.md#req-05--frescor-explícito-e-falha-parcial
+    requirement:
+      id: REQ-KANBAN-005
+      title: Frescor explícito e falha parcial
+      normative: SHALL
+      scenarios:
+        - id: SCN-KANBAN-005-A
+          given: "um documento carregado e um refresh que falha"
+          when: "o refresh é concluído com erro"
+          then: "o documento anterior continua visível com o selo desatualizado e a idade calculada de atualizadoEm"
+        - id: SCN-KANBAN-005-B
+          given: "panel disponível e liveness indisponível"
+          when: "o board é carregado"
+          then: "o board renderiza e o painel de sessões mostra o erro, sem apagar o board"
+      contracts: []
+      tests: []
+
+  - op: add_requirement
+    capability: squad-kanban-view
+    requirement_id: REQ-KANBAN-006
+    content_ref: requirements.md#req-06--estados-de-indisponibilidade-acionáveis
+    requirement:
+      id: REQ-KANBAN-006
+      title: Estados de indisponibilidade acionáveis
+      normative: SHALL
+      scenarios:
+        - id: SCN-KANBAN-006-A
+          given: "o servidor responde 403 porque squad.enabled é false"
+          when: "a rota do board é aberta"
+          then: "uma mensagem nomeada contendo squad.enabled e a remediação é exibida, sem stack trace"
+        - id: SCN-KANBAN-006-B
+          given: "o servidor não tem o grupo experimental squad"
+          when: "a rota do board é aberta"
+          then: "o estado squad indisponível nesta versão do servidor é exibido e a rota continua navegável"
+        - id: SCN-KANBAN-006-C
+          given: "nenhuma geração ativa: liveness.generation nulo e cards vazio"
+          when: "a rota do board é aberta"
+          then: "o board exibe nenhuma geração ativa, distinto do estado vazio de uma geração sem cards"
+      contracts: []
+      tests: []
+
+  - op: add_requirement
+    capability: squad-kanban-view
+    requirement_id: REQ-KANBAN-007
+    content_ref: requirements.md#req-07--sem-escrita-sem-persistência-sem-endpoint-novo
+    requirement:
+      id: REQ-KANBAN-007
+      title: Sem escrita, sem persistência, sem endpoint novo
+      normative: SHALL NOT
+      scenarios:
+        - id: SCN-KANBAN-007-A
+          given: "o diff do change contra origin/dev"
+          when: "a superfície é revisada"
+          then: "não há migration nem alteração em packages/core, schema, protocol, client ou server; os paths alterados são feature-plugins/squad, builtins.ts, a story squad-board, os testes squad-* e a seção Sem painel próprio de packages/cli/README.md"
+        - id: SCN-KANBAN-007-B
+          given: "um cliente de teste com a superfície completa de experimental.squad que lança em toda operação de escrita"
+          when: "todas as teclas da view são exercitadas"
+          then: "o contador de escritas permanece zero"
+      contracts: []
+      tests: []
+
+  - op: add_requirement
+    capability: squad-kanban-view
+    requirement_id: REQ-KANBAN-008
+    content_ref: requirements.md#req-08--sem-vazamento-de-caminho-corpo-ou-segredo
+    requirement:
+      id: REQ-KANBAN-008
+      title: Sem vazamento de caminho, corpo ou segredo
+      normative: SHALL NOT
+      scenarios:
+        - id: SCN-KANBAN-008-A
+          given: "uma fixture com location.directory /Users/segredo/worktree e campos body credential e token"
+          when: "board e detalhe são renderizados"
+          then: "nenhum desses valores aparece no frame"
+        - id: SCN-KANBAN-008-B
+          given: "uma evidência com reference sensível"
+          when: "o detalhe do card é exibido"
+          then: "a reference é renderizada verbatim e a redaction continua sendo responsabilidade do produtor"
+      contracts: []
+      tests: []
+
+  - op: add_requirement
+    capability: squad-kanban-view
+    requirement_id: REQ-KANBAN-009
+    content_ref: requirements.md#req-09--layout-navegável-em-terminal-estreito-e-tokens-semânticos
+    requirement:
+      id: REQ-KANBAN-009
+      title: Layout navegável em terminal estreito e tokens semânticos
+      normative: SHALL
+      scenarios:
+        - id: SCN-KANBAN-009-A
+          given: "um terminal de 80x24 com dez cards"
+          when: "o operador navega com j e k"
+          then: "todos os dez títulos são alcançáveis e o cabeçalho da coluna corrente permanece visível"
+        - id: SCN-KANBAN-009-B
+          given: "um terminal de 120x40"
+          when: "o board é renderizado"
+          then: "os cinco cabeçalhos de coluna aparecem simultaneamente e nenhuma cor hexadecimal é usada"
+      contracts: []
+      tests: []
+
+  - op: add_requirement
+    capability: squad-kanban-view
+    requirement_id: REQ-KANBAN-010
+    content_ref: requirements.md#req-10--story-com-fixture-e-documentação-de-uso
+    requirement:
+      id: REQ-KANBAN-010
+      title: Story com fixture e documentação de uso
+      normative: SHALL
+      scenarios:
+        - id: SCN-KANBAN-010-A
+          given: "OPENCODE_STORY definido com o id da story"
+          when: "a story é aberta"
+          then: "o board renderiza a partir de fixtures estáticas, sem rede"
+        - id: SCN-KANBAN-010-B
+          given: "a ajuda da view aberta"
+          when: "o frame é capturado"
+          then: "a frase somente leitura aparece e a documentação aponta as operações de escrita do change base"
+      contracts: []
+      tests: []

@@ -1,0 +1,28 @@
+ESCOPO: análise documental não commitada, 2026-11-05; nenhuma aprovação ou execução funcional
+GRAFO 15 tasks; 12 waves; 16 linhas de superfície
+GRAFO/SUPERFÍCIE findings=0
+CONTROLE NEGATIVO GRAFO: dependência TASK-99 detectada (somente memória)
+RASTREABILIDADE: 16 REQs = 16 deltas = 16 elos, âncoras/casos/tasks resolvidos
+CRITÉRIOS 38 ausentes na matriz: []
+CONTROLE NEGATIVO CA: CA-99.1 corretamente não coberto
+HITL: proposed, cinco gates false, approvals vazio
+ARITMÉTICA ESPECIFICADA (não é teste de implementação): entrada=100, saída=30, total=130
+MUTANTES: cache repetido=150, reasoning repetido=136, ambos=156
+CONTEXTO: 12345/200000 usado=6.2 restante=93.8; overflow=105.0
+TEMPO: terminal=5s ativo=3s
+PENDENTE: Q01/Q02, validators independentes, gates HITL, sharding, impact.json, Red/Green reais
+RECHECAGEM FINAL: tasks=15 waves=13 superfícies=16 findings=0
+CONTROLES NEGATIVOS: TASK-99→TSK-01; retirar paths de superfície→SRF-01 (somente memória)
+PATHS TASKS: 40 existentes comprovados em HEAD; 10 novos explicitamente propostos; sem fetch remoto
+ANÁLISE DEFINIÇÕES: BLOCKER=3 HIGH=1 status=FAIL; não libera implementing
+OK session-activity-monitor
+IMPACTO=missing
+FIM: proposta documental; nenhuma execução Red/Green ou aprovação humana foi simulada
+VALIDAÇÃO FINAL APÓS INVENTÁRIO RENAME: 15 tasks,13 waves,16 superfícies,38 critérios,16 deltas,16 elos; grafo/superfícies/anchors OK
+PATHS: 43 existentes HEAD, 10 propostos; sem prova de frescor remoto
+CLARIFICAÇÕES MATERIAIS PRESERVADAS: proposal.md, requirements.md; avanço permanece bloqueado
+OK session-activity-monitor
+HEAD FINAL OBSERVADO: 9c98dbb609b7ef7d8e20bf2679d25244876f8870
+BRANCH FINAL: feature/subscription-auth
+ARTEFATOS: analysis.md, approvals.yaml, clarifications.md, design.md, evidence.md, manifest.yaml, proposal.md, requirements.md, spec-delta.yaml, tasks.md, traceability.yaml, validation.log
+OK documental não equivale a aprovação; análise continua FAIL,3 BLOCKER/1 HIGH; funcional e HITL pendentes

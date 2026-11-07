@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge.dev/schemas/spec-manifest.schema.json",
+  "title": "Forge spec manifest (.forge/specs/active/<change-id>/manifest.yaml)",
+  "description": "Manifest of an active change (doc §10.2). Scale-adaptive rule (§10.3): scale 0 requires tasks; 1 adds requirements; 2 adds design (default); 3 adds analyze + story sharding; 4 adds FRD/NFRD/TRD/DDD + explicit approval. Choosing a scale below the suggested risk requires quick_plan with skipped_phases + justification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "type", "mode", "rigor", "scale", "status", "created_at", "updated_at", "owner", "gates"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$", "minLength": 3 },
+    "type": { "enum": ["feature", "bugfix", "refactor", "greenfield", "brownfield"] },
+    "mode": { "enum": ["greenfield", "brownfield", "feature-only"] },
+    "rigor": { "enum": ["spec-anchored", "spec-first", "spec-as-source"] },
+    "scale": { "type": "integer", "minimum": 0, "maximum": 4 },
+    "status": {
+      "enum": [
+        "idea", "proposed", "requirements-ready", "design-ready", "tasks-ready",
+        "implementing", "implemented", "verified", "archived",
+        "blocked", "abandoned", "rejected", "superseded", "delivered-externally", "reopened", "rolled-back"
+      ]
+    },
+    "created_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "updated_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "owner": { "type": "string", "minLength": 1 },
+    "ledger_origin": {
+      "type": "string",
+      "pattern": "^LDG-[0-9]{4}$",
+      "description": "Entrada do ledger durável que originou este change (via /forge:spec new --from-ledger). Fecha o ciclo: archive marca a entrada resolved; close por abandono/rejeição a reabre."
+    },
+    "parent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "baseline": { "type": "string" } }
+    },
+    "affected_capabilities": { "type": "array", "items": { "type": "string" } },
+    "affected_paths": { "type": "array", "items": { "type": "string" } },
+    "fixes_defects": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "description": "Ids de defeito que este change corrige, declarados sem recategorizar `type` (issue #138). Um change `type: feature` (ou qualquer type != bugfix) que declara esta lista não-vazia entra na política red-first (rule testing/regression-red-first.md) pelo predicado isDefectFixing (lib/defect-scope.mjs) — 'bugfix' continua sendo suficiente sozinho; esta lista é o caminho para quem corrige defeito sem mudar de type. Cada id declarado exige uma entrada de evidence/red/red-evidence.json#entries[] resolvida (observed|waived) com o mesmo id."
+    },
+    "affects_surfaces": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Superfícies que o change toca (ex.: \"api\", \"data\") — gatilho declarativo de proporcionalidade (REQ-13/NFR-03) para as seções condicionais de requirements.md (§2.5). Opcional; ausente ⇒ change trivial ⇒ nenhuma seção adicional exigida."
+    },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "specs": { "type": "array", "items": { "type": "string" } },
+        "code": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requirements_reviewed", "design_reviewed", "tasks_reviewed", "implementation_verified", "human_archive_approval"],
+      "properties": {
+        "requirements_reviewed": { "type": "boolean" },
+        "design_reviewed": { "type": "boolean" },
+        "tasks_reviewed": { "type": "boolean" },
+        "implementation_verified": { "type": "boolean" },
+        "human_archive_approval": { "type": "boolean" }
+      }
+    },
+    "dev_loop": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sharded": { "type": "boolean" },
+        "stories_path": { "type": "string" },
+        "epic_context_compiled": { "type": "boolean" }
+      }
+    },
+    "quick_plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "skipped_phases": {
+          "type": "array",
+          "items": { "enum": ["requirements", "design", "tasks", "analyze", "frd-nfrd", "trd", "ddd", "story-sharding"] }
+        },
+        "justification": { "type": ["string", "null"] }
+      },
+      "if": { "properties": { "enabled": { "const": true } } },
+      "then": {
+        "required": ["skipped_phases", "justification"],
+        "properties": {
+          "skipped_phases": { "type": "array", "minItems": 1 },
+          "justification": { "type": "string", "minLength": 8 }
+        }
+      }
+    },
+    "archive": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "eligible": { "type": "boolean" },
+        "reason": { "type": ["string", "null"] },
+        "kind": { "enum": ["baseline_update", "closed_without_baseline_update"] },
+        "baseline_delta": {
+          "enum": ["applied", "none"],
+          "description": "Whether /forge:archive applies a spec-delta.yaml to the baseline. 'none' sanctions a verified change (pure refactor) that does not alter the baseline: spec-delta.yaml must be absent. Omitted keeps current default behavior ('applied' — spec-delta.yaml required)."
+        }
+      }
+    }
+  }
+}

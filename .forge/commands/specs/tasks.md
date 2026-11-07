@@ -1,0 +1,83 @@
+---
+description: Gera as tasks do change ativo — TASK-NN rastreáveis, ordenadas por dependência, agrupadas em waves — com gate HITL. Transiciona para tasks-ready.
+argument-hint: "[<change-id>]"
+---
+
+# /forge:tasks — tasks do change
+
+Argumentos: `$ARGUMENTS` (change-id opcional; sem argumento, use o único change ativo).
+
+Pré-condição: a última fase exigida pelo scale está pronta (`requirements-ready` em scale 1; `design-ready` em scale ≥2; `proposed` em scale 0). **Exceção:** `type: bugfix` scale ≥2 pode chegar direto de `requirements-ready` (design é opcional para esse tipo — ver `/forge:design`, LDG-0030); `design-ready` continua sendo um estado válido se o bugfix optou por ele.
+
+## 1. Geração
+
+Preencha `tasks.md` (estrutura do template do change) derivando dos artefatos existentes:
+
+- **`TASK-NN`** com numeração contínua; título objetivo; cada task atômica (≈1 commit);
+- cada task declara: `rastreia:` (REQ-NN / seção do design / seção do bugfix), `paths:` previstos e `depende:` (TASK-NN ou —);
+- agrupe em **waves** por dependência (uma wave só depende de waves anteriores; sem ciclos);
+- inclua tasks de teste/verificação exigidas pelo artefato de requirements (bugfix: testes de regressão da §5 são tasks obrigatórias);
+- **`type: bugfix` — a TASK do Red precede toda TASK de correção, com dependência explícita.** Abra uma `TASK-01` (ou a primeira da wave 1) dedicada a `/forge:red record` — `rastreia: bugfix.md §5`, DoD é a declaração gravada (`status: pending`) com `failure_pattern` copiado de uma execução real na base. O motor do `replay` (`lib/red-replay.mjs`) exige o teste VERDE em HEAD antes de derivar a árvore pré-correção; rodado nesta wave, antes de qualquer correção existir, ele devolve `FAIL replay (item green)` — esperado, não defeito do teste nem motivo para reabrir a TASK. **`/forge:red replay` até `status: observed` é DoD da TASK que entrega a correção (Green), nunca da TASK do Red isolado** — a dependência vai na direção oposta à do replay: a TASK de correção depende do Red gravado, e é ela (ou uma TASK final própria) que fecha com `observed`. Toda TASK que altera `fix_files` declara `depende: TASK-01` (ou o número correspondente). Nunca agrupe Red e correção na mesma task — mesmo quando a correção é trivial, a separação preserva a possibilidade de observar o Red isoladamente antes do Green. Quando o change declara múltiplos defeitos (`fixes_defects`/`entries[]`), abra um `record`/`replay` (um `--id`) por defeito — nunca uma evidência de slot único cobrindo um `bugfix.md` que enumera vários.
+- **DoD de toda task de verificação é um comando, não uma frase, e prova nos dois sentidos.** Prova vermelha: descreve o presente e é executada no momento em que a task é escrita, com a saída real anotada — e, antes de ser aceita, confirma-se que o alvo citado existe (`ls`/`git log --all --diff-filter=A`/`git cat-file -t`, comando e saída no artefato) e que a falha passa pelo caminho do defeito, não por outro motivo adjacente. Prova verde: é checada quanto a ser alcançável no estado atual do change (um diff contra o tronco num caminho que o próprio change altera nunca fica vazio; use o intervalo correto, nunca `HEAD` solto). Task que prova um oráculo (serialização, auditoria, backfill) exige três mutantes: o conserto ingênuo errado (vermelho), o conserto mínimo fiel que não muda contrato não declarado (verde) e o conserto que muda contrato não declarado (vermelho, senão o teste está fixando contrato não pedido). Todo passo de prova prescrito declara também o controle negativo — a variação de uma única entrada (chave errada, credencial ausente, estado anterior) e a falha esperada — e task de regressão que nomeia "algoritmo A em vez de B" carrega as duas contas, sob A e sob B, com a task de Red usando B como stub; sem isso um stub com o algoritmo errado passa pelo teste por acidente. Para task de adoção/registro que afirma "não altera comportamento em execução", a prova é comportamental no nível do host (chamada real sem credencial, mesmo status de antes), nunca só um teste de DI sobre o que foi registrado.
+- **Todo campo que um motor determinístico vai consumir (`Teste (comando)`, `Padrão de falha`) é validado contra esse motor antes do gate, não contra a presença do campo.** O `Padrão de falha` é copiado da asserção real do teste-alvo (leia o `Assert.*`/`assert`/`expect` exato — `Assert.True`/`Assert.False` com mensagem produz só a string da mensagem; `Assert.Equal` produz o par `Expected:`/`Actual:`; `Assert.Contains` produz `Collection:`/`Not found:` — nunca assuma pelo nome do método) e precisa casar com uma assinatura que `lib/red-classify.mjs` reconhece (gate shell: `^FAIL \[...\]`); ao usar um runner ainda não visto neste repositório, rode um `record`+`replay` de amostra antes de escrever as demais tasks no mesmo formato. O comando aponta o projeto/alvo real (sem `--project` pode sair código do framework em vez do teste), e task só-de-teste ou documental (sem par vermelho/verde) declara isso explicitamente, com motivo. Ao fixar nome de tipo/arquivo novo (literal, na própria TASK ou no design que ela implementa), rode os validadores de nomenclatura do repositório (ganchos pre-commit, `validate-naming-conventions.sh`) contra o nome antes de escrevê-lo — um prefixo de domínio que colide com um prefixo de tecnologia proibido (`Grpc`, `Http`...) é recusado na hora de commitar, não na revisão. Quando a convenção de assunto de commit por TASK usa separador, prefira dois-pontos ou parênteses (`TASK-NN: ...` / `... (TASK-NN)`) a hífen com espaço — alguns projetos proíbem travessão/hífen solto como estilo, e o exemplo de commit dado por quem delega a task não é isenção dessa regra.
+- **Toda TASK cujo entregável é um gate ou check declara o `canal`** (qual workflow/job/hook o executa) e confere que o `teste_comando` cai no glob que o CI do repositório de fato roda — um gate sem chamador fecha "verde" sem proteger nada. Se o canal ainda não existe, a ligação é TASK própria e dependente, nunca implícita.
+- **Task de reserva de identificador** (número de migration, faixa de ids) varre dois universos, nunca só o código: ocorrência em todo o histórico (`git log --all -S'<id>'`, mais barato que `git grep` por ponta) e busca por conteúdo nos registros de coordenação não commitados (canal de mensagens, ledger, arquivos de reserva de branches ativas) — com um controle positivo por universo; universo que devolve zero sem controle positivo não provou ausência.
+- Toda task que escreve em estado compartilhado (`terraform plan/apply`, state remoto, release Helm, banco) e depende de outro change em andamento confere se a árvore desta branch declara tudo o que está vivo nesse estado; se não declara, a dependência no change pendente é hard-stop, não nota.
+- Toda citação de identificador de escopo local (`DD-NNN` e similares) fora do artefato que o define carrega o change/módulo que a qualifica, e se resolve primeiro contra o `design.md` do próprio change antes de qualquer busca global. Quando um achado do gate `design_reviewed` corrige um `DD-NN`, varra `tasks.md` por citações do mesmo `DD-NN` e pelos termos técnicos que mudaram antes de considerar a correção concluída — um `tasks.md` não corrigido é a versão antiga do fato, mesmo com `design.md` certo.
+- Toda afirmação sobre estado de outro change (mesclado, arquivado, ADR promovida) é medida contra a ref de integração (`git ls-tree <default_branch>`, `merge-base --is-ancestor`), nunca pelo sistema de arquivos da worktree da feature — e todo path citado no `tasks.md` é conferido com `git fetch` + `git cat-file -e origin/<branch>:<path>`, nunca pelo checkout local desatualizado.
+- Quando a mudança substitui acesso direto a uma tabela por função com revogação (REVOKE/RLS), o passo de contrato é task própria e obrigatória (nunca etapa implícita de outra), e lista o inventário de **todo ponto de acesso** medido (arquivo:linha, colunas lidas/escritas, chamadores em `develop` e em PRs abertos dependentes) — cobertura por tabela nominal esconde pontos de acesso sem função.
+- tabela de rastreabilidade ao final: todo REQ (ou invariante/teste de regressão) coberto por ≥1 task — e a cobertura é por **critério de aceite**, não por REQ nominal: cada critério aparece num caso de teste (ordinal) ou numa medição do `/forge:verify` com comando, e um REQ cujos critérios não aparecem em nenhum dos dois é órfão mesmo com a linha da tabela preenchida.
+
+## 2. Checagem estrutural (antes do gate) — por script, não por leitura
+
+A integridade do grafo de tasks é verificada por `lib/tasks-graph.mjs`, executado dentro do `validate-spec` na transição a `tasks-ready`. **Não confira estes itens lendo o arquivo** — rode o validador e corrija o que ele apontar:
+
+```bash
+bash .forge/scripts/validate-spec.sh <change-id>
+```
+
+**Bloqueiam** a transição: **TSK-01** dependência que aponta para TASK inexistente · **TSK-02** ciclo · **TSK-03** dependência para TASK de wave **posterior** · **TSK-04** ID **duplicado** · **TSK-06** **nenhuma** task declara metadados.
+
+**Avisam** (`WARN`, não travam):
+
+- **TSK-04 furo na numeração.** Ambíguo por natureza: pode ser task perdida num merge, mas também é o resultado de remover uma task sem renumerar — que é a operação segura, já que renumerar invalida referências gravadas em commits, PRs e stories.
+- **TSK-05 não foi possível verificar.** Nenhum cabeçalho de wave reconhecido, logo a ordem topológica entre waves não foi conferida. Um check que não rodou é indistinguível de um check que passou, e é por isso que ele se anuncia.
+- **SRF-01 cobertura de superfície.** Cruza o "Checklist de cobertura de superfície" do `requirements.md` contra o grafo: REQ que declara endpoint/rota sem que nenhuma das tasks que o cobrem produza superfície. Resolva declarando o `paths:` real da task que entrega a rota, ou abrindo a task que falta.
+- **TSK-06 parte das tasks sem bloco de metadados.** As dependências dessas tasks não entraram no grafo. Avisa quando é pontual (task trivial é motivo plausível) e **bloqueia** quando é o plano inteiro — aí não sobrou aresta nenhuma, e TSK-01/02/03 passariam por vacuidade. `depende: —` é declaração de independência e não conta como omissão: o que se cobra é ter declarado, não ter dependência.
+- **SRF-02 Checklist ausente ou vazio** — mesmo princípio do TSK-05: o SRF-01 não rodou, e isso aparece. O parser só reconhece `REQ-NN` na primeira célula; um projeto que usa `REQ-<PREFIXO>-NNN` (ex.: `REQ-AP-049`) recebe esse WARN mesmo com a checklist preenchida. Antes de aceitar como "esqueleto", conte as linhas da tabela por um meio independente (`grep` das linhas com `REQ-` na seção); se houver linhas e o parser devolveu zero, o achado é instrumento cego, não checklist vazia, e a cobertura se mede por uma cópia normalizada com um controle negativo registrado.
+- **SRF-03 superfície de API declarada em prosa.** A célula fala em endpoint/rota mas não cita `VERB /path`. Medido contra um repositório real, 64% dos achados de SRF-01 caem em células assim ("endpoints de publicação no bff + tela admin") — e sobre prosa o oráculo de rota não tem o que cruzar: não dá para distinguir "o endpoint não existe" de "a task declarou `paths:` incompleto". Escrever `POST /api/v1/lists/ranges` no lugar de "endpoint de listas" é o que torna a cobertura verificável. Superfície que não é de API (tela, CLI, flag) não é cobrada.
+
+O parser reconhece os campos `rastreia:`/`paths:`/`depende:` pelo **nome**, em qualquer ordem, com ou sem parênteses em volta — não há forma canônica a memorizar.
+
+Estes eram itens de checklist para você conferir a olho. Num plano de 89 tasks, a conferência a olho deixou passar uma dependência de Wave 4 para Wave 7 — por isso viraram código.
+
+Continua sendo seu: **nenhum REQ órfão na tabela de rastreabilidade** (o validador cobre a coerência de `traceability.yaml`, não a completude da tabela em prosa).
+
+Um validador cujas regras são ligadas por estado do ciclo de vida responde "OK" por vacuidade antes desse estado: se o change ainda não pode transitar (gate HITL pendente) e você precisa antecipar a conferência dos checks gated por um estado posterior, valide uma **cópia** do diretório do change com `status` avançado para o estado-alvo e registre o resultado — o `EXIT=0` no estado anterior ao gate não exercita esses checks.
+
+Depois de inserir ou mover uma TASK numa rodada de correção, rode um checklist mecânico antes de reapresentar: para cada símbolo/coluna/projeto que a TASK nova cria, busque no plano as tasks que o referenciam e confira que todas dependem dela e estão em wave igual ou posterior; confira com `git ls-tree` todo caminho citado pela primeira vez na rodada. Uma correção pontual é mudança de grafo, não de texto — o que nasce numa posição é conferido contra tudo que o consome antes dela, e o que é escrito pela primeira vez na rodada de correção merece a mesma medição que a rodada original recebeu.
+
+## 3. Gate HITL — `tasks_reviewed` (§12.1)
+
+`AskUserQuestion` (resumo: nº de tasks, waves, cobertura): **Approve** / **Review** / **Reject** / **Block**.
+
+```bash
+bash .forge/scripts/approval-log.sh <change-id> --gate tasks_reviewed --decision <decision> [--reason "<motivo>"] [--iteration <n>] --scope "tasks.md"
+```
+
+- **Approve** → encadeie com `&&` ao `approval-log` (nunca `;`): `bash .forge/scripts/approval-log.sh <change-id> --gate tasks_reviewed --decision approve [...] && bash .forge/scripts/spec-transition.sh <change-id> tasks-ready` — uma falha segura do `approval-log` (ex.: motivo com caractere que quebra o YAML) não pode deixar a transição seguir sem aprovação registrada. Próximo: `/forge:analyze` (obrigatório em scale ≥3) e, também em scale ≥3, `/forge:shard` — `/forge:implement` reprova fechado (`validate-spec.sh`) se `dev_loop.sharded` não estiver `true`.
+- **Review** → ajuste conforme o motivo e reapresente (registre com `--iteration <n>`), sujeito ao mesmo teto de 3 rodadas, à régua de severidade estável e à regra de convergência do `/forge:requirements` (§4, Teto e convergência do Review): no teto, a escalada ao dono é obrigatória.
+- **Reject**/**Block** → registre e pare.
+
+Antes de aprovar, varra normas vigentes pela superfície tocada, não pela lista de referências do próprio `tasks.md`: ADRs aceitas em todos os diretórios de ADR do repositório que nomeiem o serviço/path/conceito tocado, arquivos de `.forge/rules/**` cujo `applies_to` ou texto nomeie essa superfície, e ADRs/specs aceitas em branches/worktrees de changes com `affected_paths` cruzado (lidas por `git show <branch>:<path>`, nunca pelo checkout) — cada norma não citada vira linha no gate: compatível com motivo, ou conflito bloqueante.
+
+**Correção de achado entre rodadas do gate** carrega quatro disciplinas: (1) preservação — antes de editar em lote, conte as ocorrências dos trechos que a edição não pretende mudar e reconfira a mesma contagem depois; contagem que cai é regressão, mesmo com o validador estrutural verde; remoção pedida por decisão calcula o texto efetivamente removido (diff antes/depois) e exige que seja igual ao trecho mandado remover — nunca o fim da célula/linha como delimitador; (2) toda frase nova do tipo "feito na TASK-NN" ou "o artefato X passa a conter Y" vem acompanhada da edição correspondente em X na mesma rodada — e toda afirmação de fiação ("o mecanismo M é lido/imposto em P") só é aprovável com a citação literal do trecho de P que faz a leitura; (3) a correção nunca reescreve a descrição de um achado anterior já fechado por um gate a montante — só acrescenta, e se a edição reabre o cenário daquele achado, reexecute-o contra a regra nova e registre como nova iteração do gate a montante; (4) `tasks.md` não remete a "inalterado da rodada N" — cada rodada reescreve o trecho inteiro, porque remissão que aponta para uma versão sobrescrita perde conteúdo em silêncio. Quem corrigiu não certifica a própria correção: a rodada seguinte do revisor independente é o que audita isso.
+
+## Regras
+
+- Story sharding (épicos → stories auto-contidas) chega na W5.0 — não fatie aqui.
+- Não inicie implementação neste comando.
+
+## Modo autônomo (--yolo)
+
+Se `autonomy.mode: yolo` (`forge.yaml`) ou `--yolo` na invocação, este gate não para no `AskUserQuestion`: invoque o agent `yolo-gate` (model **opus**, effort **high**) sobre o artefato — ele analisa, decide (approve/review/reject/block) e registra em `approvals.yaml` com `autonomous: true` via `approval-log.sh --autonomous`. `review` autônomo alimenta o loop até 3 iterações e então escala ao humano. Falhas de execução e conflitos de fontes continuam parando (não são gates). Ver `.forge/rules/conventions/autonomy-yolo.md`.

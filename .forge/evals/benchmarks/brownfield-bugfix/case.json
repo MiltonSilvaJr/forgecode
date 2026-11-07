@@ -1,0 +1,21 @@
+{
+  "schema": "benchmark-case/v1",
+  "id": "brownfield-bugfix",
+  "category": "brownfield",
+  "prompt": "Diagnose a brownfield billing bug using affected paths, graph impact and a regression test.",
+  "artifacts": [
+    {
+      "path": "bugfix.md",
+      "content": "Current behavior overcharges rounded currency values; expected behavior preserves cents."
+    }
+  ],
+  "grading": {
+    "expectations": ["Root cause is explicit", "Regression test is required", "Impact analysis is mentioned"],
+    "baseline_pass_rate": 0.33,
+    "variant_pass_rate": 1
+  },
+  "budget": {
+    "profile": "brownfield-heavy",
+    "runs": 1
+  }
+}

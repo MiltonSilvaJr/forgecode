@@ -1,0 +1,98 @@
+# Canonical spec lifecycle definition (doc §10.7 + §12; validated by
+# archive-state-machine.schema.json). Scripts implement these exact rules:
+# spec-transition.sh (chain + blocked), spec-close.sh (abandoned/rejected/
+# superseded), archive-spec.sh (archived). v1.1 closes plan gap L3: 'rejected'
+# is reachable from every review-gated state (proposed..tasks-ready), like
+# 'abandoned'. v1.2 closes LDG-0035: the requirements-ready -> tasks-ready
+# lateral (design-ready skip for type:bugfix at scale>=2, LDG-0030) existed in
+# spec-transition.sh's executable chain without a matching entry here — a
+# transition tests/w173 asserts against, not just documents. v1.3 closes
+# LDG-0172: the same lateral generalized to any type whose manifest declares
+# quick_plan.skips_design, now that validate-spec.mjs honors the waiver.
+states:
+  - name: idea
+    kind: chain
+  - name: proposed
+    kind: chain
+    requires: "proposal.md exists"
+  - name: requirements-ready
+    kind: chain
+    requires: "requirements.md or bugfix.md/refactor.md without NEEDS CLARIFICATION"
+  - name: design-ready
+    kind: chain
+    requires: "design.md exists and passes its validator"
+  - name: tasks-ready
+    kind: chain
+    requires: "tasks.md complete, ordered and traceable"
+  - name: implementing
+    kind: chain
+    requires: "at least one task in progress"
+  - name: implemented
+    kind: chain
+    requires: "all tasks done"
+  - name: verified
+    kind: chain
+    requires: "checks/evidence recorded in verification.md + verification.yaml"
+  - name: archived
+    kind: terminal
+    requires: "deltas applied to baseline and folder moved to archived"
+  - name: blocked
+    kind: lateral
+    requires: "blocking cause recorded"
+  - name: abandoned
+    kind: terminal
+    requires: "closed without implementation and without baseline update"
+  - name: rejected
+    kind: terminal
+    requires: "reviewed and refused"
+  - name: superseded
+    kind: terminal
+    requires: "replaced by another spec/change"
+  - name: delivered-externally
+    kind: terminal
+    requires: "work shipped outside the spec pipeline (e.g. direct PR); recorded with evidence in the note, baseline untouched by the pipeline"
+  - name: reopened
+    kind: lateral
+    requires: "reason + affected baseline + corrective spec or rollback"
+  - name: rolled-back
+    kind: terminal
+    requires: "archive formally reverted in the baseline"
+
+transitions:
+  # main chain (scale-adaptive skips per §10.3)
+  - { from: idea, to: proposed, via: spec-transition }
+  - { from: proposed, to: requirements-ready, via: spec-transition, gate: requirements_reviewed, scale_skippable: true }
+  - { from: requirements-ready, to: design-ready, via: spec-transition, gate: design_reviewed, scale_skippable: true }
+  - { from: design-ready, to: tasks-ready, via: spec-transition, gate: tasks_reviewed }
+  # lateral 1: design-ready skip for type:bugfix at scale>=2 (LDG-0030 — a fix that reached
+  # tasks-ready without design-ready broke legacy manifests parked there; design-ready stays a
+  # valid chain target for anyone who reaches it by any other path).
+  - { from: requirements-ready, to: tasks-ready, via: spec-transition, type_conditional: bugfix, scale_gte: 2 }
+  # lateral 2 (v1.3, LDG-0172): the same skip for ANY type whose manifest declares
+  # quick_plan.enabled true with 'design' in skipped_phases. The condition that blocked this
+  # generalization is now met — validate-spec.mjs's design.md guard from tasks-ready onward honors
+  # quick_plan, so the skip authorized here is no longer rejected by the validator right after.
+  # An earlier version of this comment recorded the gap; the gap is closed, and w173 asserts both
+  # laterals against the real script instead of only the bugfix one.
+  - { from: requirements-ready, to: tasks-ready, via: spec-transition, manifest_conditional: quick_plan.skips_design, scale_gte: 2 }
+  - { from: tasks-ready, to: implementing, via: spec-transition }
+  - { from: implementing, to: implemented, via: spec-transition }
+  - { from: implemented, to: verified, via: spec-transition, gate: implementation_verified }
+  - { from: verified, to: archived, via: archive, gate: human_archive_approval }
+  # close without baseline update (§13; pre-implementing only, except superseded)
+  - { from: proposed, to: abandoned, via: close, requires_reason: true }
+  - { from: requirements-ready, to: abandoned, via: close, requires_reason: true }
+  - { from: design-ready, to: abandoned, via: close, requires_reason: true }
+  - { from: tasks-ready, to: abandoned, via: close, requires_reason: true }
+  - { from: proposed, to: rejected, via: close, requires_reason: true }
+  - { from: requirements-ready, to: rejected, via: close, requires_reason: true }
+  - { from: design-ready, to: rejected, via: close, requires_reason: true }
+  - { from: tasks-ready, to: rejected, via: close, requires_reason: true }
+  - { from: any, to: superseded, via: close, requires_reason: true }
+  - { from: any, to: delivered-externally, via: close, requires_reason: true }
+  # laterals
+  - { from: any, to: blocked, via: spec-transition, requires_reason: true }
+  - { from: blocked, to: any, via: spec-transition, requires_reason: true }
+  # post-archive (MVP3+; manual = formal human procedure)
+  - { from: archived, to: reopened, via: manual, requires_reason: true }
+  - { from: archived, to: rolled-back, via: manual, requires_reason: true }

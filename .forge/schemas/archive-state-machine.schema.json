@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge.dev/schemas/archive-state-machine.schema.json",
+  "title": "Forge spec lifecycle state machine definition (archive-state-machine.yaml)",
+  "description": "Declarative contract for spec lifecycle states, transitions, gates and exceptions (doc §10.7 + §12). The canonical instance lives next to this schema (archive-state-machine.yaml); scripts implement the same rules (spec-transition.sh, spec-close.sh, archive-spec.sh). 'archived' only follows 'verified', except via close (closed_without_baseline_update).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "states",
+    "transitions"
+  ],
+  "properties": {
+    "states": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "kind"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "chain",
+              "lateral",
+              "terminal"
+            ]
+          },
+          "requires": {
+            "type": "string",
+            "description": "Human-readable entry condition (§12 rules)"
+          }
+        }
+      }
+    },
+    "transitions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to"
+        ],
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "State name or 'any'"
+          },
+          "to": {
+            "type": "string"
+          },
+          "gate": {
+            "type": "string",
+            "description": "Manifest gate that must be true (e.g. human_archive_approval)"
+          },
+          "via": {
+            "enum": [
+              "spec-transition",
+              "close",
+              "archive",
+              "manual"
+            ],
+            "description": "Which mechanism owns the transition"
+          },
+          "requires_reason": {
+            "type": "boolean"
+          },
+          "scale_skippable": {
+            "type": "boolean",
+            "description": "Chain state may be skipped when the scale does not require its phase (§10.3)"
+          },
+          "type_conditional": {
+            "type": "string",
+            "description": "This transition is only valid when the change's manifest 'type' equals this value (e.g. bugfix skip-design lateral, LDG-0030/0035). Absent: applies regardless of type."
+          },
+          "scale_gte": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "This transition is only valid when the change's manifest 'scale' is >= this value. Absent: no additional scale floor beyond the normal chain rules."
+          },
+          "manifest_conditional": {
+            "enum": [
+              "quick_plan.skips_design"
+            ],
+            "type": "string",
+            "description": "This transition is only valid when the change's manifest declares the named predicate. 'quick_plan.skips_design' means quick_plan.enabled is true and 'design' is in skipped_phases (LDG-0172). Absent: applies to every manifest."
+          }
+        }
+      }
+    }
+  }
+}

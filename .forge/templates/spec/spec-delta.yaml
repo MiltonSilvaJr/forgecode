@@ -1,0 +1,21 @@
+# Spec delta — operations this change applies to the baseline at archive time
+# (schema: .forge/schemas/spec-delta.schema.json; doc §10.4).
+# modify_requirement is FULL REPLACEMENT — never a partial patch.
+# For deterministic apply, carry the structured `requirement:` payload
+# (baseline-capability shape) alongside the documentary content_ref.
+operations:
+  - op: add_requirement
+    capability: <capability-kebab>
+    requirement_id: REQ-XXX-001
+    content_ref: requirements.md#req-xxx-001
+    requirement:
+      id: REQ-XXX-001
+      title: <title>
+      normative: SHALL
+      scenarios:
+        - id: SCN-XXX-001-A
+          given: "<precondition>"
+          when: "<action>"
+          then: "<observable outcome>"
+      contracts: []
+      tests: []

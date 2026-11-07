@@ -1,0 +1,10 @@
+stage: skill-lifecycle-eval
+required_inputs:
+  - evals.json?
+required_outputs:
+  - aggregate.json
+  - evidence/runs/*/run-manifest.json
+validators:
+  - eval-aggregate
+budget_class: high
+evidence_required: true

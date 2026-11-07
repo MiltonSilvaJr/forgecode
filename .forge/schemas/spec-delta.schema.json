@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge.dev/schemas/spec-delta.schema.json",
+  "title": "Forge spec delta (.forge/specs/active/<change-id>/spec-delta.yaml)",
+  "description": "Operations a verified change applies to the baseline (doc §10.4). Central rule: modify_requirement is FULL REPLACEMENT, never a partial patch (OpenSpec lesson — partial deltas lose context at archive time). For deterministic apply, add/modify ops SHOULD carry the structured `requirement` payload (baseline-capability shape) alongside the documentary *_ref; archive fails politely when only the ref is present.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["operations"],
+  "properties": {
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["op"],
+        "properties": {
+          "op": { "enum": ["add_requirement", "modify_requirement", "remove_requirement", "add_contract", "remove_capability"] }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "op": { "const": "add_requirement" } } },
+            "then": {
+              "required": ["capability", "requirement_id"],
+              "properties": {
+                "op": true,
+                "capability": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+                "requirement_id": { "type": "string", "pattern": "^REQ-[A-Z0-9]+-[0-9]+$" },
+                "content_ref": { "type": "string" },
+                "requirement": { "$ref": "#/$defs/requirement" }
+              },
+              "additionalProperties": false
+            }
+          },
+          {
+            "if": { "properties": { "op": { "const": "modify_requirement" } } },
+            "then": {
+              "required": ["capability", "requirement_id"],
+              "properties": {
+                "op": true,
+                "capability": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+                "requirement_id": { "type": "string", "pattern": "^REQ-[A-Z0-9]+-[0-9]+$" },
+                "full_replacement_ref": { "type": "string" },
+                "requirement": { "$ref": "#/$defs/requirement" }
+              },
+              "additionalProperties": false
+            }
+          },
+          {
+            "if": { "properties": { "op": { "const": "remove_requirement" } } },
+            "then": {
+              "required": ["capability", "requirement_id", "reason"],
+              "properties": {
+                "op": true,
+                "capability": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+                "requirement_id": { "type": "string", "pattern": "^REQ-[A-Z0-9]+-[0-9]+$" },
+                "reason": { "type": "string", "minLength": 3 },
+                "migration": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          },
+          {
+            "if": { "properties": { "op": { "const": "add_contract" } } },
+            "then": {
+              "required": ["contract_type", "path"],
+              "properties": {
+                "op": true,
+                "contract_type": { "enum": ["openapi", "asyncapi", "protobuf", "jsonschema", "graphql", "other"] },
+                "path": { "type": "string" },
+                "capability": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+                "requirement_id": { "type": "string", "pattern": "^REQ-[A-Z0-9]+-[0-9]+$" }
+              },
+              "additionalProperties": false
+            }
+          },
+          {
+            "if": { "properties": { "op": { "const": "remove_capability" } } },
+            "then": {
+              "required": ["capability", "reason"],
+              "properties": {
+                "op": true,
+                "capability": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+                "reason": { "type": "string", "minLength": 3 },
+                "force": { "type": "boolean" }
+              },
+              "additionalProperties": false
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "requirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "normative"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^REQ-[A-Z0-9]+-[0-9]+$" },
+        "title": { "type": "string", "minLength": 3 },
+        "normative": { "enum": ["SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "MAY"] },
+        "scenarios": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "given", "when", "then"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^SCN-[A-Z0-9]+-[0-9]+-[A-Z]$" },
+              "given": { "type": "string", "minLength": 3 },
+              "when": { "type": "string", "minLength": 3 },
+              "then": { "type": "string", "minLength": 3 }
+            }
+          }
+        },
+        "contracts": { "type": "array", "items": { "type": "string" } },
+        "tests": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

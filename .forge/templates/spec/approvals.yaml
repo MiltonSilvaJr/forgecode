@@ -1,0 +1,3 @@
+# HITL decision log (schema: .forge/schemas/approvals.schema.json; doc §12.1).
+# Maintained by .forge/scripts/approval-log.sh — prefer the script over hand edits.
+approvals: []

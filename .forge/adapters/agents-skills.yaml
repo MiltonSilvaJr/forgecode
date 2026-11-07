@@ -1,0 +1,14 @@
+# Cross-tool skills adapter (.agents/skills/ — BMAD v6 pattern, §15). Dozens of platforms
+# discover skills here; this is the canonical multi-tool projection of .forge/skills/.
+adapter: agents-skills
+generates:
+  - .agents/skills/
+supports:
+  symlink: false
+  slash_commands: false
+  skills: true
+  hooks: false
+smoke_tests:
+  - name: skills-projected
+    command: "test \"$(find .agents/skills -name SKILL.md | wc -l | tr -d ' ')\" = \"$(find .forge/skills -name SKILL.md | wc -l | tr -d ' ')\""
+loss_warnings: []

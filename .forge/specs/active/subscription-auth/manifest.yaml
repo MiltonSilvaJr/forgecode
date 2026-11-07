@@ -1,0 +1,81 @@
+id: subscription-auth
+type: feature
+mode: brownfield
+rigor: spec-anchored
+scale: 2
+status: implemented
+created_at: "2026-11-04"
+updated_at: "2026-11-05"
+owner: "Milton Antonio da Silva Jr"
+parent:
+  baseline: .forge/product/current
+affected_capabilities:
+  - subscription-auth
+affected_paths:
+  - packages/schema/src/subscription-auth.ts
+  - packages/schema/src/config/subscription-auth.ts
+  - packages/schema/src/config.ts
+  - packages/schema/src/event.ts
+  - packages/schema/test/config-subscription-auth.test.ts
+  - packages/schema/test/subscription-auth.test.ts
+  - packages/core/src/subscription.ts
+  - packages/core/src/subscription/
+  - packages/core/src/plugin/provider/kimi.ts
+  - packages/core/src/plugin/provider.ts
+  - packages/core/src/plugin/internal.ts
+  - packages/core/script/subscription-smoke.ts
+  - packages/core/test/subscription-auth/
+  - packages/protocol/src/groups/subscription.ts
+  - packages/protocol/src/api.ts
+  - packages/protocol/test/subscription-group.test.ts
+  - packages/protocol/test/experimental-identifiers.test.ts
+  - packages/server/src/handlers/subscription.ts
+  - packages/server/src/handlers.ts
+  - packages/server/test/subscription.test.ts
+  - packages/server/test/subscription-exposure.test.ts
+  - packages/server/test/subscription-regression.test.ts
+  - packages/client/src
+  - packages/cli/src/commands/commands.ts
+  - packages/cli/src/index.ts
+  - packages/cli/src/commands/handlers/auth/
+  - packages/cli/test/auth-status.test.ts
+  - packages/cli/test/auth-refresh.test.ts
+  - packages/cli/test/auth-test-command.test.ts
+  - packages/cli/test/auth-login-subscription.test.ts
+  - packages/cli/test/auth-logout-subscription.test.ts
+  - packages/cli/test/auth.test.ts
+  - specs/v2/subscription-auth.md
+  - specs/v2/README.md
+  - packages/core/src/config/normalize.ts
+  - packages/core/src/instance.ts
+  - packages/cli/src/commands/handlers/acp.ts
+  - packages/schema/src/event-manifest.ts
+affects_surfaces:
+  - api
+  - cli
+dependencies:
+  specs: []
+  code:
+    - "packages/core/src/integration.ts (Integration e Connection.resolve)"
+    - "packages/core/src/credential.ts (store e Credential.External)"
+    - "packages/core/src/plugin/provider/chatgpt.ts (OAuth ChatGPT com token sharing)"
+    - "packages/core/src/plugin/provider/claude-agent (provider Claude Agent)"
+    - "packages/ai/src/providers/moonshot.ts (protocolo messages com Bearer)"
+    - "packages/core/src/models-dev/snapshot.txt (catálogo kimi-code-plan-global)"
+gates:
+  requirements_reviewed: true
+  design_reviewed: true
+  tasks_reviewed: true
+  implementation_verified: false
+  human_archive_approval: false
+dev_loop:
+  sharded: false
+  stories_path: stories/
+  epic_context_compiled: false
+quick_plan:
+  enabled: false
+  skipped_phases: []
+  justification:
+archive:
+  eligible: false
+  reason: "tasks not implemented"

@@ -1,0 +1,32 @@
+# empty-universe-allowlist — justificativas para universo VAZIO em gates que iteram (issue #49).
+#
+# Uma linha por gate, no formato:
+#
+#     <gate-key>  # motivo: <justificativa auditável>
+#
+# Todo gate do harness que itera sobre um universo — arquivos, commits, changes, refs, pontos de
+# entrada — imprime QUANTOS itens examinou. Universo vazio é um estado próprio e, por padrão, NÃO
+# é sucesso: "não encontrei violação" e "não examinei nada" não podem colapsar no mesmo verde. Foi
+# assim que o gate de red-first aprovou o push de um bugfix imprimindo `OK — 0 change(s)
+# examinado(s)`, e assim que uma rede de doze suítes ficou dez rodadas sem ninguém invocá-la.
+#
+# Esta allowlist é a ÚNICA saída, e ela é declarada, versionada e revisável — nunca um flag de
+# quem invoca o gate, nunca memória de agente. A justificativa é OBRIGATÓRIA: entrada sem
+# `# motivo:` REPROVA o gate por integridade, porque isenção anônima é exatamente por onde um gate
+# é esvaziado na prática.
+#
+# Gate-keys usadas pelo harness:
+#
+#     ai-attribution         commits varridos por check-ai-attribution.sh range
+#     authz                  arquivos varridos por check-authz
+#     data-governance        arquivos varridos por check-data-governance
+#     observability          arquivos varridos por check-observability
+#     red-first              changes type:bugfix examinados pelo hook de pre-push
+#     red-first-ci           changes ativos examinados por red-evidence.sh ci
+#     shell-pipeline         arquivos .sh varridos por check-shell-pipeline.sh
+#     suite-wiring           pontos de entrada varridos por check-suite-wiring.sh
+#     suite-wiring-runners   runners de suíte encontrados por check-suite-wiring.sh
+#
+# Isentar um gate aqui não o silencia: o estado vira `OK <gate>/universo-vazio … justificativa
+# declarada: <motivo>`, uma linha distinta de `OK <gate>/universo — N examinado(s)`. A diferença
+# continua legível no log, que é o ponto.

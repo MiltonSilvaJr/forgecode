@@ -1,0 +1,15 @@
+verification:
+  commit: "da634f4185"
+  verified_at: "2026-11-06T13:14:40-03:00"
+  checks:
+    - name: test
+      command: "bun turbo test --concurrency=3"
+      status: passed
+    - name: typecheck
+      command: "bun run typecheck"
+      status: passed
+    - name: lint
+      command: "bun run lint"
+      status: passed
+  evidence:
+    - verification.md

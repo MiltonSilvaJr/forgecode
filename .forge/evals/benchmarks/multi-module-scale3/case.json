@@ -1,0 +1,21 @@
+{
+  "schema": "benchmark-case/v1",
+  "id": "multi-module-scale3",
+  "category": "multi-module",
+  "prompt": "Plan a scale 3 change spanning API, application and persistence modules with analysis and sharding.",
+  "artifacts": [
+    {
+      "path": "manifest.yaml",
+      "content": "scale: 3\naffected_paths:\n  - services/billing\n  - apps/admin"
+    }
+  ],
+  "grading": {
+    "expectations": ["Analyze phase is required", "Story sharding is required", "Impacted modules are explicit"],
+    "baseline_pass_rate": 0.33,
+    "variant_pass_rate": 1
+  },
+  "budget": {
+    "profile": "regulated",
+    "runs": 1
+  }
+}

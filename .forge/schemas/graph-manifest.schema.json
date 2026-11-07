@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge.dev/schemas/graph-manifest.schema.json",
+  "title": "Forge graph manifest (.forge/graph/manifest.json)",
+  "description": "Deterministic minimal inventory (doc §16.1, lite mode — W2.3): stack, commands, structure, boundaries, git state, build-manifest fingerprints and affected paths. The full graph (graph.json) arrives in MVP4.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "generated_at", "mode", "stack", "commands", "structure", "git"],
+  "properties": {
+    "schema": { "const": "graph-manifest/v0" },
+    "generated_at": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T" },
+    "mode": { "enum": ["lite", "full"] },
+    "root": { "type": "string" },
+    "stack": { "type": "array", "items": { "enum": ["node-ts", "dotnet", "python", "java", "kotlin-android", "go"] } },
+    "commands": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "run": { "type": ["string", "null"] },
+        "test": { "type": ["string", "null"] },
+        "build": { "type": ["string", "null"] },
+        "typecheck": { "type": ["string", "null"] },
+        "lint": { "type": ["string", "null"] }
+      }
+    },
+    "structure": { "type": "array", "items": { "type": "string" } },
+    "boundaries": { "type": "array", "items": { "type": "string" } },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo", "dirty", "changed_files"],
+      "properties": {
+        "repo": { "type": "boolean" },
+        "last_commit": { "type": ["string", "null"] },
+        "dirty": { "type": "boolean" },
+        "changed_files": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "fingerprints": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+    },
+    "affected_paths": { "type": "array", "items": { "type": "string" } }
+  }
+}

@@ -1,0 +1,27 @@
+# Claude Code adapter declaration (§10.6). Generated targets are NEVER edited by hand —
+# edit .forge/** and re-run `sync-adapters.sh`. Drift detected via claude.lock.yaml.
+adapter: claude
+# NOTE: os slash commands /forge:* NÃO são mais gerados em .claude/commands/ (contract C1, revisado).
+# O Claude Code (>= 2.x) descontinuou o namespace via subdiretório ali; /forge:* agora vêm de um
+# PLUGIN (name: forge) — `npx forge-harness install-plugin` (auto no init) ou marketplace git.
+generates:
+  - .claude/agents/                # 1:1 projection of .forge/agents/**
+  - .claude/skills/                # 1:1 projection of .forge/skills/**
+  - .claude/settings.json          # PreToolUse wiring -> $CLAUDE_PROJECT_DIR/.forge/hooks/... (C5)
+  - AGENTS.md                      # operational projection of .forge/FORGE.md (§7.2, header §7.4)
+  - CLAUDE.md                      # symlink -> AGENTS.md (copy fallback)
+  - QWEN.md                        # symlink -> AGENTS.md
+  - GEMINI.md                      # symlink -> AGENTS.md
+supports:
+  symlink: true
+  slash_commands: true            # via plugin `forge` (não .claude/commands/) — ver C1/NOTE acima
+  skills: true
+  hooks: true
+smoke_tests:
+  - name: agents-present
+    command: "ls .claude/agents/*/*.md >/dev/null"
+  - name: settings-wires-forge-hook
+    command: "grep -q '.forge/hooks/pre-tool-use/enforce-worktree-location.sh' .claude/settings.json"
+  - name: agents-md-projection
+    command: "head -1 AGENTS.md | grep -q 'Generated from .forge/FORGE.md'"
+loss_warnings: []

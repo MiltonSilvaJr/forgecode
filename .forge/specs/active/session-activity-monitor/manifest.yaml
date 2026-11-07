@@ -1,0 +1,72 @@
+id: session-activity-monitor
+type: feature
+mode: brownfield
+rigor: spec-anchored
+scale: 3
+status: proposed
+created_at: "2026-11-05"
+updated_at: "2026-11-05"
+owner: "Milton Antonio da Silva Jr"
+parent:
+  baseline: .forge/product/current
+affects_surfaces: [tui, api, data]
+affected_capabilities: [session-activity-monitor]
+affected_paths:
+  - packages/tui/src/routes/session/sidebar.tsx
+  - packages/tui/src/routes/session/composer/
+  - packages/tui/src/feature-plugins/sidebar/
+  - packages/tui/src/feature-plugins/system/storybook/
+  - packages/tui/src/component/dialog-experiments.tsx
+  - packages/tui/src/component/prompt/
+  - packages/tui/src/config/
+  - packages/tui/src/util/session.ts
+  - packages/tui/test/
+  - packages/schema/src/session.ts
+  - packages/schema/src/session-event.ts
+  - packages/schema/src/session-message.ts
+  - packages/schema/test/
+  - packages/core/src/session/
+  - packages/core/src/plugin/host.ts
+  - packages/core/src/plugin/goal.ts
+  - packages/core/src/tool/plugin/opencode.ts
+  - packages/core/src/database/migration/
+  - packages/core/src/database/migration.gen.ts
+  - packages/core/test/
+  - packages/protocol/src/groups/session.ts
+  - packages/protocol/test/
+  - packages/server/src/handlers/session.ts
+  - packages/server/test/
+  - packages/client/src/solid/
+  - packages/client/src/promise/generated/
+  - packages/client/src/effect/generated/
+  - packages/client/src/effect/api/api.ts
+  - packages/client/test/solid-data.test.ts
+  - packages/client/test/solid-usage.test.ts
+  - specs/v2/session-activity-monitor.md
+dependencies:
+  specs: []
+  code:
+    - packages/ai/src/schema/events.ts
+    - packages/schema/src/token-usage.ts
+    - packages/schema/src/shell.ts
+    - packages/schema/src/model.ts
+    - packages/core/src/tool/plugin/subagent.ts
+    - packages/core/src/tool/plugin/shell.ts
+    - packages/tui/src/component/dialog-shell-output.tsx
+gates:
+  requirements_reviewed: false
+  design_reviewed: false
+  tasks_reviewed: false
+  implementation_verified: false
+  human_archive_approval: false
+dev_loop:
+  sharded: false
+  stories_path: stories/
+  epic_context_compiled: false
+quick_plan:
+  enabled: false
+  skipped_phases: []
+  justification:
+archive:
+  eligible: false
+  reason: "Rascunho documental; decisões, gates HITL, revisão independente e sharding pendentes; implementação não iniciada"

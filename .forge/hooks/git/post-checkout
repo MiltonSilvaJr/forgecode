@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+# Forge post-checkout — toda worktree nasce com branch.
+#
+# Pedido do dono, 2026-09-08: "sempre que se abrir uma worktree, já se cria uma branch, mesmo que
+# depois ela seja renomeada, para garantir rastreabilidade do trabalho e garantir que o trabalho não
+# se perca". Uma worktree com HEAD destacado não tem nada para empurrar, não admite PR, e o rastro
+# do trabalho morre na máquina no instante em que a worktree é removida.
+#
+# POR QUE AQUI, E NÃO NO GUARD DE PreToolUse: `hooks/pre-tool-use/enforce-worktree-location.sh` só
+# existe para o Claude Code, e um humano no terminal, um script, uma IDE ou outro agente não passam
+# por ele. O `post-checkout` dispara DENTRO da worktree recém-criada em `git worktree add`, seja
+# quem for que digitou o comando, e ele é lido de `core.hooksPath` — que mora no `.git/config`
+# COMUM a todos os worktrees e que o harness grava em caminho absoluto apontando para o tronco.
+# Isso torna este hook a única peça do harness que alcança worktree criada a partir de uma branch
+# antiga, cuja árvore carrega a maquinaria da versão anterior (issue #123).
+#
+# POR QUE CONSERTAR E NÃO RECUSAR: medido — `exit 1` num `post-checkout` NÃO desfaz o
+# `git worktree add`. A worktree continua existindo em disco e o comando devolve rc 1, o que é
+# estritamente pior que o estado de hoje. Este hook conserta antes de qualquer trabalho existir.
+#
+# AS QUATRO CONDIÇÕES DE DISPARO, todas medidas em fixture própria:
+#   1. `$1` (o commit anterior) é quarenta zeros — vale isso em `git worktree add` e vale um sha
+#      REAL num `git checkout` comum. É a peça que separa criação de worktree de checkout comum, e
+#      sem ela o hook agiria em todo checkout de todo worktree do consumidor.
+#   2. o diretório do git desta árvore difere do diretório comum, o que caracteriza worktree
+#      linkada. Os dois lados são resolvidos pelo MESMO primitivo, porque `--absolute-git-dir`
+#      devolve caminho absoluto enquanto `--git-common-dir` devolve `.git` relativo no tronco, e a
+#      comparação ingênua diria "diferente" também ali.
+#   3. `git symbolic-ref -q HEAD` sai vazio, que é o discriminador de HEAD destacado. NUNCA `$3`:
+#      medido, `$3` vale 1 tanto em `worktree add <dir> HEAD` quanto em `worktree add <dir> -b`, e
+#      um hook que discriminasse por ele nasceria morto.
+#   4. o toplevel está sob `<tronco>/.forge/worktrees/`, o território declarado do harness. Fora
+#      dali o hook não mexe: `lib/red-replay.mjs` cria worktrees efêmeras com `--detach` em
+#      `tmpdir()` deliberadamente, e um conserto de escopo largo atacharia branch em cada replay de
+#      evidência red.
+#
+# A REENTRÂNCIA É CONTIDA POR CONSTRUÇÃO, e não por variável de guarda. O `git switch -c` abaixo
+# dispara este mesmo hook de novo — medido, exatamente uma vez — e a segunda invocação chega com
+# `$1` igual a um sha REAL e com `symbolic-ref` já preenchido, de modo que qualquer uma das duas
+# condições a encerra na entrada. Uma variável de ambiente de guarda seria código morto sob as
+# mesmas condições, e código morto não sustenta prova de mutação.
+set -u
+
+ZERO=0000000000000000000000000000000000000000
+[ "${1:-}" = "$ZERO" ] || exit 0
+
+_pc_abs() {  # _pc_abs <caminho> -> ecoa o caminho canônico, ou nada
+  [ -n "${1:-}" ] || return 1
+  ( cd "$1" 2>/dev/null && pwd -P ) 2>/dev/null
+}
+
+git_dir="$(_pc_abs "$(git rev-parse --absolute-git-dir 2>/dev/null || true)")" || exit 0
+common_dir="$(_pc_abs "$(git rev-parse --git-common-dir 2>/dev/null || true)")" || exit 0
+[ -n "$git_dir" ] && [ -n "$common_dir" ] || exit 0
+[ "$git_dir" != "$common_dir" ] || exit 0
+
+[ -z "$(git symbolic-ref -q HEAD 2>/dev/null)" ] || exit 0
+
+top="$(_pc_abs "$(git rev-parse --show-toplevel 2>/dev/null || true)")" || exit 0
+[ -n "$top" ] || exit 0
+
+# O tronco é a PRIMEIRA entrada de `git worktree list --porcelain`, que é sempre o checkout
+# principal — nunca `dirname` do diretório comum, porque um `.git` pode não estar ao lado da árvore.
+tronco="$(_pc_abs "$(git worktree list --porcelain 2>/dev/null | awk '/^worktree /{print substr($0,10); exit}')")" || exit 0
+[ -n "$tronco" ] || exit 0
+territorio="$tronco/.forge/worktrees"
+
+case "$top" in
+  "$territorio"/*)
+    : ;;
+  "$tronco"/*)
+    # Dentro da árvore do tronco e fora do território: avisa, não mexe. O aviso é restrito a este
+    # caso justamente para não alcançar as worktrees efêmeras que o red-replay cria em `tmpdir()`,
+    # cujo stderr reaparece dentro de qualquer mensagem de erro do replay.
+    echo "forge post-checkout: worktree com HEAD destacado em '$top', fora de '$territorio' — não dei nome a ela, e sem branch o trabalho daqui não vira PR." >&2
+    echo "  dar nome agora: git -C '$top' switch -c <tipo>/<escopo>/<descricao>" >&2
+    exit 0 ;;
+  *)
+    exit 0 ;;
+esac
+
+# ── nome: cascata de candidatos, saneada, com teto declarado ────────────────────────────────────
+# O prefixo `wt/` é namespace: torna a branch trivialmente renomeável para fora dele, e uma branch
+# que CONTINUA em `wt/` é por si só o sinal legível de que ninguém a nomeou direito. Ele não elimina
+# a colisão diretório/arquivo no namespace de refs (`wt/a` contra `wt/a/b`), e é por isso que a
+# cascata existe.
+slug="$(basename "$top")"
+slug="$(printf '%s' "$slug" | tr -c 'A-Za-z0-9._-' '-')"
+slug="${slug%.lock}"
+while :; do
+  case "$slug" in
+    .*|-*) slug="${slug#?}" ;;
+    *.|*-) slug="${slug%?}" ;;
+    *) break ;;
+  esac
+  [ -n "$slug" ] || break
+done
+[ -n "$slug" ] || slug="worktree"
+
+sha7="$(git rev-parse --short=7 HEAD 2>/dev/null || echo 0000000)"
+TETO=8
+
+_pc_valido() {  # _pc_valido <candidato> -> rc 0 se o git aceita o nome
+  git check-ref-format --branch "$1" >/dev/null 2>&1
+}
+_pc_existe() {  # _pc_existe <candidato> -> rc 0 se a branch já existe
+  git show-ref --verify --quiet "refs/heads/$1"
+}
+
+criada=""
+tentativa=0
+while [ "$tentativa" -lt "$TETO" ]; do
+  case "$tentativa" in
+    0) cand="wt/$slug" ;;
+    1) cand="wt/$slug-$sha7" ;;
+    *) cand="wt/$slug-$sha7-$tentativa" ;;
+  esac
+  tentativa=$((tentativa + 1))
+  _pc_valido "$cand" || continue
+  # D3: branch existente NUNCA é reaproveitada, esteja ela livre ou checada em outra worktree.
+  # Reaproveitar uma branch livre de mesmo nome juntaria em silêncio dois trabalhos que só têm o
+  # nome em comum, e o custo do erro é assimétrico — uma branch a mais é entulho, uma branch
+  # compartilhada por engano é histórico misturado.
+  _pc_existe "$cand" && continue
+  if git switch -q -c "$cand" >/dev/null 2>&1 || git checkout -q -b "$cand" >/dev/null 2>&1; then
+    criada="$cand"
+    break
+  fi
+done
+
+if [ -n "$criada" ]; then
+  echo "forge post-checkout: worktree criada sem branch — dei nome a ela: $criada"
+  echo "  renomear quando o trabalho tiver nome próprio: git -C '$top' branch -m '$criada' <tipo>/<escopo>/<descricao>"
+  exit 0
+fi
+
+# Terceiro estado: "consegui dar nome", "já tinha nome" e "NÃO consegui dar nome" são desfechos
+# diferentes, e sair 0 aqui colapsaria o terceiro no primeiro — o falso-verde que este harness já
+# pagou caro. O rc não desfaz nada, e a mensagem diz isso em letra porque todo chamador com `set -e`
+# lê rc não-zero como "o comando falhou".
+echo "forge post-checkout: NÃO consegui dar nome à worktree — os $TETO candidatos derivados de 'wt/$slug' já existem ou são recusados pelo git." >&2
+echo "  a worktree EXISTE em disco, com HEAD destacado, em '$top' — este código de saída não desfaz o 'git worktree add' e não removeu nada." >&2
+echo "  dar nome agora: git -C '$top' switch -c <tipo>/<escopo>/<descricao>" >&2
+exit 3

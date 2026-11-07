@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge/schemas/deferrals.schema.json",
+  "title": "deferrals.json — ledger de pendências do change (§17.4)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["change_id", "deferrals"],
+  "properties": {
+    "change_id": { "type": "string" },
+    "deferrals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "raised_in", "reason", "status"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^DEFER-[0-9]+" },
+          "raised_in": { "type": "string" },
+          "description": { "type": "string" },
+          "reason": { "type": "string" },
+          "blocks": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "status": {
+            "enum": ["open", "resolved", "tested", "wont-fix"]
+          },
+          "resolved_at": { "type": ["string", "null"] },
+          "resolution_note": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

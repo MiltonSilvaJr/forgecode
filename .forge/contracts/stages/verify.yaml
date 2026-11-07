@@ -1,0 +1,19 @@
+stage: verify
+required_inputs:
+  - manifest.yaml
+  - tasks.md
+  - traceability.yaml?
+required_outputs:
+  - verification.yaml
+  - evidence/runs/*/run-manifest.json
+  # Furo 9 — entrada "evidence/red/*.json?" removida daqui: stage-contract.mjs (existsPattern)
+  # resolve QUALQUER entrada terminada em "?" como sempre-presente, então uma entrada
+  # condicional-a-type:bugfix não tem como ser expressa neste contrato hoje (ele não sabe o
+  # type do change, só required_inputs/required_outputs por glob). Mantê-la aqui era um
+  # comentário disfarçado de contrato — nunca reprovava nada. O enforcement real (observed|
+  # waived antes de verified, só para type:bugfix) é feito por validate-spec.mjs; a produção
+  # do resumo red_first dentro de verification.yaml é feita por spec-verify.sh (Onda C).
+validators:
+  - validate-spec
+budget_class: medium
+evidence_required: true

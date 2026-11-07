@@ -1,0 +1,21 @@
+{
+  "schema": "benchmark-case/v1",
+  "id": "docs-only",
+  "category": "docs",
+  "prompt": "Update product documentation from accepted baseline capabilities without changing runtime code.",
+  "artifacts": [
+    {
+      "path": "publish-docs.md",
+      "content": "Publish docs/product from .forge/product/current and preserve generated-file integrity."
+    }
+  ],
+  "grading": {
+    "expectations": ["Generated docs are not edited by hand", "Baseline remains source of truth"],
+    "baseline_pass_rate": 0.5,
+    "variant_pass_rate": 1
+  },
+  "budget": {
+    "profile": "quick",
+    "runs": 1
+  }
+}

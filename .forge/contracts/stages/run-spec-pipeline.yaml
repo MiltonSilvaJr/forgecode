@@ -1,0 +1,13 @@
+stage: run-spec-pipeline
+required_inputs:
+  - manifest.yaml?
+required_outputs:
+  - proposal.md?
+  - requirements.md?
+  - design.md?
+  - tasks.md?
+  - evidence/runs/*/run-manifest.json?
+validators:
+  - validate-spec
+budget_class: high
+evidence_required: false

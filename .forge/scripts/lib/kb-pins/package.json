@@ -1,0 +1,11 @@
+{
+  "name": "forge-kb-semantic-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Runtime opt-in da camada semântica do /forge:kb (instalado por kb.sh semantic install). Não editar à mão.",
+  "license": "MIT",
+  "dependencies": {
+    "@huggingface/tokenizers": "0.2.0",
+    "onnxruntime-web": "1.31.1"
+  }
+}

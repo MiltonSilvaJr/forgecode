@@ -1,0 +1,16 @@
+# Kiro adapter (§15): steering file ONLY — .kiro/specs/ is intentionally NEVER generated
+# (the canonical spec lifecycle lives in .forge/specs/; using both would duplicate truth).
+adapter: kiro
+generates:
+  - .kiro/steering/forge.md
+supports:
+  symlink: false
+  slash_commands: false
+  skills: false
+  hooks: false
+smoke_tests:
+  - name: steering-present-no-specs
+    command: "test -f .kiro/steering/forge.md && test ! -d .kiro/specs"
+loss_warnings:
+  - "Hooks do Kiro nao instalados nesta versao"
+  - "Specs do Kiro intencionalmente NAO usadas — lifecycle canonico em .forge/specs (§15)"

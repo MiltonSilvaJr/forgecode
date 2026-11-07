@@ -1,0 +1,191 @@
+version: 1
+harness:
+  name: forge
+  installed_at: "installed"
+  template_version: "0.1.0-dev"
+  # Active adapters for THIS repo (chosen at /forge:init, reconciled by sync-adapters).
+  # Available adapters are the declarations in .forge/adapters/*.yaml; only the ones listed
+  # here are materialized. Default is claude; add others via /forge:sync-adapters --set.
+  adapters:
+    - claude
+    - codex
+specs:
+  root: .forge/specs
+  active: .forge/specs/active
+  archived: .forge/specs/archived
+  baseline: .forge/product/current
+graph:
+  enabled: true
+  root: .forge/graph
+capabilities:
+  # Packs opt-in por stack. O código/ADRs do projeto sempre vencem o pack; o doctor apenas sugere.
+  # Ex.: backend-dotnet-relational,backend-node-postgres
+  active: []
+quality:
+  enabled: false
+  evals_root: .forge/evals
+  runners: .forge/runners.yaml
+  # Cobrados no pré-flight §13.1 do /forge:archive (lib/validate-archive.mjs):
+  #   require_tests_before_archive        -> exige um check 'test' com status 'passed' no
+  #                                          verification.yaml (declare 'test:' em runtime).
+  #   require_traceability_before_archive -> exige que todo requirement que o spec-delta.yaml
+  #                                          introduz/modifica apareça no traceability.yaml
+  #                                          ligado a ao menos uma TASK.
+  # Pôr em `false` é dispensa DECLARADA: o archive segue e ANUNCIA a dispensa no log.
+  #
+  # Default OFF, pelo MESMO motivo medido da chave irmã abaixo — e a primeira escrita desta leva
+  # errou justamente por não medi-lo aqui. `templates/FORGE.md` entrega `test:` VAZIO de fábrica,
+  # então `spec-verify` grava `verification.yaml` com um único check `name: none / status:
+  # skipped`: ligada por default, a chave reprova o /forge:archive de TODO projeto greenfield, no
+  # primeiro change, antes de o projeto ter tido chance de declarar um comando de teste. Medido:
+  # cinco gates da suíte reprovam com ela ligada (w31, w32, w33, w42, w100), e w31 é o decisivo —
+  # é o único montado a partir dos templates DE FÁBRICA, e por isso o único que não podia ser
+  # calado editando a fixture. Foi exatamente o que a primeira escrita fez com os outros quatro:
+  # deixou a suíte verde sem tocar no adotante real, que é a definição de prova que não exercita
+  # o canal real.
+  #
+  # A chave continua REAL: ligada, ela reprova nas quatro ramificações (sem check `test`; com
+  # `test` reprovando; com `test` passando ela aprova e declara; desligada ela aprova e declara a
+  # dispensa), provado por w192. Ligue-a no dia em que o projeto declarar `test:` no bloco
+  # `runtime` — é uma linha, e a partir dali o archive passa a exigir a evidência.
+  require_tests_before_archive: false
+  # Default OFF, e o motivo é MEDIDO, não preferência: ligá-la exige que todo change que
+  # introduz/modifica requirement carregue `traceability.yaml` PREENCHIDO, e o artefato nasce
+  # como scaffold. Ligada por default, o primeiro /forge:archive de todo adotante — e cinco
+  # fixtures da suíte deste repositório — passariam a reprovar por um artefato que o pipeline
+  # nunca exigiu antes. A chave é REAL (o pré-flight a lê e a honra, provado por w192); virar o
+  # default é fatia própria, depois de uma passagem de curadoria sobre os artefatos de change.
+  require_traceability_before_archive: false
+  # NÃO existe 'require_human_approval_before_archive'. A aprovação humana antes do archive é
+  # real e já é cobrada, sob outro nome: o gate de manifesto `gates.human_archive_approval`
+  # (schemas/spec-manifest.schema.json), exigido por lib/validate-archive.mjs e escrito por
+  # approval-log.sh. Uma chave aqui seria a SEGUNDA verdade sobre o mesmo fato — e quem a
+  # pusesse em `false` esperando pular o gate encontraria o gate mesmo assim, sem explicação.
+rules:
+  # Rule-packs de domínio ATIVOS (LDG-0003). Simetria explícita com capabilities.active: pack
+  # listado aqui passa a ser CONTRATO do projeto e `validate-rules.sh` o afirma; rule cujo `pack:`
+  # não está listado continua disponível como REFERÊNCIA, nunca gate imposto — que é exatamente o
+  # que rules/README.md sempre prometeu e nada lia. Ativar pack sem nenhuma rule que o declare
+  # REPROVA: ativação sem conteúdo é a forma de acreditar ter contratado uma política sem ter.
+  # Ex.: [security-authz, data-classification]
+  packs: []
+handoff:
+  # Quando true, sync-adapters liga hooks SessionStart/SessionEnd no settings.json do adapter
+  # ativo: regeneram e injetam o .forge/HANDOFF.md automaticamente (rule-based, sem LLM). Default off.
+  auto: false
+ledger:
+  # Ledger durável de projeto (roadmap & dívida técnica) em .forge/ledger/. Store NÃO-BLOQUEANTE de
+  # trabalho conhecido que sobrevive entre changes; alimentado por captura automática (harvest de
+  # deferrals/findings no close/archive) + /forge:ledger. Ver rules/conventions/ledger-consultation.md.
+  # Quando true, o hook SessionStart também lista os itens open de maior prioridade (rule-based, sem
+  # LLM), como o handoff.auto. A captura automática no close/archive independe deste flag. Default off.
+  auto: false
+  # Limiar de envelhecimento, em dias: item ativo sem reverificação (`ledger-ops.sh verify`) há mais
+  # que isto aparece em `ledger-ops.sh stale`, no sufixo do `/forge:status`, marcado no `list` (que o
+  # /forge:resume e o SessionStart leem) e numa linha informativa do `/forge:doctor`. ADVISORY: não
+  # trava nada. Para travar em CI, opte explicitamente por `ledger-ops.sh stale --strict` num step
+  # seu (rc 1 com item envelhecido). Inteiro >= 1; valor inválido é erro nomeado, nunca o default.
+  stale_days: 30
+liaison:
+  # Canal de mensagens ORDENADAS entre agentes de repositórios distintos (ex.: dono do .proto e app
+  # cliente), em .forge/liaison/. Ver rules/conventions/liaison-protocol.md e liaison-untrusted-input.md.
+  # auto: quando true, o hook SessionStart resume o inbox — contagem e ASSUNTO, nunca o corpo, que é
+  # conteúdo escrito por outro repositório e entra no contexto como dado, jamais como instrução.
+  # enforce: o que fazer com contract-change inbound que exige ack e não foi ackado (Onda 4).
+  #   warn (default): avisa no pre-push e no pré-flight do archive, sem bloquear.
+  #   block: reprova. Faz sentido nos CONSUMIDORES de contrato — quem sofre o drift precisa da trava;
+  #          o dono do .proto não. Cada participante bloqueia pelo próprio ack pendente, nunca pelo
+  #          dos outros, senão o participante mais lento trava o trabalho de todo mundo.
+  auto: false
+  enforce: warn
+  # baton: bastão de dono único entre sessões de repositórios distintos (add-liaison-handoff-
+  # baton). Sub-bloco aditivo — ausente, usa os defaults abaixo; forge update preserva este
+  # forge.yaml, então consumidores existentes continuam nos defaults até declararem o bloco.
+  # Só offer/claim leem esta configuração (e o gancho de renovação, para auto_renew); os demais
+  # verbos, leitores e a dobra nunca a leem — o estado calculado nunca muda com a configuração
+  # local (design §2.6).
+  # baton:
+  #   default_lease_seconds: 1800    # [60, max_lease_seconds] — prazo do lease sem --lease
+  #   max_lease_seconds: 14400       # [60, 86400] — prazo máximo que uma oferta aceita
+  #   skew_tolerance_seconds: 120    # [0, 3600] — folga antes de outra sessão tomar por vencimento
+  #   auto_renew: true               # renovação automática enquanto a sessão titular está ativa
+secrets:
+  # Gate mecânico contra segredo hardcoded em arquivo VERSIONADO (check-secrets.sh, rule
+  # conventions/no-hardcoded-secrets.md). Roda no pre-commit sobre o índice, no CI sobre o diff do
+  # PR e, se declarado em runtime.gates, no pre-push sobre o repositório inteiro.
+  #   block: qualquer achado reprova. É o modo de repositório novo ou já saneado, e é o que o
+  #          template entrega abaixo — projeto que nasce com o harness nasce sem passivo.
+  #   warn (default na AUSÊNCIA deste bloco): achado vira aviso e não bloqueia. É o que um
+  #          repositório existente HERDA ao atualizar o harness, porque o gate não é opt-in e
+  #          chegar travando o time no primeiro dia é como um gate vira `--no-verify` de hábito.
+  #          Combine com `check-secrets.sh report` para medir o passivo e feche em `block` depois.
+  # Falha de INTEGRIDADE (conjunto varrido vazio, allowlist malformada) reprova nos dois modos:
+  # um gate que não rodou não pode reportar-se verde. Exceções em .forge/secrets-allowlist.txt,
+  # com justificativa obrigatória na própria linha.
+  enforce: block
+autonomy:
+  # Modo de decisão nos gates HITL (§12.1). Ver rules/conventions/autonomy-yolo.md.
+  #   hitl (default): gates de aprovação param para decisão humana via AskUserQuestion.
+  #   yolo: gates de aprovação são decididos por um subagente Opus effort high (agent
+  #         yolo-gate), registrados em approvals.yaml com autonomous:true — NUNCA mascarados
+  #         como decisão humana. Falhas de execução ([!], blockers, conflito de fontes) NÃO
+  #         são gates: continuam parando (yolo decide gates, não mascara falhas).
+  mode: hitl
+  # Decisor autônomo dos gates (alto critério por design).
+  gate_agent:
+    model: opus
+    effort: high
+  # Gates de APROVAÇÃO que permanecem humanos mesmo em yolo (domínio regulado/financeiro —
+  # §12.1/§13.1 exigem aprovação humana explícita p/ mutação de baseline). Esvazie ([]) para
+  # yolo total desassistido, assumindo o risco de auditoria.
+  human_hard_stops:
+    - human_archive_approval
+  # Ações IRREVERSÍVEIS de alto risco nunca auto-aprovadas em yolo (produção/dados),
+  # independentemente de mode. Continuam exigindo confirmação humana explícita.
+  irreversible_hard_stops:
+    - deploy_prd
+    - promote_staging
+    - adapter_removal
+    - branch_cleanup
+
+# Mutex de carga pesada por MÁQUINA (issue #52). Chega DESLIGADO: o harness é publicado no npm e
+# instalado por terceiros, e chegar serializando o pre-push de repositórios não relacionados é como
+# um gate vira `--no-verify` de hábito. Ligue quando houver carga que dispute CPU ou daemon Docker.
+#
+# `resource` é o NOME do recurso, e ele define o caminho do lock (`/tmp/<resource>.lock`). Dois
+# repositórios que declaram o mesmo nome se serializam entre si; nomes diferentes não se veem.
+heavy_mutex:
+  enabled: false
+  resource: forge-heavy-suite
+  timeout_s: 1800
+  # stale_after_s: <segundos> — OPT-IN (issue #137), ausente = DESLIGADO. Sem esta chave, dono vivo
+  # nunca é reclamado por idade (só por morte, e só por beneficiário morto — issue #144). Declare
+  # só quando souber quanto tempo a SUA suíte pesada legitimamente dura: o valor é respeitado como
+  # está, mesmo que ultrapasse o teto de espera menos a reserva de encerramento — nesse caso o
+  # harness avisa com os três números, sem rebaixar.
+
+# Tronco à frente do remoto (issue #67). No `pre-push`, mede com `git ls-remote` — nunca por
+# `refs/remotes/*`, que é réplica local e pode estar desatualizada NAS DUAS DIREÇÕES — quantos
+# commits o tronco local tem a mais que o servidor, e quantos deles entram NESTE push.
+#
+# Por que importa: tronco local à frente infla o PR de OUTRA frente sem sinal nenhum para quem
+# rebaseou, porque o GitHub congela `baseRefOid` e só recalcula por evento. Medido em campo: um PR
+# mostrando 59 arquivos para o revisor, dos quais só 27 eram do autor.
+#
+# Este check INFORMA e NUNCA bloqueia, e não há chave para bloquear — foi decisão de projeto, não
+# omissão. Bloquear `feat/x` porque o TRONCO está atrasado é bloquear pela ref alheia (o mesmo que
+# o comentário de `liaison.enforce` acima proíbe), e seria deadlock: com tronco divergido ou branch
+# protegida o push do tronco é recusado, então a única saída viraria `--no-verify`.
+#
+# `enabled: false` NÃO silencia — imprime a classe "NÃO MEDIDO" com o motivo. Um caminho mudo
+# tornaria "desligado" indistinguível de "quebrado".
+push_ahead:
+  enabled: true
+  timeout_s: 5
+
+# worktree-reconcile.sh media ahead/behind por refs/remotes/<remote>/* (LDG-0056) — reflexo LOCAL
+# do remoto, que pode estar desatualizado NAS DUAS DIREÇÕES, o mesmo defeito que o push_ahead acima
+# corrigiu com `git ls-remote`. `git worktree` compartilha refs/remotes/* entre TODOS os worktrees
+# do mesmo repositório, então uma leitura de rede POR REMOTO (nunca por worktree) já cobre todos.
+worktree_reconcile:
+  timeout_s: 5

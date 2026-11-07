@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge.dev/schemas/data-classification.schema.json",
+  "title": "Forge data-classification (field → classification map)",
+  "description": "Declarative map of data fields to their PCI/PII classification, masking strategy and tokenization boundary (REQ-14, design §2.4). Consumed by check-data-governance (REQ-12b): a sensitive field without a matching entry here is a finding.",
+  "type": "object",
+  "additionalProperties": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["classification", "masking", "tokenization_boundary"],
+    "properties": {
+      "classification": { "enum": ["pii", "pan", "sensitive", "public"] },
+      "masking": { "type": "string", "minLength": 1 },
+      "tokenization_boundary": { "type": "boolean" }
+    }
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "schema": "run-manifest/v1",
+  "run_id": "20261106124024-97eb0a4e",
+  "stage": "verify",
+  "status": "passed",
+  "started_at": "2026-11-06T12:40:17Z",
+  "finished_at": "2026-11-06T12:40:24.336Z",
+  "duration_ms": 7336,
+  "git": {
+    "repo": true,
+    "branch": "feature/subscription-auth",
+    "head_sha": "261538c1a8e960ca203ef298e58a23260c8d8af4",
+    "dirty": true,
+    "changed_files": [
+      ".claude/",
+      ".forge/",
+      ".gitattributes",
+      ".github/workflows/red-first.yml",
+      ".github/workflows/staging.yml",
+      ".gitignore",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "prompts/"
+    ],
+    "diff_stat": ".gitattributes | 23 +++++++++++++++++++\n .gitignore     | 34 ++++++++++++++++++++++++++++\n AGENTS.md      | 70 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n 3 files changed, 127 insertions(+)",
+    "diff_sha256": "a8bf244fea0394914e5194433682f733bcbe6597d1dac36d435bfb265301c739"
+  },
+  "inputs": [
+    {
+      "path": "manifest.yaml",
+      "exists": true,
+      "sha256": "c5258105904d7b890b93b5b09ea13644107b363c73bae9f1b2aeb706020ede58",
+      "bytes": 2837,
+      "kind": "file"
+    },
+    {
+      "path": "tasks.md",
+      "exists": true,
+      "sha256": "e878c64289fcb13ca658373b0164479a08b4ed72c9f76aff85ea69b499d0844f",
+      "bytes": 17729,
+      "kind": "file"
+    },
+    {
+      "path": "traceability.yaml",
+      "exists": false,
+      "sha256": null,
+      "bytes": null
+    }
+  ],
+  "commands": [
+    {
+      "name": "spec-verify",
+      "command": "spec-verify.sh subscription-auth",
+      "status": "passed"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "verification.yaml",
+      "exists": true,
+      "sha256": "fe41a03c403e8870d1a8ac9e5c123bc9f5ffa44af254916842da183463de8a66",
+      "bytes": 356,
+      "kind": "file"
+    }
+  ],
+  "runner": {
+    "name": "local",
+    "profile": "standard"
+  },
+  "budgets": {
+    "profile": "standard",
+    "budget_class": "medium",
+    "expected_runs": 1,
+    "estimated_timeout_s": 300,
+    "uses_llm": false,
+    "uses_subagent": false
+  }
+}

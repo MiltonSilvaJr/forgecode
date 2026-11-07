@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+# Forge pre-commit (§20.4) — cheap one-line gates over STAGED files only.
+# Blocks only on clear violations; anything expensive belongs to pre-push or /forge:verify.
+set -u
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+fail=0
+
+# Resolução do alvo delegado (issue #141): core.hooksPath é gravado ABSOLUTO para o tronco
+# (#41/#54, LDG-0042), mas cada worktree carrega sua PRÓPRIA cópia de .forge/scripts/ (issue
+# #41). Um hook novo (vindo do tronco via hooksPath) encontra scripts antigos na worktree que o
+# executa e bloqueava por causa alheia. Precedência: a árvore que executa primeiro; se o alvo
+# faltar lá E a árvore do hook (o tronco, quando hooksPath é absoluto — aqui mesmo, quando não
+# há separação) o tiver, usa o do tronco com uma linha nomeando-o; bloqueio só quando falta nas
+# duas. $0 é o caminho do próprio hook, gravado por hooksPath — dirname($0)/../.. é o .forge de
+# onde ele foi executado.
+HOOK_FORGE_DIR="$(cd "$(dirname "$0")/../.." 2>/dev/null && pwd)" || HOOK_FORGE_DIR=""
+# Só serve de fallback quando termina em .forge E carrega a maquinaria deste hook — caso
+# contrário (symlink solto, HOME, checkout parcial) o tronco fica indisponível, como antes da #141.
+case "$HOOK_FORGE_DIR" in
+  */.forge) [ -f "$HOOK_FORGE_DIR/hooks/git/${0##*/}" ] || HOOK_FORGE_DIR="" ;;
+  *) HOOK_FORGE_DIR="" ;;
+esac
+resolve_delegated() {  # resolve_delegated <label> <rel-sob-.forge/> — ecoa o caminho resolvido em
+  # stdout; rc 0 = achado (própria árvore, ou do tronco com aviso em stderr nomeando-o); rc 1 =
+  # ausente nas duas com o diretório-lar presente em ao menos uma (bloqueio é do chamador); rc 2 =
+  # diretório-lar ausente nas duas (no-op legítimo — harness não instalado).
+  local label="$1" rel="$2"
+  local wt="$ROOT/.forge/$rel" trunk="" wt_dir trunk_dir=""
+  wt_dir="$(dirname "$wt")"
+  if [ -f "$wt" ]; then printf '%s\n' "$wt"; return 0; fi
+  # Árvore sem $ROOT/.forge nenhum nunca adotou o harness — não é uma worktree defasada, é uma
+  # árvore NÃO gerenciada. Devolve o mesmo no-op de antes da #141 (rc 2), sem consultar o tronco,
+  # sem aviso e sem efeito colateral. A delegação ao tronco abaixo vale só para a árvore que TEM
+  # .forge/ mas com este alvo ausente ou defasado.
+  [ -d "$ROOT/.forge" ] || return 2
+  if [ -n "$HOOK_FORGE_DIR" ]; then
+    trunk="$HOOK_FORGE_DIR/$rel"
+    trunk_dir="$(dirname "$trunk")"
+  fi
+  if [ -n "$trunk" ] && [ -f "$trunk" ]; then
+    echo "hook: $label ausente em $ROOT — usando o do tronco ($trunk); rode forge update na worktree" >&2
+    printf '%s\n' "$trunk"
+    return 0
+  fi
+  if [ -d "$wt_dir" ] || { [ -n "$trunk_dir" ] && [ -d "$trunk_dir" ]; }; then
+    # A recusa do CHAMADOR (texto literal, mantido) fala de UMA árvore só. Sem esta linha, uma
+    # worktree que não tem sequer o DIRETÓRIO faria a mensagem afirmar, por omissão, que ele
+    # existe nela — falso quando só o tronco o tem. Nomear as duas buscas não muda o prefixo que
+    # gates e usuários casam, só acrescenta onde se procurou.
+    echo "  (procurado em $wt_dir e em ${trunk_dir:-<tronco indisponível>})" >&2
+    return 1
+  fi
+  return 2
+}
+
+# worktree-guard: committing from a worktree is only allowed under .forge/worktrees/
+GIT_DIR="$(git rev-parse --git-dir)"
+COMMON_DIR="$(git rev-parse --git-common-dir)"
+if [ "$GIT_DIR" != "$COMMON_DIR" ]; then
+  case "$ROOT" in
+    */.forge/worktrees/*) : ;;
+    *) echo "pre-commit BLOQUEADO: worktree fora de .forge/worktrees/ (regra §20.4)"; exit 1 ;;
+  esac
+fi
+
+staged="$(git diff --cached --name-only --diff-filter=ACM)"
+[ -n "$staged" ] || { echo "pre-commit OK (nada staged)"; exit 0; }
+
+while IFS= read -r f; do
+  [ -f "$ROOT/$f" ] || continue
+  case "$f" in
+    *.DS_Store) echo "pre-commit BLOQUEADO: .DS_Store staged ($f)"; fail=1 ;;
+  esac
+  if grep -qE '^(<<<<<<<|=======$|>>>>>>>)' "$ROOT/$f" 2>/dev/null; then
+    case "$f" in
+      *.md|*.sh|*.json|*.yaml|*.yml|*.cs|*.ts|*.tsx|*.go|*.kt)
+        echo "pre-commit BLOQUEADO: marcador de conflito em $f"; fail=1 ;;
+    esac
+  fi
+  case "$f" in
+    *.sh) bash -n "$ROOT/$f" 2>/dev/null || { echo "pre-commit BLOQUEADO: $f não parseia (bash -n)"; fail=1; } ;;
+    *.json) python3 -m json.tool "$ROOT/$f" >/dev/null 2>&1 || { echo "pre-commit BLOQUEADO: $f não é JSON válido"; fail=1; } ;;
+  esac
+done <<EOF_STAGED
+$staged
+EOF_STAGED
+
+# frontmatter gate for harness artifacts (agents/commands/skills)
+harness_md="$(printf '%s\n' "$staged" | grep -E '^\.forge/(agents|commands|skills)/.*\.md$' | grep -v 'README.md' || true)"
+if [ -n "$harness_md" ]; then
+  # shellcheck disable=SC2086
+  out="$(cd "$ROOT" && .forge/scripts/validate-frontmatter.sh $harness_md 2>/dev/null | tail -1)"
+  case "$out" in
+    OK*) : ;;
+    *) echo "pre-commit BLOQUEADO: validate-frontmatter falhou ($out)"; fail=1 ;;
+  esac
+fi
+
+# segredo hardcoded em arquivo versionado (rule conventions/no-hardcoded-secrets.md).
+#
+# Sobre o ÍNDICE, que é exatamente o conjunto prestes a virar histórico — e o único momento em que
+# remover a linha ainda resolve. Depois do commit o valor está no histórico e em todos os clones, e
+# a remediação deixa de ser um `git reset` para virar rotação de credencial e análise de exposição.
+#
+# É o único gate deste hook que roda um script do harness em vez de um grep inline, porque a
+# distinção entre segredo e placeholder não cabe num grep: a diferença entre `Password=${DB_PASS}`
+# e `Password=Tr0v4d0r` é o que separa um gate usável de um que vira `--no-verify` de hábito.
+#
+# Opcional por construção: um repositório que não instalou (ou removeu) check-secrets.sh não é
+# penalizado; e `secrets.enforce: warn` no forge.yaml rebaixa os achados para aviso, que é como um
+# brownfield com passivo adota o gate sem travar o time no dia da ativação.
+# Regra de delegação (issue #49, instância 4): chamar algo que não existe é ERRO, não no-op.
+# O no-op só é legítimo quando o harness NÃO está instalado — aí não há maquinaria a impor. Se o
+# DIRETÓRIO que hospeda o alvo existe, a ausência do alvo significa harness atualizado pela
+# metade, script apagado ou instalação corrompida, e isso não pode terminar no mesmo desfecho de
+# uma execução bem-sucedida.
+#
+# O comentário acima dizia "opcional por construção: um repositório que não instalou (ou removeu)
+# check-secrets.sh não é penalizado". Removê-lo continua sendo possível — removendo o harness. O
+# que não pode é o gate de segredo sumir de dentro de um harness instalado sem que nada acuse.
+SECRETS="$(resolve_delegated check-secrets.sh scripts/check-secrets.sh)"; _rc=$?
+if [ "$_rc" -eq 1 ]; then
+  echo "pre-commit BLOQUEADO: .forge/scripts/ existe mas check-secrets.sh não — a delegação aponta para um alvo ausente"
+  fail=1
+  SECRETS=""
+fi
+if [ -n "$SECRETS" ] && [ -f "$SECRETS" ]; then
+  # Saída capturada: o gate emite uma linha por asserção, e imprimir isso em TODO commit limpo
+  # transformaria o sinal em ruído. Num commit reprovado, sai inteira.
+  # `if ! var="$(cmd)"` e não `var=$(cmd); if [ $? -ne 0 ]`: o segundo idioma depende de nada ser
+  # inserido entre a atribuição e o teste, e a inserção acidental é justamente como um gate deixa
+  # de reprovar sem que ninguém perceba.
+  if ! secrets_out="$(FORGE_ROOT="$ROOT" bash "$SECRETS" staged 2>&1)"; then
+    printf '%s\n' "$secrets_out"
+    echo "pre-commit BLOQUEADO: check-secrets (rule conventions/no-hardcoded-secrets.md)"
+    fail=1
+  fi
+fi
+
+[ "$fail" -eq 0 ] && echo "pre-commit OK" && exit 0
+exit 1

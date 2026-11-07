@@ -1,0 +1,61 @@
+id: forgequeue
+type: feature
+mode: brownfield
+rigor: spec-anchored
+scale: 2
+status: implemented
+created_at: "2026-11-04"
+updated_at: "2026-11-06"
+owner: "Milton Antonio da Silva Jr"
+parent:
+  baseline: .forge/product/current
+affects_surfaces:
+  - api
+affected_capabilities:
+  - forge-queue
+affected_paths:
+  - packages/schema/src/config/experimental.ts
+  - packages/schema/test/config.test.ts
+  - packages/core/src/config/normalize.ts
+  - packages/client/src/promise/generated/
+  - packages/client/src/effect/generated/
+  - packages/cli/src/queue/
+  - packages/cli/src/commands/commands.ts
+  - packages/cli/src/commands/handlers/queue.ts
+  - packages/cli/src/commands/handlers/queue/
+  - packages/cli/src/commands/handlers/sessions.ts
+  - packages/cli/src/index.ts
+  - packages/cli/test/
+  - packages/server/test/session-prompt-delivery.test.ts
+  - packages/cli/AGENTS.md
+  - .forge/product/current/adr/
+dependencies:
+  specs: []
+  code:
+    - packages/protocol/src/groups/session.ts
+    - packages/protocol/src/groups/event.ts
+    - packages/protocol/src/groups/config.ts
+    - packages/core/src/session/prompt.ts
+    - packages/core/src/session/inbox.ts
+    - packages/schema/src/session-inbox.ts
+    - packages/schema/src/session-event.ts
+    - packages/cli/src/framework/runtime.ts
+    - packages/cli/src/services/server-connection.ts
+    - packages/util/src/global.ts
+gates:
+  requirements_reviewed: true
+  design_reviewed: true
+  tasks_reviewed: true
+  implementation_verified: false
+  human_archive_approval: false
+dev_loop:
+  sharded: false
+  stories_path: stories/
+  epic_context_compiled: false
+quick_plan:
+  enabled: false
+  skipped_phases: []
+  justification:
+archive:
+  eligible: false
+  reason: "tasks not implemented"

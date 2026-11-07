@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forge/schemas/meta-eval.schema.json",
+  "title": "meta-aggregate.json — meta-avaliação A/B de um artefato do harness (§18)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["case", "artifact_under_test", "with_template", "without_template", "delta", "verdict"],
+  "properties": {
+    "case": { "type": "string", "minLength": 1 },
+    "artifact_under_test": { "type": "string", "minLength": 1 },
+    "with_template": { "$ref": "#/$defs/arm_summary" },
+    "without_template": { "$ref": "#/$defs/arm_summary" },
+    "delta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["miss", "conflict", "pass_rate"],
+      "properties": {
+        "miss": { "type": "number" },
+        "conflict": { "type": "number" },
+        "clarify": { "type": "number" },
+        "pass_rate": { "type": "number" }
+      }
+    },
+    "verdict": { "type": "string", "enum": ["template_helps", "template_hurts", "neutral"] }
+  },
+  "$defs": {
+    "arm_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["n", "miss_mean", "conflict_mean", "pass_rate"],
+      "properties": {
+        "n": { "type": "integer", "minimum": 1 },
+        "miss_mean": { "type": "number", "minimum": 0 },
+        "miss_stddev": { "type": "number", "minimum": 0 },
+        "conflict_mean": { "type": "number", "minimum": 0 },
+        "conflict_stddev": { "type": "number", "minimum": 0 },
+        "clarify_mean": { "type": "number", "minimum": 0 },
+        "pass_rate": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    }
+  }
+}

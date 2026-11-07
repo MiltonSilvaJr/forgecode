@@ -1,0 +1,463 @@
+# Spec delta — operations this change applies to the baseline at archive time
+# (schema: .forge/schemas/spec-delta.schema.json; doc §10.4).
+# Capability subscription-auth nasce com este change; REQ-SA-NN segue a ordem de
+# requirements.md (REQ-01..16 e NFR-01..04 = REQ-SA-01..20).
+operations:
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-01
+    content_ref: requirements.md#req-01--flag-opt-in-e-desligada-por-padrão
+    requirement:
+      id: REQ-SA-01
+      title: Flag opt-in e desligada por padrão
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-01-A
+          given: "config sem bloco subscription_auth ou com enabled false"
+          when: "o usuário executa auth status ou auth login com fonte nativa"
+          then: "a capacidade reporta enabled false, não lê sessão nativa e o login falha com subscription_auth_disabled"
+        - id: SCN-SA-01-B
+          given: "flag false e providers claude-agent e openai já configurados"
+          when: "o catálogo de providers é montado"
+          then: "a lista de providers e modelos é idêntica ao baseline"
+      contracts:
+        - "packages/schema/src/config/subscription-auth.ts"
+        - "packages/schema/src/config.ts"
+      tests:
+        - "packages/schema/test/config-subscription-auth.test.ts"
+        - "packages/core/test/subscription-auth/resolver.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-02
+    content_ref: requirements.md#req-02--contrato-de-fonte-de-credencial-com-relatório-sem-segredo
+    requirement:
+      id: REQ-SA-02
+      title: Contrato de fonte de credencial com relatório sem segredo
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-02-A
+          given: "uma fonte com sessão nativa presente"
+          when: "o relatório da fonte é serializado"
+          then: "apenas present state expiresAt accountLabel detail aparecem e nenhum campo de token é aceito pelo schema"
+        - id: SCN-SA-02-B
+          given: "um adapter que declara fallback por API key"
+          when: "o resolvedor pede o material dessa fonte"
+          then: "o material devolvido é Credential.Key e a fonte declara kind api_key como menor prioridade"
+      contracts:
+        - "packages/schema/src/subscription-auth.ts"
+        - "packages/core/src/subscription/source.ts"
+      tests:
+        - "packages/schema/test/subscription-auth.test.ts"
+        - "packages/core/test/subscription-auth/native-session.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-03
+    content_ref: requirements.md#req-03--prioridade-de-resolução-explícita-e-observável
+    requirement:
+      id: REQ-SA-03
+      title: Prioridade de resolução explícita e observável
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-03-A
+          given: "as cinco fontes presentes para o mesmo provider"
+          when: "a credencial é resolvida"
+          then: "a fonte escolhida é env e as demais aparecem como skipped com motivo"
+        - id: SCN-SA-03-B
+          given: "config com subscription_auth.sources.kimi-code reordenando native antes de store"
+          when: "a credencial é resolvida"
+          then: "a ordem informada é respeitada e um kind desconhecido é rejeitado na decodificação"
+      contracts:
+        - "packages/core/src/subscription/resolver.ts"
+      tests:
+        - "packages/core/test/subscription-auth/resolver.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-04
+    content_ref: requirements.md#req-04--adapter-claude-code-sem-tocar-o-token
+    requirement:
+      id: REQ-SA-04
+      title: Adapter claude-code sem tocar o token
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-04-A
+          given: "sessão do Claude Code presente em arquivo ou Keychain"
+          when: "auth status é executado"
+          then: "o adapter reporta source native sem ler nem expor o token e o transporte é claude-agent"
+        - id: SCN-SA-04-B
+          given: "binário claude ausente do PATH"
+          when: "auth login claude-code é executado"
+          then: "a operação falha com cli_missing e cita a URL de instalação"
+      contracts:
+        - "packages/core/src/subscription/adapters/claude-code.ts"
+        - "specs/v2/claude-agent-provider.md"
+      tests:
+        - "packages/core/test/subscription-auth/adapter-claude-code.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-05
+    content_ref: requirements.md#req-05--adapter-codex-chatgpt-com-fonte-nativa-declarada-como-não-transferível
+    requirement:
+      id: REQ-SA-05
+      title: Adapter codex-chatgpt com fonte nativa declarada como não transferível
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-05-A
+          given: "auth.json do Codex com auth_mode chatgpt"
+          when: "auth status é executado"
+          then: "a fonte nativa aparece detectada com usable_by_forgecode false e sem tokens no relatório"
+        - id: SCN-SA-05-B
+          given: "usuário escolhe source managed"
+          when: "auth login codex-chatgpt é executado"
+          then: "o OAuth ChatGPT gerenciado cria credencial oauth e nenhum token do CLI é copiado"
+      contracts:
+        - "packages/core/src/subscription/adapters/codex-chatgpt.ts"
+        - "packages/core/src/plugin/provider/chatgpt.ts"
+      tests:
+        - "packages/core/test/subscription-auth/adapter-codex-chatgpt.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-06
+    content_ref: requirements.md#req-06--adapter-kimi-code-e-binding-de-transporte
+    requirement:
+      id: REQ-SA-06
+      title: Adapter kimi-code e binding de transporte
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-06-A
+          given: "sessão do Kimi presente e flag ligada"
+          when: "o catálogo de providers é montado"
+          then: "kimi-for-coding e seus modelos aparecem com custo zerado e Bearer para api.kimi.com/coding/v1"
+        - id: SCN-SA-06-B
+          given: "sessão do Kimi ausente"
+          when: "o catálogo de providers é montado"
+          then: "kimi-for-coding não aparece em provider nem em model"
+      contracts:
+        - "packages/core/src/subscription/adapters/kimi-code.ts"
+        - "packages/core/src/plugin/provider/kimi.ts"
+        - "packages/ai/src/providers/moonshot.ts"
+      tests:
+        - "packages/core/test/subscription-auth/adapter-kimi-code.test.ts"
+        - "packages/core/test/subscription-auth/provider-kimi.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-07
+    content_ref: requirements.md#req-07--auth-status-lista-fonte-validade-e-estado
+    requirement:
+      id: REQ-SA-07
+      title: auth status lista fonte validade e estado
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-07-A
+          given: "três adapters com fontes conhecidas"
+          when: "auth status --json é executado"
+          then: "cada provider traz enabled state source expiresAt accountLabel consent transport e motivo de descarte sem segredo"
+        - id: SCN-SA-07-B
+          given: "servidor local que falha ao receber conexão"
+          when: "auth status é executado sem --probe"
+          then: "nenhuma requisição de rede ocorre e o comando conclui em menos de 2 segundos"
+      contracts:
+        - "packages/cli/src/commands/handlers/auth/status.ts"
+        - "packages/protocol/src/groups/subscription.ts"
+      tests:
+        - "packages/cli/test/auth-status.test.ts"
+        - "packages/server/test/subscription.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-08
+    content_ref: requirements.md#req-08--auth-login-com-fonte-alias-e-consentimento
+    requirement:
+      id: REQ-SA-08
+      title: auth login com fonte alias e consentimento
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-08-A
+          given: "primeiro uso de kimi-code sem aceite registrado"
+          when: "auth login kimi-code roda sem --accept-tos em modo não interativo"
+          then: "falha com consent_required antes de ler qualquer fonte"
+        - id: SCN-SA-08-B
+          given: "sessão nativa já presente"
+          when: "auth login claude-code é executado"
+          then: "responde already_authenticated e não altera o arquivo de sessão"
+      contracts:
+        - "packages/cli/src/commands/handlers/auth/login.ts"
+        - "packages/cli/src/commands/handlers/auth/shared.ts"
+        - "packages/protocol/src/groups/subscription.ts"
+      tests:
+        - "packages/cli/test/auth-login-subscription.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-09
+    content_ref: requirements.md#req-09--auth-logout-remove-só-o-que-o-forgecode-gerencia
+    requirement:
+      id: REQ-SA-09
+      title: auth logout remove só o que o ForgeCode gerencia
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-09-A
+          given: "credencial gerenciada ativa para o provider"
+          when: "auth logout é executado"
+          then: "apenas a credencial gerenciada é removida"
+        - id: SCN-SA-09-B
+          given: "somente fonte nativa disponível"
+          when: "auth logout é executado"
+          then: "falha com native_session_not_managed e cita o comando oficial de logout sem tocar no arquivo"
+      contracts:
+        - "packages/cli/src/commands/handlers/auth/logout.ts"
+      tests:
+        - "packages/cli/test/auth-logout-subscription.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-10
+    content_ref: requirements.md#req-10--auth-refresh-renova-ou-revalida-sem-destruir-a-credencial
+    requirement:
+      id: REQ-SA-10
+      title: auth refresh renova ou revalida sem destruir a credencial
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-10-A
+          given: "credencial OAuth gerenciada expirada"
+          when: "auth refresh é executado"
+          then: "a credencial é renovada e o novo expiresAt é devolvido"
+        - id: SCN-SA-10-B
+          given: "o provedor de refresh responde 500"
+          when: "auth refresh é executado"
+          then: "falha com refresh_failed e a credencial anterior permanece intacta"
+      contracts:
+        - "packages/server/src/handlers/subscription.ts"
+        - "packages/core/src/integration.ts"
+      tests:
+        - "packages/cli/test/auth-refresh.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-11
+    content_ref: requirements.md#req-11--auth-test-faz-chamada-mínima-e-reporta-sem-expor-segredo
+    requirement:
+      id: REQ-SA-11
+      title: auth test faz chamada mínima e reporta sem expor segredo
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-11-A
+          given: "sessão válida e transporte disponível"
+          when: "auth test é executado"
+          then: "devolve ok latencyMs e model após uma única chamada com max_tokens menor ou igual a 8"
+        - id: SCN-SA-11-B
+          given: "servidor que responde 401 com corpo contendo Bearer e sentinela"
+          when: "auth test é executado"
+          then: "devolve session_expired sem ecoar header corpo ou token"
+      contracts:
+        - "packages/server/src/handlers/subscription.ts"
+        - "packages/core/src/subscription/redaction.ts"
+      tests:
+        - "packages/cli/test/auth-test-command.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-12
+    content_ref: requirements.md#req-12--exposição-de-providermodelo-condicionada-a-fonte-e-transporte
+    requirement:
+      id: REQ-SA-12
+      title: Exposição de provider e modelo condicionada a fonte e transporte
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-12-A
+          given: "flag ligada fonte pronta e transporte declarado"
+          when: "provider e model list são consultados"
+          then: "o provider de assinatura e seus modelos aparecem"
+        - id: SCN-SA-12-B
+          given: "policy provider.use deny para kimi-for-coding com sessão válida"
+          when: "o catálogo é montado"
+          then: "o provider é removido e não aparece em provider nem em model"
+      contracts:
+        - "packages/core/src/subscription/plugin.ts"
+        - "specs/v2/provider-policy.md"
+      tests:
+        - "packages/server/test/subscription-exposure.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-13
+    content_ref: requirements.md#req-13--fallback-para-api-key-declarado-nunca-silencioso
+    requirement:
+      id: REQ-SA-13
+      title: Fallback para API key declarado nunca silencioso
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-13-A
+          given: "sessão ausente e API key presente com fallback ligado"
+          when: "a credencial é resolvida"
+          then: "a resolução reporta source api_key e fallback api_key com motivo"
+        - id: SCN-SA-13-B
+          given: "fallback desligado e sessão ausente"
+          when: "a credencial é resolvida"
+          then: "a resolução falha com subscription_unavailable e nenhuma credencial é criada"
+      contracts:
+        - "packages/core/src/subscription/resolver.ts"
+        - "packages/schema/src/config/subscription-auth.ts"
+      tests:
+        - "packages/core/test/subscription-auth/resolver.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-14
+    content_ref: requirements.md#req-14--erros-acionáveis-e-redação-de-segredo
+    requirement:
+      id: REQ-SA-14
+      title: Erros acionáveis e redação de segredo
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-14-A
+          given: "cada condição de falha mapeada"
+          when: "a falha atravessa rota CLI log e evento"
+          then: "o mesmo code aparece nas quatro bordas com mensagem que indica a próxima ação"
+        - id: SCN-SA-14-B
+          given: "corpo de erro com Bearer e refresh_token sentinela"
+          when: "o erro é logado e serializado"
+          then: "os valores são redigidos e o corpo é truncado"
+      contracts:
+        - "packages/core/src/subscription/redaction.ts"
+        - "packages/schema/src/subscription-auth.ts"
+      tests:
+        - "packages/core/test/subscription-auth/redaction.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-15
+    content_ref: requirements.md#req-15--superfície-http-experimental-aditiva-e-compatível
+    requirement:
+      id: REQ-SA-15
+      title: Superfície HTTP experimental aditiva e compatível
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-15-A
+          given: "as cinco rotas publicadas"
+          when: "o teste de identificadores experimentais roda"
+          then: "todo path experimental tem identificador experimental e vice-versa"
+        - id: SCN-SA-15-B
+          given: "rotas estáveis existentes"
+          when: "o contrato é comparado ao baseline"
+          then: "nenhuma rota estável mudou de path payload ou erro e o client só ganhou adições"
+        - id: SCN-SA-15-C
+          given: "política integration.connect deny para o integrationID e provider.use deny para o provider vinculado"
+          when: "login consent refresh e test são chamados no handler"
+          then: "as rotas respondem 403 e nenhuma credencial é criada nem chamada de provider executada"
+      contracts:
+        - "packages/protocol/src/groups/subscription.ts"
+        - "packages/protocol/src/api.ts"
+        - "packages/client/src"
+        - "packages/server/src/handlers/subscription.ts"
+      tests:
+        - "packages/protocol/test/experimental-identifiers.test.ts"
+        - "packages/protocol/test/subscription-group.test.ts"
+        - "packages/server/test/subscription.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-16
+    content_ref: requirements.md#req-16--tos-versionado-documentado-e-nunca-implícito
+    requirement:
+      id: REQ-SA-16
+      title: ToS versionado documentado e nunca implícito
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-16-A
+          given: "primeiro uso de um provider"
+          when: "auth login é executado"
+          then: "o aviso versionado é apresentado e o aceite fica registrado por provider e versão"
+        - id: SCN-SA-16-B
+          given: "versão do aviso incrementada"
+          when: "auth status é executado"
+          then: "consent volta a required e o login falha sem --accept-tos"
+      contracts:
+        - "packages/core/src/subscription/notice.ts"
+        - "packages/core/src/subscription/consent.ts"
+        - "specs/v2/subscription-auth.md"
+      tests:
+        - "packages/core/test/subscription-auth/consent.test.ts"
+        - "packages/cli/test/auth-login-subscription.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-17
+    content_ref: requirements.md#requisitos-não-funcionais-do-change-quando-houver
+    requirement:
+      id: REQ-SA-17
+      title: auth status offline e dentro do orçamento de latência
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-17-A
+          given: "três adapters e nenhum probe solicitado"
+          when: "auth status é executado"
+          then: "conclui em até 2 segundos sem requisição de rede"
+      contracts:
+        - "packages/cli/test/auth-status.test.ts"
+      tests:
+        - "packages/cli/test/auth-status.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-18
+    content_ref: requirements.md#requisitos-não-funcionais-do-change-quando-houver
+    requirement:
+      id: REQ-SA-18
+      title: Nenhum segredo persistido ou exposto
+      normative: SHALL NOT
+      scenarios:
+        - id: SCN-SA-18-A
+          given: "sessões nativas com tokens sentinela"
+          when: "status login refresh test export e log são exercitados"
+          then: "nenhum sentinela aparece em banco config KV log evento ou saída"
+      contracts:
+        - ".forge/scripts/check-secrets.sh"
+      tests:
+        - "packages/core/test/subscription-auth/redaction.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-19
+    content_ref: requirements.md#requisitos-não-funcionais-do-change-quando-houver
+    requirement:
+      id: REQ-SA-19
+      title: Flag desligada não gera leitura fora do ForgeCode
+      normative: SHALL NOT
+      scenarios:
+        - id: SCN-SA-19-A
+          given: "HOME temporário sem diretórios dos CLIs e flag false"
+          when: "auth status e catálogo de providers são executados"
+          then: "nenhuma leitura fora dos diretórios do ForgeCode ocorre e não há erro"
+      contracts:
+        - "packages/core/src/subscription/resolver.ts"
+      tests:
+        - "packages/core/test/subscription-auth/resolver.test.ts"
+
+  - op: add_requirement
+    capability: subscription-auth
+    requirement_id: REQ-SA-20
+    content_ref: requirements.md#requisitos-não-funcionais-do-change-quando-houver
+    requirement:
+      id: REQ-SA-20
+      title: Sondagem e refresh com limites de tempo e tentativa
+      normative: SHALL
+      scenarios:
+        - id: SCN-SA-20-A
+          given: "provider que não responde em 16 segundos"
+          when: "auth test é executado"
+          then: "encerra com transport_unavailable em 15 segundos após uma única tentativa"
+        - id: SCN-SA-20-B
+          given: "duas chamadas concorrentes de refresh para a mesma credencial"
+          when: "ambas aguardam o resultado"
+          then: "ocorre uma única renovação e as duas recebem o mesmo expiresAt"
+      contracts:
+        - "packages/core/src/integration.ts"
+      tests:
+        - "packages/core/test/subscription-auth/adapter-kimi-code.test.ts"
+        - "packages/server/test/subscription.test.ts"

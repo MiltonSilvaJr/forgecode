@@ -1,0 +1,43 @@
+# machinery-exceptions.txt — divergências DELIBERADAS entre esta árvore e o template do harness.
+#
+# Lido por `forge update`, aplicação real E `--dry-run` com a MESMA classificação (issues
+# #101/#131), antes de sobrescrever qualquer maquinaria própria fora de ENRICHABLE_DIRS —
+# `scripts/`, `hooks/`, `commands/` e qualquer outro caminho fora de agents/rules/skills/templates
+# (capabilities, contracts, schemas, adapters/*.yaml, README.md) — que o overlay aditivo sempre
+# sobrescreve quando diverge do template. Uma linha por arquivo:
+#
+#     <sha256 do TEMPLATE no momento da declaração>  <caminho relativo a .forge/>  # razão
+#
+# O caminho aceita prefixo `./` ou `.forge/` (normalizado antes de casar contra o template; a
+# grafia original é nomeada no relatório) — duas declarações que normalizam para o mesmo caminho
+# contam como duplicata.
+#
+# POR QUE ESTE ARQUIVO EXISTE. Ele é a decisão explícita de que um conserto local deve ficar. Sem ele, o `update` trata a divergência como deriva local: preserva o arquivo, mas grava a versão nova do template em `.forge/cache/template-pendente/` e cobra reconciliação a cada update e no `doctor`, e um `update --overwrite-drift` a sobrescreve. A gramática aqui é a mesma que consumidores reais já operam em produção (o `check-machinery-drift.sh` do axis-fare-validator, por exemplo): separador de colunas por espaço livre, corte no primeiro `#` (o resto da linha é a razão), sha hexadecimal minúsculo com pelo menos 32 dígitos. Qualquer token além de "<sha> <caminho>" malforma a linha, com ou sem `#` — igual ao parser de origem (`read -r e_sha e_rel e_resto`; um terceiro token não vazio recusa a linha).
+#
+# O SHA É O DO TEMPLATE, NUNCA O DO DISCO, E CASA POR IGUALDADE ESTRITA — nunca por prefixo. Um sha
+# declarado com menos de 64 dígitos (sintaxe válida, >= 32 dígitos) nunca é igual ao sha de 64
+# dígitos do template atual, então cai sempre em EXPIRADO. Se o template mudar o arquivo de novo, o
+# sha declarado deixa de bater com o do template novo, a exceção EXPIRA e o
+# `update` nomeia os dois shas para reexame — mas preserva o arquivo mesmo assim (a exceção
+# expirada nunca bloqueia o update; parar seria mudar a fronteira publicada do comando). Uma
+# exceção declarada para um caminho que o template não tem, ou cujo conteúdo local já é idêntico
+# ao template novo, é reportada como OCIOSA — sem efeito, mas nomeada. Uma exceção declarada para
+# um caminho que o template REMOVEU (tombstone) barra a poda de órfãos incondicionalmente — o
+# arquivo sobrevive e é nomeado uma única vez, nunca como OCIOSA. Um caminho preservado por exceção
+# viva ou expirada também fica isento do orphan-check defensivo de placeholders `<PROJECT_*>`: é
+# conteúdo do consumidor, não do template, e não deve derrubar o `update` por escolha alheia.
+#
+# Arquivo ilegível, linha malformada ou o mesmo caminho declarado duas vezes PARAM o update antes
+# de escrever qualquer coisa, nomeando a linha: o que este parser não sabe ler não pode absolver
+# ninguém.
+#
+# AO CONSERTAR OU RECONCILIAR UM ARQUIVO, REMOVA A LINHA DELE. Exceção que não cobre nada é
+# reportada como OCIOSA justamente porque ela sobrevive à correção: no dia em que o arquivo
+# divergir de novo, por outro motivo, ela absolve sozinha uma divergência que ninguém leu.
+#
+# A razão é para quem chegar daqui a alguns meses e tiver que decidir se o desvio ainda vale.
+# "customização local" não é razão; diga o que o desvio FAZ.
+#
+# DERIVA LOCAL SEM DECLARAÇÃO (revisão da DH-1 pelo dono, 2026-09-26, depois de o ensaio de campo da 0.16.0 medir cerca de 40 consertos deliberados sobrescritos em cinco consumidores que nunca tinham declarado exceção): quando o sha local não é nenhum conteúdo que o harness entregou (nem a entrada do `.forge/cache/machinery.lock`, nem uma versão publicada do template, nem a versão pendente que o update anterior guardou) — `PRESERVADO (deriva local)` se o lock tem entrada para o caminho, `PRESERVADO (sem lock para provar)` se não tem —, o `update` preserva o arquivo, grava a versão nova do template em `.forge/cache/template-pendente/<caminho>` e não avança o lock daquele caminho. Para que o conserto fique sem cobrança, declare-o aqui com o sha da versão pendente (`shasum -a 256 .forge/cache/template-pendente/<caminho>`); para aceitar o template, rode `update --overwrite-drift` (sobrescreve com backup, nomeando `SOBRESCRITO (não declarado)`, e nunca passa por cima de uma linha deste arquivo). Um arquivo voltado de propósito a uma versão publicada mais antiga do template é conteúdo entregue pelo harness, não deriva: sem declaração aqui, o próximo update o atualiza.
+#
+# Este arquivo nasce vazio no template — é seu, o `update` nunca escreve nele.

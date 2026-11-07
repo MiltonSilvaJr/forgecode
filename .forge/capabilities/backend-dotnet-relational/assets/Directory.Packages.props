@@ -1,0 +1,22 @@
+<Project>
+
+  <!-- Central Package Management. Com ManagePackageVersionsCentrally ligado, o .csproj declara APENAS <PackageReference Include="..." /> e a versão vive aqui, num ponto único. Um PackageReference com Version= no projeto passa a ser erro de build (NU1008) — que é exatamente o objetivo: em monorepo, a divergência de versão entre projetos é o default silencioso. -->
+  <!-- Materializado por `bash .forge/scripts/dotnet-baseline.sh` no modo apply. As versões abaixo são as dos analisadores do baseline; as do projeto entram no segundo ItemGroup. -->
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.203" />
+    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.33.0.1635" />
+    <PackageVersion Include="Roslynator.Analyzers" Version="5.0.0" />
+    <PackageVersion Include="xunit.analyzers" Version="2.0.0" />
+  </ItemGroup>
+
+  <!-- Versões do projeto. Nunca use floating version (`*`, `[8.0,)`) nem `latest`: build reprodutível exige versão fixa. -->
+  <ItemGroup>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,357 @@
+# Spec delta — operations this change applies to the baseline at archive time
+# (schema: .forge/schemas/spec-delta.schema.json; doc §10.4).
+# modify_requirement is FULL REPLACEMENT — never a partial patch.
+# One add_requirement per REQ of requirements.md (REQ-NN ↔ REQ-FQ-NN).
+operations:
+  - op: add_requirement
+    capability: forge-queue
+    requirement_id: REQ-FQ-001
+    content_ref: requirements.md#req-01
+    requirement:
+      id: REQ-FQ-001
+      title: "Enfileirar mensagem para uma sessão por UUID"
+      normative: SHALL
+      scenarios:
+        - id: SCN-FQ-001-A
+          given: "uma sessão existente e a flag experimental forgequeue habilitada"
+          when: "o operador executa forgecode queue --thread com --message e sem --delivery"
+          then: "a mensagem é admitida na inbox com delivery queue e a saída é Queued message id for thread uuid com código 0"
+        - id: SCN-FQ-001-B
+          given: "um UUID que não corresponde a nenhuma sessão"
+          when: "o operador enfileira para esse UUID"
+          then: "o comando falha com Session uuid not found, código 1, sem chamada de admissão e sem linha queued na auditoria"
+      contracts:
+        - "POST /api/session/:sessionID/prompt"
+      tests:
+        - "packages/cli/test/queue-enqueue.test.ts"
+        - "packages/cli/test/queue-command.test.ts"
+        - "packages/cli/test/queue-integration.test.ts"
+  - op: add_requirement
+    capability: forge-queue
+    requirement_id: REQ-FQ-002
+    content_ref: requirements.md#req-02
+    requirement:
+      id: REQ-FQ-002
+      title: "Resolver destino por nome apenas na geração atual"
+      normative: SHALL
+      scenarios:
+        - id: SCN-FQ-002-A
+          given: "uma única sessão de topo não arquivada com título exato igual ao nome informado"
+          when: "o operador executa forgecode queue --to com esse nome"
+          then: "o enfileiramento usa o id dessa sessão e imprime a confirmação com esse uuid"
+        - id: SCN-FQ-002-B
+          given: "duas sessões ativas com o mesmo título"
+          when: "o operador executa forgecode queue --to com esse título"
+          then: "o comando falha por ambiguidade listando id e diretório de cada candidato e não enfileira"
+        - id: SCN-FQ-002-C
+          given: "o título só existe em sessão arquivada"
+          when: "o operador executa forgecode queue --to com esse título"
+          then: "o comando falha informando que o nome pertence à geração anterior e não enfileira"
+      contracts:
+        - "GET /api/session"
+      tests:
+        - "packages/cli/test/queue-target.test.ts"
+  - op: add_requirement
+    capability: forge-queue
+    requirement_id: REQ-FQ-003
+    content_ref: requirements.md#req-03
+    requirement:
+      id: REQ-FQ-003
+      title: "Corpo da mensagem vindo de arquivo UTF-8"
+      normative: SHALL
+      scenarios:
+        - id: SCN-FQ-003-A
+          given: "um arquivo com metacaracteres de shell e crases"
+          when: "o operador usa --message-file apontando para esse arquivo"
+          then: "o texto enviado é o conteúdo literal do arquivo, sem interpretação"
+        - id: SCN-FQ-003-B
+          given: "um caminho inexistente ou um arquivo vazio"
+          when: "o operador usa --message-file"
+          then: "o comando falha com mensagem própria e código 1 sem chamada de admissão"
+      contracts: []
+      tests:
+        - "packages/cli/test/queue-command.test.ts"
+  - op: add_requirement
+    capability: forge-queue
+    requirement_id: REQ-FQ-004
+    content_ref: requirements.md#req-04
+    requirement:
+      id: REQ-FQ-004
+      title: "Semântica de entrega explícita com default queue"
+      normative: SHALL
+      scenarios:
+        - id: SCN-FQ-004-A
+          given: "nenhuma flag de delivery informada"
+          when: "o operador enfileira uma mensagem"
+          then: "o payload enviado tem delivery queue"
+        - id: SCN-FQ-004-B
+          given: "a flag --delivery steer"
+          when: "o operador enfileira uma mensagem"
+          then: "o payload enviado tem delivery steer e a confirmação é a mesma"
+        - id: SCN-FQ-004-C
+          given: "um valor de delivery fora do conjunto aceito"
+          when: "o operador executa o comando"
+          then: "o parser recusa com código 2 e a ajuda lista queue e steer"
+      contracts:
+        - "POST /api/session/:sessionID/prompt"
+      tests:
+        - "packages/cli/test/queue-command.test.ts"
+  - op: add_requirement
+    capability: forge-queue
+    requirement_id: REQ-FQ-005
+    content_ref: requirements.md#req-05
+    requirement:
+      id: REQ-FQ-005
+      title: "A confirmação prova apenas enfileiramento"
+      normative: SHALL NOT
+      scenarios:
+        - id: SCN-FQ-005-A
+          given: "uma admissão bem-sucedida"
+          when: "o comando escreve a saída"
+          then: "a saída afirma apenas enfileiramento e não contém delivered, read, processed nem ack"
+        - id: SCN-FQ-005-B
+          given: "um cliente que registra as requisições feitas"
+          when: "o operador enfileira uma mensagem"
+          then: "nenhuma requisição de espera por ociosidade é feita antes de o comando retornar"
+      contracts: []
+      tests:
+        - "packages/cli/test/queue-command.test.ts"
+  - op: add_requirement
+    capability: forge-queue
+    requirement_id: REQ-FQ-006
+    content_ref: requirements.md#req-06
+    requirement:
+      id: REQ-FQ-006
+      title: "Listar itens da fila com estado derivado"
+      normative: SHALL
+      scenarios:
+        - id: SCN-FQ-006-A
+          given: "um item ainda presente na inbox da sessão"
+          when: "o operador executa forgecode queue list --thread"
+          then: "o item é reportado como pending"
+        - id: SCN-FQ-006-B
+          given: "um item que saiu da inbox e cuja mensagem projetada existe"
+          when: "o operador lista a fila"
+          then: "o item é reportado como delivered"
+        - id: SCN-FQ-006-C
+          given: "um item que saiu da inbox sem mensagem projetada"
+          when: "o operador lista a fila"
+          then: "o item é reportado como cancelled"
+        - id: SCN-FQ-006-D
+          given: "um item cuja prova de mensagem falhou por transporte"
+          when: "o operador lista a fila"
+          then: "o item é reportado como unknown e nunca como delivered"
+      contracts:
+        - "GET /api/session/:sessionID/inbox"
+        - "GET /api/session/:sessionID/message/:messageID"
+      tests:
+        - "packages/cli/test/queue-status.test.ts"
+        - "packages/cli/test/queue-integration.test.ts"
+  - op: add_requirement
+    capability: forge-queue
+    requirement_id: REQ-FQ-007
+    content_ref: requirements.md#req-07
+    requirement:
+      id: REQ-FQ-007
+      title: "Listar sessões com identidade e estado"
+      normative: SHALL
+      scenarios:
+        - id: SCN-FQ-007-A
+          given: "sessões de topo ativas com e sem modelo definido"
+          when: "o operador executa forgecode sessions"
+          then: "cada linha traz id, título, provider e modelo quando houver, diretório e status"
+        - id: SCN-FQ-007-B
+          given: "uma sessão arquivada"
+          when: "o operador executa forgecode sessions sem --all"
+          then: "a sessão arquivada não aparece; com --all ela aparece com status archived"
+      contracts:
+        - "GET /api/session"
+      tests:
+        - "packages/cli/test/sessions.test.ts"
+  - op: add_requirement
+    capability: forge-queue
+    requirement_id: REQ-FQ-008
+    content_ref: requirements.md#req-08
+    requirement:
+      id: REQ-FQ-008
+      title: "Bloquear auto-envio por padrão"
+      normative: SHALL
+      scenarios:
+        - id: SCN-FQ-008-A
+          given: "OPENCODE_SESSION_ID igual ao destino resolvido"
+          when: "o operador enfileira sem --allow-self"
+          then: "o comando recusa com código 1 e não faz chamada de admissão"
+        - id: SCN-FQ-008-B
+          given: "OPENCODE_SESSION_ID igual ao destino resolvido"
+          when: "o operador enfileira com --allow-self"
+          then: "a admissão acontece e o comando sai com código 0"
+      contracts: []
+      tests:
+        - "packages/cli/test/queue-enqueue.test.ts"
+  - op: add_requirement
+    capability: forge-queue
+    requirement_id: REQ-FQ-009
+    content_ref: requirements.md#req-09
+    requirement:
+      id: REQ-FQ-009
+      title: "Broadcast validado com falha parcial reportada"
+      normative: SHALL
+      scenarios:
+        - id: SCN-FQ-009-A
+          given: "três sessões elegíveis e uma falha de admissão na terceira"
+          when: "o operador usa --all"
+          then: "a saída lista as três com queued ou failed, a auditoria recebe três linhas e o código de saída é 1"
+        - id: SCN-FQ-009-B
+          given: "nenhuma sessão elegível além da origem"
+          when: "o operador usa --all"
+          then: "o comando falha com no targets in the current generation e não faz admissão"
+      contracts:
+        - "GET /api/session"
+      tests:
+        - "packages/cli/test/queue-broadcast.test.ts"
+  - op: add_requirement
+    capability: forge-queue
+    requirement_id: REQ-FQ-010
+    content_ref: requirements.md#req-10
+    requirement:
+      id: REQ-FQ-010
+      title: "Trilha de auditoria append-only sem segredos"
+      normative: SHALL
+      scenarios:
+        - id: SCN-FQ-010-A
+          given: "duas tentativas de enfileiramento"
+          when: "as tentativas são executadas"
+          then: "o arquivo tem duas linhas e os bytes da primeira permanecem idênticos"
+        - id: SCN-FQ-010-B
+          given: "uma mensagem com o marcador FORGEQUEUE_SENTINEL"
+          when: "a tentativa é registrada"
+          then: "o marcador não aparece no arquivo de auditoria"
+        - id: SCN-FQ-010-C
+          given: "uma admissão que falhou"
+          when: "a tentativa é registrada"
+          then: "a linha tem result failed, messageID nulo e error de no máximo 200 caracteres"
+      contracts: []
+      tests:
+        - "packages/cli/test/queue-audit.test.ts"
+  - op: add_requirement
+    capability: forge-queue
+    requirement_id: REQ-FQ-011
+    content_ref: requirements.md#req-11
+    requirement:
+      id: REQ-FQ-011
+      title: "Atividade medida e nunca presumida"
+      normative: SHALL
+      scenarios:
+        - id: SCN-FQ-011-A
+          given: "uma sessão com execução em curso, busy maior que idle"
+          when: "o operador executa queue activity"
+          then: "o snapshot reporta state busy com lastMessageAt, pendingCount, outcome e observedAt"
+        - id: SCN-FQ-011-B
+          given: "uma sessão assinada em watch e um evento de execução dessa sessão"
+          when: "o evento chega antes do timeout"
+          then: "o comando imprime tipo e created do primeiro evento da sessão e sai com código 0"
+        - id: SCN-FQ-011-C
+          given: "watch sem nenhum evento da sessão"
+          when: "o timeout expira"
+          then: "o comando sai com código 1 e informa que não houve atividade no intervalo"
+      contracts:
+        - "GET /api/event"
+      tests:
+        - "packages/cli/test/queue-activity.test.ts"
+  - op: add_requirement
+    capability: forge-queue
+    requirement_id: REQ-FQ-012
+    content_ref: requirements.md#req-12
+    requirement:
+      id: REQ-FQ-012
+      title: "Idempotência obrigatória por chave"
+      normative: SHALL
+      scenarios:
+        - id: SCN-FQ-012-A
+          given: "duas invocações com a mesma chave e a mesma sessão"
+          when: "as invocações são executadas"
+          then: "ambas reportam o mesmo id e a listagem mostra um único item"
+        - id: SCN-FQ-012-B
+          given: "uma chave com caracteres fora do conjunto aceito"
+          when: "o operador executa o comando"
+          then: "o comando sai com código 2 e informa chave de idempotência inválida"
+        - id: SCN-FQ-012-C
+          given: "um comando de escrita sem --idempotency-key"
+          when: "o operador executa o comando"
+          then: "o comando sai com código 2, informa a chave ausente e não faz admissão"
+        - id: SCN-FQ-012-D
+          given: "uma falha de transporte depois de uma admissão que chegou ao servidor"
+          when: "o operador repete o comando com a mesma chave"
+          then: "o servidor devolve o item existente e nenhum segundo item é criado"
+      contracts:
+        - "POST /api/session/:sessionID/prompt"
+      tests:
+        - "packages/cli/test/queue-enqueue.test.ts"
+  - op: add_requirement
+    capability: forge-queue
+    requirement_id: REQ-FQ-013
+    content_ref: requirements.md#req-13
+    requirement:
+      id: REQ-FQ-013
+      title: "Erros claros e comando não bloqueante"
+      normative: SHALL
+      scenarios:
+        - id: SCN-FQ-013-A
+          given: "servidor inalcançável"
+          when: "o operador enfileira uma mensagem"
+          then: "o comando falha com código 1 citando o endereço do servidor e sem expor credencial"
+        - id: SCN-FQ-013-B
+          given: "resposta 5xx do servidor"
+          when: "o operador enfileira uma mensagem"
+          then: "o comando falha com código 1 citando o status HTTP recebido"
+      contracts: []
+      tests:
+        - "packages/cli/test/queue-command.test.ts"
+  - op: add_requirement
+    capability: forge-queue
+    requirement_id: REQ-FQ-014
+    content_ref: requirements.md#req-14
+    requirement:
+      id: REQ-FQ-014
+      title: "Feature flag desliga a escrita"
+      normative: SHALL
+      scenarios:
+        - id: SCN-FQ-014-A
+          given: "nenhum documento de configuração define experimental forgequeue enabled"
+          when: "o operador tenta enfileirar"
+          then: "o comando sai com código 1 informando como habilitar e não faz admissão"
+        - id: SCN-FQ-014-B
+          given: "dois documentos que definem a chave com valores opostos"
+          when: "o comando resolve a flag"
+          then: "vale o último documento que define a chave na ordem de GET /api/config"
+        - id: SCN-FQ-014-C
+          given: "a flag desligada"
+          when: "o operador executa sessions, queue list ou queue activity"
+          then: "a leitura funciona normalmente"
+      contracts:
+        - "GET /api/config"
+      tests:
+        - "packages/schema/test/config.test.ts"
+        - "packages/cli/test/queue-flag.test.ts"
+  - op: add_requirement
+    capability: forge-queue
+    requirement_id: REQ-FQ-015
+    content_ref: requirements.md#req-15
+    requirement:
+      id: REQ-FQ-015
+      title: "Preservar o comportamento existente"
+      normative: SHALL NOT
+      scenarios:
+        - id: SCN-FQ-015-A
+          given: "uma admissão por prompt sem campo delivery"
+          when: "a mensagem é admitida"
+          then: "o item fica com delivery steer como antes do change"
+        - id: SCN-FQ-015-B
+          given: "o comando session list com saída json"
+          when: "o operador executa"
+          then: "as chaves da saída permanecem as mesmas do estado anterior ao change"
+      contracts:
+        - "POST /api/session/:sessionID/prompt"
+      tests:
+        - "packages/server/test/session-prompt-delivery.test.ts"
+        - "packages/cli/test/queue-regression.test.ts"

@@ -1,0 +1,19 @@
+# Qwen CLI adapter (§15): commands under .agents/commands/forge/ + QWEN.md -> AGENTS.md.
+# Skills come from the cross-tool agents-skills adapter (.agents/skills/).
+adapter: qwen
+generates:
+  - .agents/commands/forge/
+  - QWEN.md
+supports:
+  symlink: true
+  slash_commands: true
+  skills: true
+  hooks: false
+smoke_tests:
+  - name: commands-projected
+    command: "ls .agents/commands/forge/*.md >/dev/null"
+  - name: qwen-md-resolves
+    command: "[ \"$(readlink QWEN.md)\" = 'AGENTS.md' ] || head -1 QWEN.md | grep -q 'Generated from .forge/FORGE.md'"
+loss_warnings:
+  - "Hooks nao suportados pelo runtime — gates rodam via .forge/scripts e hooks git"
+  - "Namespacing por subdiretorio forge/; se o runtime nao suportar, invocar pelo path do arquivo"
