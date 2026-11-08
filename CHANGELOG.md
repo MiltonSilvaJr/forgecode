@@ -2,7 +2,7 @@
 
 Release notes for ForgeCode, a fork of OpenCode V2, newest first.
 
-## Unreleased
+## v0.2.0 — 2026-11-07
 
 ### Added
 
